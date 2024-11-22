@@ -453,10 +453,10 @@ const Dashboard = () => {
                         >
                           <Card sx={{
                             height: "100%",
-                            backgroundColor: "#e8ab31",
-                            borderRadius: 0,
-                            boxShadow: "none", 
-                            color: 'white',
+                            backgroundColor:
+                              theme.mode === "light"
+                                ? "transparent"
+                                : "rgba(170, 170, 170, 0.2)",
                           }}>
                             <CardContent>
                               <Stack
@@ -467,22 +467,19 @@ const Dashboard = () => {
                               >
                                 <Stack spacing={1}>
                                   <Typography
-                                    style={{ color: 'white' }}
+                                    color="primary"
                                     variant="overline"
                                     className={classes.overline}
                                   >
                                     {i18n.t("dashboard.cards.inAttendance")}
                                   </Typography>
-                                  <Typography
-                                     style={{ color: 'white' }}
-                                     variant="h4"
-                                     className={classes.h4}>
+                                  <Typography variant="h4" className={classes.h4}>
                                     {counters.supportHappening}
                                   </Typography>
                                 </Stack>
                                 <Avatar
                                   sx={{
-                                    backgroundColor: '#e8ab31',
+                                    backgroundColor: '#0b708c',
                                     height: 60,
                                     width: 60
                                   }}
@@ -503,10 +500,10 @@ const Dashboard = () => {
                         >
                           <Card sx={{
                             height: "100%",
-                            backgroundColor:"#1a95b8",
-                            borderRadius: 0,
-                            boxShadow: "none", 
-                            color: 'white',
+                            backgroundColor:
+                              theme.mode === "light"
+                                ? "transparent"
+                                : "rgba(170, 170, 170, 0.2)",
                           }}>
                             <CardContent>
                               <Stack
@@ -517,15 +514,13 @@ const Dashboard = () => {
                               >
                                 <Stack spacing={1}>
                                   <Typography
-                                    style={{ color: 'white' }}
+                                    color="primary"
                                     variant="overline"
                                     className={classes.overline}
                                   >
                                     {i18n.t("dashboard.cards.waiting")}
                                   </Typography>
-                                  <Typography
-                                    style={{ color: 'white' }}
-                                    variant="h4"
+                                  <Typography variant="h4"
                                     className={classes.h4}
                                   >
                                     {counters.supportPending}
@@ -533,7 +528,7 @@ const Dashboard = () => {
                                 </Stack>
                                 <Avatar
                                   sx={{
-                                    backgroundColor: '#1a95b8',
+                                    backgroundColor: '#47606e',
                                     height: 60,
                                     width: 60
                                   }}
@@ -554,10 +549,10 @@ const Dashboard = () => {
                         >
                           <Card sx={{
                             height: "100%",
-                            backgroundColor:"#499e31",
-                            borderRadius: 0,
-                            boxShadow: "none", 
-                            color: 'white',
+                            backgroundColor:
+                              theme.mode === "light"
+                                ? "transparent"
+                                : "rgba(170, 170, 170, 0.2)",
                           }}>
                             <CardContent>
                               <Stack
@@ -568,15 +563,13 @@ const Dashboard = () => {
                               >
                                 <Stack spacing={1}>
                                   <Typography
-                                    style={{ color: 'white' }}
+                                    color="primary"
                                     variant="overline"
                                     className={classes.overline}
                                   >
                                     {i18n.t("dashboard.cards.finalized")}
                                   </Typography>
-                                  <Typography
-                                    style={{ color: 'white' }}
-                                    variant="h4"
+                                  <Typography variant="h4"
                                     className={classes.h4}
                                   >
                                     {counters.supportFinished}
@@ -584,7 +577,7 @@ const Dashboard = () => {
                                 </Stack>
                                 <Avatar
                                   sx={{
-                                    backgroundColor: '#499e31',
+                                    backgroundColor: '#5852ab',
                                     height: 60,
                                     width: 60
                                   }}
@@ -605,10 +598,10 @@ const Dashboard = () => {
                         >
                           <Card sx={{
                             height: "100%",
-                            backgroundColor:"#b24ced",
-                            borderRadius: 0,
-                            boxShadow: "none", 
-                            color: 'white',
+                            backgroundColor:
+                              theme.mode === "light"
+                                ? "transparent"
+                                : "rgba(170, 170, 170, 0.2)",
                           }}>
                             <CardContent>
                               <Stack
@@ -619,15 +612,14 @@ const Dashboard = () => {
                               >
                                 <Stack spacing={1}>
                                   <Typography
-                                    style={{ color: 'white' }}
+                                    color="primary"
                                     variant="overline"
                                     className={classes.overline}
                                   >
                                     {i18n.t("dashboard.cards.groups")}
                                   </Typography>
-                                  <Typography
-                                    style={{ color: 'white' }}
-                                    variant="h4"
+                                  <Typography variant="h4"
+
                                     className={classes.h4}
                                   >
                                     {counters.supportGroups}
@@ -636,7 +628,7 @@ const Dashboard = () => {
 
                                 <Avatar
                                   sx={{
-                                    backgroundColor: '#b24ced',
+                                    backgroundColor: '#01BBAC',
                                     height: 60,
                                     width: 60
                                   }}
@@ -657,10 +649,10 @@ const Dashboard = () => {
                         >
                           <Card sx={{
                             height: "100%",
-                            backgroundColor:"#f57b5f",
-                            borderRadius: 0,
-                            boxShadow: "none", 
-                            color: 'white',
+                            backgroundColor:
+                              theme.mode === "light"
+                                ? "transparent"
+                                : "rgba(170, 170, 170, 0.2)",
                           }}>
                             <CardContent>
                               <Stack
@@ -671,15 +663,13 @@ const Dashboard = () => {
                               >
                                 <Stack spacing={1}>
                                   <Typography
-                                    style={{ color: 'white' }}
+                                    color="primary"
                                     variant="overline"
                                     className={classes.overline}
                                   >
                                     {i18n.t("dashboard.cards.activeAttendants")}
                                   </Typography>
-                                  <Typography
-                                    style={{ color: 'white' }}
-                                    variant="h4"
+                                  <Typography variant="h4"
                                     className={classes.h4}
                                   >
                                     {GetUsers()}/{attendants.length}
@@ -687,7 +677,7 @@ const Dashboard = () => {
                                 </Stack>
                                 <Avatar
                                   sx={{
-                                    backgroundColor: '#f57b5f',
+                                    backgroundColor: '#805753',
                                     height: 60,
                                     width: 60
                                   }}
@@ -708,10 +698,10 @@ const Dashboard = () => {
                         >
                           <Card sx={{
                             height: "100%",
-                            backgroundColor:"#8c6b19",
-                            borderRadius: 0,
-                            boxShadow: "none", 
-                            color: 'white',
+                            backgroundColor:
+                              theme.mode === "light"
+                                ? "transparent"
+                                : "rgba(170, 170, 170, 0.2)",
                           }}>
                             <CardContent>
                               <Stack
@@ -722,15 +712,13 @@ const Dashboard = () => {
                               >
                                 <Stack spacing={1}>
                                   <Typography
-                                    style={{ color: 'white' }}
+                                    color="primary"
                                     variant="overline"
                                     className={classes.overline}
                                   >
                                     {i18n.t("dashboard.cards.newContacts")}
                                   </Typography>
-                                  <Typography
-                                    style={{ color: 'white' }}
-                                    variant="h4"
+                                  <Typography variant="h4"
                                     className={classes.h4}
                                   >
                                     {counters.leads}
@@ -759,10 +747,10 @@ const Dashboard = () => {
                         >
                           <Card sx={{
                             height: "100%",
-                            backgroundColor:"#615c61",
-                            borderRadius: 0,
-                            boxShadow: "none", 
-                            color: 'white',
+                            backgroundColor:
+                              theme.mode === "light"
+                                ? "transparent"
+                                : "rgba(170, 170, 170, 0.2)",
                           }}>
                             <CardContent>
                               <Stack
@@ -773,15 +761,13 @@ const Dashboard = () => {
                               >
                                 <Stack spacing={1}>
                                   <Typography
-style={{ color: 'white' }}
+                                    color="primary"
                                     variant="overline"
                                     className={classes.overline}
                                   >
                                     {i18n.t("dashboard.cards.totalReceivedMessages")}
                                   </Typography>
-                                  <Typography
-                                    style={{ color: 'white' }}
-                                    variant="h4"
+                                  <Typography variant="h4"
                                     className={classes.h4}
                                   >
                                     {GetMessages(false, false)}/{GetMessages(true, false)}
@@ -789,7 +775,7 @@ style={{ color: 'white' }}
                                 </Stack>
                                 <Avatar
                                   sx={{
-                                    backgroundColor: '#615c61',
+                                    backgroundColor: '#333133',
                                     height: 60,
                                     width: 60
                                   }}
@@ -810,10 +796,10 @@ style={{ color: 'white' }}
                         >
                           <Card sx={{
                             height: "100%",
-                            backgroundColor:"#00a99d",
-                            borderRadius: 0,
-                            boxShadow: "none", 
-                            color: 'white',
+                            backgroundColor:
+                              theme.mode === "light"
+                                ? "transparent"
+                                : "rgba(170, 170, 170, 0.2)",
                           }}>
                             <CardContent>
                               <Stack
@@ -824,15 +810,13 @@ style={{ color: 'white' }}
                               >
                                 <Stack spacing={1}>
                                   <Typography
-                                    style={{ color: 'white' }}
+                                    color="primary"
                                     variant="overline"
                                     className={classes.overline}
                                   >
                                     {i18n.t("dashboard.cards.totalSentMessages")}
                                   </Typography>
-                                  <Typography
-                                    style={{ color: 'white' }}
-                                    variant="h4"
+                                  <Typography variant="h4"
                                     className={classes.h4}
                                   >
                                     {GetMessages(false, true)}/{GetMessages(true, true)}
@@ -840,7 +824,7 @@ style={{ color: 'white' }}
                                 </Stack>
                                 <Avatar
                                   sx={{
-                                    backgroundColor: '#00a99d',
+                                    backgroundColor: '#558a59',
                                     height: 60,
                                     width: 60
                                   }}
@@ -861,10 +845,10 @@ style={{ color: 'white' }}
                         >
                           <Card sx={{
                             height: "100%",
-                            backgroundColor:"#642141",
-                            borderRadius: 0,
-                            boxShadow: "none", 
-                            color: 'white',
+                            backgroundColor:
+                              theme.mode === "light"
+                                ? "transparent"
+                                : "rgba(170, 170, 170, 0.2)",
                           }}>
                             <CardContent>
                               <Stack
@@ -875,15 +859,13 @@ style={{ color: 'white' }}
                               >
                                 <Stack spacing={1}>
                                   <Typography
-                                    style={{ color: 'white' }}
+                                    color="primary"
                                     variant="overline"
                                     className={classes.overline}
                                   >
                                     {i18n.t("dashboard.cards.averageServiceTime")}
                                   </Typography>
-                                  <Typography
-                                    style={{ color: 'white' }}
-                                    variant="h4"
+                                  <Typography variant="h4"
                                     className={classes.h4}
                                   >
                                     {formatTime(counters.avgSupportTime)}
@@ -891,7 +873,7 @@ style={{ color: 'white' }}
                                 </Stack>
                                 <Avatar
                                   sx={{
-                                    backgroundColor: '#642141',
+                                    backgroundColor: '#F79009',
                                     height: 60,
                                     width: 60
                                   }}
@@ -912,10 +894,10 @@ style={{ color: 'white' }}
                         >
                           <Card sx={{
                             height: "100%",
-                            backgroundColor:"#f9bda7",
-                            borderRadius: 0,
-                            boxShadow: "none", 
-                            color: 'white',
+                            backgroundColor:
+                              theme.mode === "light"
+                                ? "transparent"
+                                : "rgba(170, 170, 170, 0.2)",
                           }}>
                             <CardContent>
                               <Stack
@@ -926,15 +908,13 @@ style={{ color: 'white' }}
                               >
                                 <Stack spacing={1}>
                                   <Typography
-                                    style={{ color: 'white' }}
+                                    color="primary"
                                     variant="overline"
                                     className={classes.overline}
                                   >
                                     {i18n.t("dashboard.cards.averageWaitingTime")}
                                   </Typography>
-                                  <Typography
-                                    style={{ color: 'white' }}
-                                    variant="h4"
+                                  <Typography variant="h4"
                                     className={classes.h4}
                                   >
                                     {formatTime(counters.avgWaitTime)}
@@ -942,7 +922,7 @@ style={{ color: 'white' }}
                                 </Stack>
                                 <Avatar
                                   sx={{
-                                    backgroundColor: '#f9bda7',
+                                    backgroundColor: '#8a2c40',
                                     height: 60,
                                     width: 60
                                   }}
@@ -963,10 +943,10 @@ style={{ color: 'white' }}
                         >
                           <Card sx={{
                             height: "100%",
-                            backgroundColor:"#b4ba1a",
-                            borderRadius: 0,
-                            boxShadow: "none", 
-                            color: 'white',
+                            backgroundColor:
+                              theme.mode === "light"
+                                ? "transparent"
+                                : "rgba(170, 170, 170, 0.2)",
                           }}>
                             <CardContent>
                               <Stack
@@ -977,15 +957,13 @@ style={{ color: 'white' }}
                               >
                                 <Stack spacing={1}>
                                   <Typography
-                                    style={{ color: 'white' }}
+                                    color="primary"
                                     variant="overline"
                                     className={classes.overline}
                                   >
                                     {i18n.t("dashboard.cards.activeTickets")}
                                   </Typography>
-                                  <Typography
-                                    style={{ color: 'white' }}
-                                    variant="h4"
+                                  <Typography variant="h4"
                                     className={classes.h4}
                                   >
                                     {counters.activeTickets}
@@ -994,7 +972,7 @@ style={{ color: 'white' }}
 
                                 <Avatar
                                   sx={{
-                                    backgroundColor: '#b4ba1a',
+                                    backgroundColor: '#EE4512',
                                     height: 60,
                                     width: 60
                                   }}
@@ -1015,11 +993,10 @@ style={{ color: 'white' }}
                         >
                           <Card sx={{
                             height: "100%",
-                            backgroundColor:"#9496be",
-                            borderRadius: 0,
-                            boxShadow: "none", 
-                            color: 'white',
-
+                            backgroundColor:
+                              theme.mode === "light"
+                                ? "transparent"
+                                : "rgba(170, 170, 170, 0.2)",
                           }}>
                             <CardContent>
                               <Stack
@@ -1030,15 +1007,14 @@ style={{ color: 'white' }}
                               >
                                 <Stack spacing={1}>
                                   <Typography
-                                    style={{ color: 'white' }}
+                                    color="primary"
                                     variant="overline"
                                     className={classes.overline}
                                   >
                                     {i18n.t("dashboard.cards.passiveTickets")}
                                   </Typography>
-                                  <Typography
-                                    style={{ color: 'white' }}
-                                    variant="h4"
+                                  <Typography variant="h4"
+
                                     className={classes.h4}
                                   >
                                     {counters.passiveTickets}
@@ -1048,7 +1024,7 @@ style={{ color: 'white' }}
 
                                 <Avatar
                                   sx={{
-                                    backgroundColor: '#9496be',
+                                    backgroundColor: '#28C037',
                                     height: 60,
                                     width: 60
                                   }}

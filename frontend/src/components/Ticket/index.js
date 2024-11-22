@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useContext, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  useRef,
+  useCallback,
+} from "react";
 import { useParams, useHistory } from "react-router-dom";
 
 import clsx from "clsx";
@@ -18,9 +24,10 @@ import { ForwardMessageProvider } from "../../context/ForwarMessage/ForwardMessa
 import toastError from "../../errors/toastError";
 import { AuthContext } from "../../context/Auth/AuthContext";
 import { TagsContainer } from "../TagsContainer";
-import { isNil } from 'lodash';
+import { isNil } from "lodash";
 import { EditMessageProvider } from "../../context/EditingMessage/EditingMessageContext";
 import { TicketsContext } from "../../context/Tickets/TicketsContext";
+import { toast } from "react-toastify";
 
 const drawerWidth = 320;
 
@@ -67,7 +74,6 @@ const Ticket = () => {
   const { user, socket } = useContext(AuthContext);
   const { setTabOpen } = useContext(TicketsContext);
 
-
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [contact, setContact] = useState({});
@@ -76,20 +82,29 @@ const Ticket = () => {
   const { companyId } = user;
 
   useEffect(() => {
-    console.log("======== Ticket ===========")
-    console.log(ticket)
-    console.log("===========================")
-}, [ticket])
+    console.log("======== Ticket ===========");
+    console.log(ticket);
+    console.log("===========================");
+  }, [ticket]);
 
   useEffect(() => {
     setLoading(true);
     const delayDebounceFn = setTimeout(() => {
       const fetchTicket = async () => {
         try {
-
           if (!isNil(ticketId) && ticketId !== "undefined") {
-
             const { data } = await api.get("/tickets/u/" + ticketId);
+
+            const { queueId, contact } = data;
+            const { queues, profile } = user;
+            if (contact?.users?.map((u) => u.id).indexOf(user.id) === -1) {
+              const queueAllowed = queues.find((q) => q.id === queueId);
+              if (queueAllowed === undefined && profile !== "admin") {
+                toast.error("Acesso não permitido");
+                history.push("/tickets");
+                return;
+              }
+            }
 
             setContact(data.contact);
             // setWhatsapp(data.whatsapp);
@@ -101,7 +116,7 @@ const Ticket = () => {
             setLoading(false);
           }
         } catch (err) {
-          history.push("/tickets");   // correção para evitar tela branca uuid não encontrado Feito por Altemir 16/08/2023
+          history.push("/tickets"); // correção para evitar tela branca uuid não encontrado Feito por Altemir 16/08/2023
           setLoading(false);
           toastError(err);
         }
@@ -113,7 +128,12 @@ const Ticket = () => {
   }, [ticketId, user, history]);
 
   useEffect(() => {
-    if (!ticket && !ticket.id && ticket.uuid !== ticketId && ticketId === "undefined") {
+    if (
+      !ticket &&
+      !ticket.id &&
+      ticket.uuid !== ticketId &&
+      ticketId === "undefined"
+    ) {
       return;
     }
 
@@ -122,7 +142,7 @@ const Ticket = () => {
 
       const onConnectTicket = () => {
         socket.emit("joinChatBox", `${ticket.id}`);
-      }
+      };
 
       const onCompanyTicket = (data) => {
         if (data.action === "update" && data.ticket.id === ticket?.id) {
@@ -147,12 +167,11 @@ const Ticket = () => {
         }
       };
 
-      socket.on("connect", onConnectTicket)
+      socket.on("connect", onConnectTicket);
       socket.on(`company-${companyId}-ticket`, onCompanyTicket);
       socket.on(`company-${companyId}-contact`, onCompanyContactTicket);
 
       return () => {
-
         socket.emit("joinChatBoxLeave", `${ticket.id}`);
         socket.off("connect", onConnectTicket);
         socket.off(`company-${companyId}-ticket`, onCompanyTicket);
@@ -178,8 +197,7 @@ const Ticket = () => {
           whatsappId={ticket.whatsappId}
           queueId={ticket.queueId}
           channel={ticket.channel}
-        >
-        </MessagesList>
+        ></MessagesList>
         <MessageInput
           ticketId={ticket.id}
           ticketStatus={ticket.status}
@@ -190,7 +208,6 @@ const Ticket = () => {
       </>
     );
   };
-
 
   return (
     <div className={classes.root} id="drawer-container">
@@ -212,9 +229,7 @@ const Ticket = () => {
               />
             </div>
           )}
-          <TicketActionButtons
-            ticket={ticket}
-          />
+          <TicketActionButtons ticket={ticket} />
         </TicketHeader>
         {/* </div> */}
         <Paper>
@@ -222,9 +237,7 @@ const Ticket = () => {
         </Paper>
         <ReplyMessageProvider>
           <ForwardMessageProvider>
-            <EditMessageProvider>
-              {renderMessagesList()}
-            </EditMessageProvider>
+            <EditMessageProvider>{renderMessagesList()}</EditMessageProvider>
           </ForwardMessageProvider>
         </ReplyMessageProvider>
       </Paper>
@@ -236,7 +249,6 @@ const Ticket = () => {
         loading={loading}
         ticket={ticket}
       />
-
     </div>
   );
 };

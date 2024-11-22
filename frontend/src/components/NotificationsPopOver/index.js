@@ -16,7 +16,7 @@ import { makeStyles } from "@material-ui/core/styles";
 import Badge from "@material-ui/core/Badge";
 import ChatIcon from "@material-ui/icons/Chat";
 
-import TicketListItem from "../TicketListItem";
+import TicketListItemCustom from "../TicketListItemCustom";
 import useTickets from "../../hooks/useTickets";
 import alertSound from "../../assets/sound.mp3";
 import { AuthContext } from "../../context/Auth/AuthContext";
@@ -281,14 +281,18 @@ const NotificationsPopOver = (volume) => {
 	const browserNotification = () => {
 		const numbers = "⓿➊➋➌➍➎➏➐➑➒➓⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴";
 		if (notifications.length > 0) {
-			if (notifications.length < 21) {
-				document.title = numbers.substring(notifications.length, notifications.length + 1) + " - " + (theme.appName || "...");
-			} else {
-				document.title = "(" + notifications.length + ")" + (theme.appName || "...");
-			}
-		} else {
-			document.title = theme.appName || "...";
-		}
+      if (notifications.length < 21) {
+        document.title =
+          // numbers.substring(notifications.length, notifications.length + 1) +
+          // " - " +
+          (theme.appName || "...");
+      } else {
+        document.title =
+          "(" + notifications.length + ")" + (theme.appName || "...");
+      }
+    } else {
+      document.title = theme.appName || "...";
+    }
 		return (
 			<>
 				<Favicon
@@ -339,7 +343,7 @@ const NotificationsPopOver = (volume) => {
 					) : (
 						notifications.map(ticket => (
 							<NotificationTicket key={ticket.id}>
-								<TicketListItem ticket={ticket} />
+								<TicketListItemCustom ticket={ticket} isNotification={true} />
 							</NotificationTicket>
 						))
 					)}

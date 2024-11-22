@@ -297,6 +297,7 @@ const messages = {
           schedules: "Horário de expediente",
         },
         form: {
+          autoImportContacts: "Importar contatos automaticamente",
           importOldMessagesEnable: "Importar mensagens do aparelho",
           importOldMessages: "Data de inicio da importação",
           importRecentMessages: "Data de termino da importação",
@@ -595,6 +596,7 @@ const messages = {
           startWork: "Inicio de trabalho",
           endWork: "Fim de trabalho",
           whatsapp: "Conexão Padrão",
+          canDeleteMessage: "Permitido deletar Mensagens",
           allTicketEnable: "Habilitado",
           allTicketDisable: "Desabilitado",
           allTicket: "Visualizar chamados sem fila",

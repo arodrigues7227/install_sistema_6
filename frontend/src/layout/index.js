@@ -500,7 +500,7 @@ const LoggedInLayout = ({ children, themeToggle }) => {
               label={i18n.t("mainDrawer.appBar.user.token")}
             />
           )}
-         
+          <VersionControl />
 
           {/* DESABILITADO POIS TEM BUGS */}
           {/* <UserLanguageSelector /> */}

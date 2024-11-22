@@ -173,11 +173,11 @@ const App = () => {
       });
     getPublicSetting("appName")
       .then((name) => {
-        setAppName(name || "Whaticket.click");
+        setAppName(name || "WORKZAP");
       })
       .catch((error) => {
         console.log("!==== Erro ao carregar temas: ====!", error);
-        setAppName("Whaticket.click");
+        setAppName("WORKZAP");
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -28,7 +28,7 @@ import {
   Tabs,
   Paper,
   Box,
-  Typography
+  Typography,
 } from "@material-ui/core";
 
 import api from "../../services/api";
@@ -46,7 +46,7 @@ const useStyles = makeStyles((theme) => ({
   root: {
     display: "flex",
     flexWrap: "wrap",
-    gap: 4
+    gap: 4,
   },
 
   multFieldLine: {
@@ -108,8 +108,8 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
 
   const inputFileRef = useRef(null);
 
-  const [attachment, setAttachment] = useState(null)
-  const [attachmentName, setAttachmentName] = useState('')
+  const [attachment, setAttachment] = useState(null);
+  const [attachmentName, setAttachmentName] = useState("");
 
   const initialState = {
     name: "",
@@ -125,10 +125,10 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     allowGroup: false,
     enableImportMessage: false,
     groupAsTicket: "disabled",
-    timeUseBotQueues: '0',
-    timeSendQueue: '0',
+    timeUseBotQueues: "0",
+    timeSendQueue: "0",
     sendIdQueue: 0,
-    expiresTicketNPS: '0',
+    expiresTicketNPS: "0",
     expiresInactiveMessage: "",
     timeInactiveMessage: "",
     inactiveMessage: "",
@@ -143,7 +143,8 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     collectiveVacationEnd: "",
     collectiveVacationStart: "",
     collectiveVacationMessage: "",
-    queueIdImportMessages: null
+    queueIdImportMessages: null,
+    autoImportContacts: true,
   };
   const [whatsApp, setWhatsApp] = useState(initialState);
   const [selectedQueueIds, setSelectedQueueIds] = useState([]);
@@ -151,27 +152,80 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   const [tab, setTab] = useState("general");
   const [enableImportMessage, setEnableImportMessage] = useState(false);
   const [importOldMessagesGroups, setImportOldMessagesGroups] = useState(false);
-  const [closedTicketsPostImported, setClosedTicketsPostImported] = useState(false);
-  const [importOldMessages, setImportOldMessages] = useState(moment().add(-1, "days").format("YYYY-MM-DDTHH:mm"));
-  const [importRecentMessages, setImportRecentMessages] = useState(moment().add(-1, "minutes").format("YYYY-MM-DDTHH:mm"));
+  const [closedTicketsPostImported, setClosedTicketsPostImported] =
+    useState(false);
+  const [importOldMessages, setImportOldMessages] = useState(
+    moment().add(-1, "days").format("YYYY-MM-DDTHH:mm")
+  );
+  const [importRecentMessages, setImportRecentMessages] = useState(
+    moment().add(-1, "minutes").format("YYYY-MM-DDTHH:mm")
+  );
   const [copied, setCopied] = useState(false);
 
   const [schedulesEnabled, setSchedulesEnabled] = useState(false);
   const [NPSEnabled, setNPSEnabled] = useState(false);
   const [showOpenAi, setShowOpenAi] = useState(false);
   const [showIntegrations, setShowIntegrations] = useState(false);
+  const [autoImportContacts, setAutoImportContacts] = useState(true);
   const { user } = useContext(AuthContext);
 
-
-
   const [schedules, setSchedules] = useState([
-    { weekday: i18n.t("queueModal.serviceHours.monday"), weekdayEn: "monday", startTimeA: "08:00", endTimeA: "12:00", startTimeB: "13:00", endTimeB: "18:00", },
-    { weekday: i18n.t("queueModal.serviceHours.tuesday"), weekdayEn: "tuesday", startTimeA: "08:00", endTimeA: "12:00", startTimeB: "13:00", endTimeB: "18:00", },
-    { weekday: i18n.t("queueModal.serviceHours.wednesday"), weekdayEn: "wednesday", startTimeA: "08:00", endTimeA: "12:00", startTimeB: "13:00", endTimeB: "18:00", },
-    { weekday: i18n.t("queueModal.serviceHours.thursday"), weekdayEn: "thursday", startTimeA: "08:00", endTimeA: "12:00", startTimeB: "13:00", endTimeB: "18:00", },
-    { weekday: i18n.t("queueModal.serviceHours.friday"), weekdayEn: "friday", startTimeA: "08:00", endTimeA: "12:00", startTimeB: "13:00", endTimeB: "18:00", },
-    { weekday: "Sábado", weekdayEn: "saturday", startTimeA: "08:00", endTimeA: "12:00", startTimeB: "13:00", endTimeB: "18:00", },
-    { weekday: "Domingo", weekdayEn: "sunday", startTimeA: "08:00", endTimeA: "12:00", startTimeB: "13:00", endTimeB: "18:00", },
+    {
+      weekday: i18n.t("queueModal.serviceHours.monday"),
+      weekdayEn: "monday",
+      startTimeA: "08:00",
+      endTimeA: "12:00",
+      startTimeB: "13:00",
+      endTimeB: "18:00",
+    },
+    {
+      weekday: i18n.t("queueModal.serviceHours.tuesday"),
+      weekdayEn: "tuesday",
+      startTimeA: "08:00",
+      endTimeA: "12:00",
+      startTimeB: "13:00",
+      endTimeB: "18:00",
+    },
+    {
+      weekday: i18n.t("queueModal.serviceHours.wednesday"),
+      weekdayEn: "wednesday",
+      startTimeA: "08:00",
+      endTimeA: "12:00",
+      startTimeB: "13:00",
+      endTimeB: "18:00",
+    },
+    {
+      weekday: i18n.t("queueModal.serviceHours.thursday"),
+      weekdayEn: "thursday",
+      startTimeA: "08:00",
+      endTimeA: "12:00",
+      startTimeB: "13:00",
+      endTimeB: "18:00",
+    },
+    {
+      weekday: i18n.t("queueModal.serviceHours.friday"),
+      weekdayEn: "friday",
+      startTimeA: "08:00",
+      endTimeA: "12:00",
+      startTimeB: "13:00",
+      endTimeB: "18:00",
+    },
+    {
+      weekday: "Sábado",
+      weekdayEn: "saturday",
+      startTimeA: "08:00",
+      endTimeA: "12:00",
+      startTimeB: "13:00",
+      endTimeB: "18:00",
+    },
+    {
+      weekday: "Domingo",
+      weekdayEn: "sunday",
+      startTimeA: "08:00",
+      endTimeA: "12:00",
+      startTimeB: "13:00",
+      endTimeB: "18:00",
+    },
   ]);
 
   const { get: getSetting } = useCompanySettings();
@@ -197,7 +251,6 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     }
   }, [whatsAppId, whatsApp.token]);
 
-
   useEffect(() => {
     async function fetchData() {
       const companyId = user.companyId;
@@ -222,24 +275,21 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   }, [whatsAppId]);
 
   useEffect(() => {
-
     const fetchData = async () => {
-
       const settingSchedules = await getSetting({
-        "column": "scheduleType"
+        column: "scheduleType",
       });
       setSchedulesEnabled(settingSchedules.scheduleType === "connection");
       const settingNPS = await getSetting({
-        "column": "userRating"
+        column: "userRating",
       });
       setNPSEnabled(settingNPS.userRating === "enabled");
-    }
+    };
     fetchData();
   }, []);
 
   const handleEnableImportMessage = async (e) => {
     setEnableImportMessage(e.target.checked);
-
   };
 
   useEffect(() => {
@@ -249,25 +299,32 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
       try {
         const { data } = await api.get(`whatsapp/${whatsAppId}?session=0`);
         if (data && data?.flowIdNotPhrase) {
-          const { data: flowDefault } = await api.get(`flowbuilder/${data.flowIdNotPhrase}`)
-          console.log(flowDefault?.flow.id)
-          const selectedFlowIdNotPhrase = flowDefault?.flow.id
-          setFlowIdNotPhrase(selectedFlowIdNotPhrase)
+          const { data: flowDefault } = await api.get(
+            `flowbuilder/${data.flowIdNotPhrase}`
+          );
+          console.log(flowDefault?.flow.id);
+          const selectedFlowIdNotPhrase = flowDefault?.flow.id;
+          setFlowIdNotPhrase(selectedFlowIdNotPhrase);
         }
         if (data && data?.flowIdWelcome) {
-          const { data: flowDefault } = await api.get(`flowbuilder/${data.flowIdWelcome}`)
-          console.log(flowDefault?.flow.id)
-          const selectedFlowIdWelcome = flowDefault?.flow.id
-          setFlowIdWelcome(selectedFlowIdWelcome)
+          const { data: flowDefault } = await api.get(
+            `flowbuilder/${data.flowIdWelcome}`
+          );
+          console.log(flowDefault?.flow.id);
+          const selectedFlowIdWelcome = flowDefault?.flow.id;
+          setFlowIdWelcome(selectedFlowIdWelcome);
         }
         setWhatsApp(data);
+        setAutoImportContacts(data.autoImportContacts);
         setAttachmentName(data.greetingMediaAttachment);
         setAutoToken(data.token);
-        setSelectedIntegration(data?.integrationId)
-        data.promptId ? setSelectedPrompt(data.promptId) : setSelectedPrompt(null);
+        setSelectedIntegration(data?.integrationId);
+        data.promptId
+          ? setSelectedPrompt(data.promptId)
+          : setSelectedPrompt(null);
         const whatsQueueIds = data.queues?.map((queue) => queue.id);
         setSelectedQueueIds(whatsQueueIds);
-        setSchedules(data.schedules)
+        setSchedules(data.schedules);
         if (!isNil(data?.importOldMessages)) {
           setEnableImportMessage(true);
           setImportOldMessages(data?.importOldMessages);
@@ -305,40 +362,38 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     })();
   }, []);
 
-
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await api.get("/flowbuilder")
-        setWebhooks(data.flows)
+        const { data } = await api.get("/flowbuilder");
+        setWebhooks(data.flows);
       } catch (err) {
-        toastError(err)
+        toastError(err);
       }
     })();
-  }, [])
+  }, []);
 
   const handleChangeQueue = (e) => {
     setSelectedQueueIds(e);
     setSelectedPrompt(null);
-    setSelectedIntegration(null)
+    setSelectedIntegration(null);
   };
 
   const handleChangeIntegration = (e) => {
-    setSelectedIntegration(e.target.value)
-    setSelectedPrompt(null)
-    setSelectedQueueIds([])
-  }
+    setSelectedIntegration(e.target.value);
+    setSelectedPrompt(null);
+    setSelectedQueueIds([]);
+  };
 
   const handleChangeFlowIdNotPhrase = (e) => {
-    console.log(e.target.value)
-    setFlowIdNotPhrase(e.target.value)
-  }
+    console.log(e.target.value);
+    setFlowIdNotPhrase(e.target.value);
+  };
 
   const handleChangeFlowIdWelcome = (e) => {
-    console.log(e.target.value)
-    setFlowIdWelcome(e.target.value)
-  }
-
+    console.log(e.target.value);
+    setFlowIdWelcome(e.target.value);
+  };
 
   const handleChangePrompt = (e) => {
     setSelectedPrompt(e.target.value);
@@ -348,25 +403,31 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   const handleSaveWhatsApp = async (values) => {
     if (!whatsAppId) setAutoToken(generateRandomCode(30));
 
-
-
     if (NPSEnabled) {
-
       if (isNil(values.ratingMessage)) {
         toastError(i18n.t("whatsappModal.errorRatingMessage"));
         return;
       }
 
-      if (values.expiresTicketNPS === '0' && values.expiresTicketNPS === '' && values.expiresTicketNPS === 0) {
+      if (
+        values.expiresTicketNPS === "0" &&
+        values.expiresTicketNPS === "" &&
+        values.expiresTicketNPS === 0
+      ) {
         toastError(i18n.t("whatsappModal.errorExpiresNPS"));
         return;
       }
     }
 
+    if (values.timeSendQueue === "") values.timeSendQueue = "0";
 
-    if (values.timeSendQueue === '') values.timeSendQueue = '0'
-
-    if ((values.sendIdQueue === 0 || values.sendIdQueue === '' || isNil(values.sendIdQueue)) && (values.timeSendQueue !== 0 && values.timeSendQueue !== '0')) {
+    if (
+      (values.sendIdQueue === 0 ||
+        values.sendIdQueue === "" ||
+        isNil(values.sendIdQueue)) &&
+      values.timeSendQueue !== 0 &&
+      values.timeSendQueue !== "0"
+    ) {
       toastError(i18n.t("whatsappModal.errorSendQueue"));
       return;
     }
@@ -379,20 +440,29 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
       queueIds: selectedQueueIds,
       importOldMessages: enableImportMessage ? importOldMessages : null,
       importRecentMessages: enableImportMessage ? importRecentMessages : null,
-      importOldMessagesGroups: importOldMessagesGroups ? importOldMessagesGroups : null,
-      closedTicketsPostImported: closedTicketsPostImported ? closedTicketsPostImported : null,
-      token: autoToken ? autoToken : null, schedules,
-      promptId: selectedPrompt ? selectedPrompt : null
+      importOldMessagesGroups: importOldMessagesGroups
+        ? importOldMessagesGroups
+        : null,
+      closedTicketsPostImported: closedTicketsPostImported
+        ? closedTicketsPostImported
+        : null,
+      token: autoToken ? autoToken : null,
+      schedules,
+      promptId: selectedPrompt ? selectedPrompt : null,
     };
 
-    console.dir(whatsappData)
+    console.dir(whatsappData);
 
     delete whatsappData["queues"];
     delete whatsappData["session"];
 
     try {
       if (whatsAppId) {
-        if (whatsAppId && enableImportMessage && whatsApp?.status === "CONNECTED") {
+        if (
+          whatsAppId &&
+          enableImportMessage &&
+          whatsApp?.status === "CONNECTED"
+        ) {
           try {
             setWhatsApp({ ...whatsApp, status: "qrcode" });
             await api.delete(`/whatsappsession/${whatsApp.id}`);
@@ -407,7 +477,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
           formData.append("file", attachment);
           await api.post(`/whatsapp/${whatsAppId}/media-upload`, formData);
         }
-        if (!attachmentName && (whatsApp.greetingMediaAttachment !== null)) {
+        if (!attachmentName && whatsApp.greetingMediaAttachment !== null) {
           await api.delete(`/whatsapp/${whatsAppId}/media-upload`);
         }
       } else {
@@ -424,11 +494,11 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     } catch (err) {
       toastError(err);
     }
-
   };
 
   function generateRandomCode(length) {
-    const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyvz0123456789";
+    const charset =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyvz0123456789";
     let code = "";
 
     for (let i = 0; i < length; i++) {
@@ -440,10 +510,10 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
 
   const handleRefreshToken = () => {
     setAutoToken(generateRandomCode(30));
-  }
+  };
 
   const handleCopyToken = () => {
-    navigator.clipboard.writeText(autoToken); // Copia o token para a área de transferência    
+    navigator.clipboard.writeText(autoToken); // Copia o token para a área de transferência
     setCopied(true); // Define o estado de cópia como verdadeiro
   };
 
@@ -457,8 +527,8 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     setWhatsApp(initialState);
     setEnableImportMessage(false);
     // inputFileRef.current.value = null
-    setAttachment(null)
-    setAttachmentName("")
+    setAttachment(null);
+    setAttachmentName("");
     setCopied(false);
   };
 
@@ -468,15 +538,15 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
 
   const handleFileUpload = () => {
     const file = inputFileRef.current.files[0];
-    setAttachment(file)
-    setAttachmentName(file.name)
-    inputFileRef.current.value = null
+    setAttachment(file);
+    setAttachmentName(file.name);
+    inputFileRef.current.value = null;
   };
 
   const handleDeleFile = () => {
-    setAttachment(null)
-    setAttachmentName(null)
-  }
+    setAttachment(null);
+    setAttachmentName(null);
+  };
 
   return (
     <div className={classes.root}>
@@ -515,13 +585,30 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                   onChange={handleTabChange}
                   className={classes.tab}
                 >
-                  <Tab label={i18n.t("whatsappModal.tabs.general")} value={"general"} />
-                  <Tab label={i18n.t("whatsappModal.tabs.integrations")} value={"integrations"} />
-                  <Tab label={i18n.t("whatsappModal.tabs.messages")} value={"messages"} />
+                  <Tab
+                    label={i18n.t("whatsappModal.tabs.general")}
+                    value={"general"}
+                  />
+                  <Tab
+                    label={i18n.t("whatsappModal.tabs.integrations")}
+                    value={"integrations"}
+                  />
+                  <Tab
+                    label={i18n.t("whatsappModal.tabs.messages")}
+                    value={"messages"}
+                  />
                   <Tab label="Chatbot" value={"chatbot"} />
-                  <Tab label={i18n.t("whatsappModal.tabs.assessments")} value={"nps"} />
+                  <Tab
+                    label={i18n.t("whatsappModal.tabs.assessments")}
+                    value={"nps"}
+                  />
                   <Tab label="Fluxo Padrão" value={"flowbuilder"} />
-                  {schedulesEnabled && <Tab label={i18n.t("whatsappModal.tabs.schedules")} value={"schedules"} />}
+                  {schedulesEnabled && (
+                    <Tab
+                      label={i18n.t("whatsappModal.tabs.schedules")}
+                      value={"schedules"}
+                    />
+                  )}
                 </Tabs>
               </Paper>
               <Paper className={classes.paper} elevation={0}>
@@ -533,10 +620,13 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                   <DialogContent dividers>
                     {attachmentName && (
                       <div
-                        style={{ display: 'flex', flexDirection: 'row-reverse' }}
+                        style={{
+                          display: "flex",
+                          flexDirection: "row-reverse",
+                        }}
                       >
                         <Button
-                          variant='outlined'
+                          variant="outlined"
                           color="primary"
                           endIcon={<DeleteOutlineIcon />}
                           onClick={handleDeleFile}
@@ -546,16 +636,23 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       </div>
                     )}
                     <div
-                      style={{ display: 'flex', flexDirection: "column-reverse" }}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column-reverse",
+                      }}
                     >
                       <input
                         type="file"
                         accept="video/*,image/*"
                         ref={inputFileRef}
-                        style={{ display: 'none' }}
+                        style={{ display: "none" }}
                         onChange={handleFileUpload}
                       />
-                      <Button variant="contained" color="primary" onClick={() => inputFileRef.current.click()}>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => inputFileRef.current.click()}
+                      >
                         {i18n.t("userModal.buttons.addImage")}
                       </Button>
                     </div>
@@ -599,36 +696,61 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             label={i18n.t("whatsappModal.form.group")}
                           />
                         </Grid>
-                        <Grid xs={6} md={4} item>
+                        <Grid xs={6} md={3} item>
                           <FormControl
                             variant="outlined"
                             margin="dense"
                             fullWidth
                             className={classes.formControl}
                           >
-                            <InputLabel id="groupAsTicket-selection-label">{i18n.t("whatsappModal.form.groupAsTicket")}</InputLabel>
+                            <InputLabel id="groupAsTicket-selection-label">
+                              {i18n.t("whatsappModal.form.groupAsTicket")}
+                            </InputLabel>
                             <Field
                               as={Select}
                               label={i18n.t("whatsappModal.form.groupAsTicket")}
-                              placeholder={i18n.t("whatsappModal.form.groupAsTicket")}
+                              placeholder={i18n.t(
+                                "whatsappModal.form.groupAsTicket"
+                              )}
                               labelId="groupAsTicket-selection-label"
                               id="groupAsTicket"
                               name="groupAsTicket"
                             >
-                              <MenuItem value={"disabled"}>{i18n.t("whatsappModal.menuItem.disabled")}</MenuItem>
-                              <MenuItem value={"enabled"}>{i18n.t("whatsappModal.menuItem.enabled")}</MenuItem>
+                              <MenuItem value={"disabled"}>
+                                {i18n.t("whatsappModal.menuItem.disabled")}
+                              </MenuItem>
+                              <MenuItem value={"enabled"}>
+                                {i18n.t("whatsappModal.menuItem.enabled")}
+                              </MenuItem>
                             </Field>
                           </FormControl>
                         </Grid>
+
+                        <Grid style={{ paddingTop: 15 }} item>
+                          <FormControlLabel
+                            control={
+                              <Field
+                                as={Switch}
+                                color="primary"
+                                name="autoImportContacts"
+                                checked={values.autoImportContacts}
+                              />
+                            }
+                            label={i18n.t(
+                              "whatsappModal.form.autoImportContacts"
+                            )}
+                          />
+                        </Grid>
                       </Grid>
                     </div>
-
 
                     <div className={classes.importMessage}>
                       <div className={classes.multFieldLine}>
                         <FormControlLabel
                           style={{ marginRight: 7, color: "gray" }}
-                          label={i18n.t("whatsappModal.form.importOldMessagesEnable")}
+                          label={i18n.t(
+                            "whatsappModal.form.importOldMessagesEnable"
+                          )}
                           labelPlacement="end"
                           control={
                             <Switch
@@ -673,14 +795,19 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                                   size="medium"
                                   checked={closedTicketsPostImported}
                                   onChange={(e) =>
-                                    setClosedTicketsPostImported(e.target.checked)
+                                    setClosedTicketsPostImported(
+                                      e.target.checked
+                                    )
                                   }
                                   name="closedTicketsPostImported"
                                   color="primary"
                                 />
                               }
                             />
-                          </>) : <></>}
+                          </>
+                        ) : (
+                          <></>
+                        )}
                       </div>
 
                       {enableImportMessage ? (
@@ -689,7 +816,9 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             <Field
                               fullWidth
                               as={TextField}
-                              label={i18n.t("whatsappModal.form.importOldMessages")}
+                              label={i18n.t(
+                                "whatsappModal.form.importOldMessages"
+                              )}
                               type="datetime-local"
                               name="importOldMessages"
                               inputProps={{
@@ -709,7 +838,8 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                                 Boolean(errors.importOldMessages)
                               }
                               helperText={
-                                touched.importOldMessages && errors.importOldMessages
+                                touched.importOldMessages &&
+                                errors.importOldMessages
                               }
                               variant="outlined"
                               value={moment(importOldMessages).format(
@@ -724,7 +854,9 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             <Field
                               fullWidth
                               as={TextField}
-                              label={i18n.t("whatsappModal.form.importRecentMessages")}
+                              label={i18n.t(
+                                "whatsappModal.form.importRecentMessages"
+                              )}
                               type="datetime-local"
                               name="importRecentMessages"
                               inputProps={{
@@ -733,7 +865,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                                   .format("YYYY-MM-DDTHH:mm"),
                                 min: moment(importOldMessages).format(
                                   "YYYY-MM-DDTHH:mm"
-                                )
+                                ),
                               }}
                               //min="2022-11-06T22:22:55"
                               InputLabelProps={{
@@ -744,7 +876,8 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                                 Boolean(errors.importRecentMessages)
                               }
                               helperText={
-                                touched.importRecentMessages && errors.importRecentMessages
+                                touched.importRecentMessages &&
+                                errors.importRecentMessages
                               }
                               variant="outlined"
                               value={moment(importRecentMessages).format(
@@ -763,20 +896,26 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                               fullWidth
                             >
                               <InputLabel id="queueIdImportMessages-selection-label">
-                                {i18n.t("whatsappModal.form.queueIdImportMessages")}
+                                {i18n.t(
+                                  "whatsappModal.form.queueIdImportMessages"
+                                )}
                               </InputLabel>
                               <Field
                                 as={Select}
                                 name="queueIdImportMessages"
                                 id="queueIdImportMessages"
-                                value={values.queueIdImportMessages || '0'}
+                                value={values.queueIdImportMessages || "0"}
                                 required={enableImportMessage}
-                                label={i18n.t("whatsappModal.form.queueIdImportMessages")}
-                                placeholder={i18n.t("whatsappModal.form.queueIdImportMessages")}
+                                label={i18n.t(
+                                  "whatsappModal.form.queueIdImportMessages"
+                                )}
+                                placeholder={i18n.t(
+                                  "whatsappModal.form.queueIdImportMessages"
+                                )}
                                 labelId="queueIdImportMessages-selection-label"
                               >
                                 <MenuItem value={0}>&nbsp;</MenuItem>
-                                {queues.map(queue => (
+                                {queues.map((queue) => (
                                   <MenuItem key={queue.id} value={queue.id}>
                                     {queue.name}
                                   </MenuItem>
@@ -785,7 +924,6 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             </FormControl>
                           </Grid>
                         </Grid>
-
                       ) : null}
                     </div>
                     {enableImportMessage && (
@@ -793,7 +931,6 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                         {i18n.t("whatsappModal.form.importAlert")}
                       </span>
                     )}
-
 
                     {/* TOKEN */}
                     <Box display="flex" alignItems="center">
@@ -815,13 +952,21 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                         disabled={isSubmitting}
                         className={classes.tokenRefresh}
                         variant="text"
-                        startIcon={<Autorenew style={{ marginLeft: 5, color: "green" }} />}
+                        startIcon={
+                          <Autorenew
+                            style={{ marginLeft: 5, color: "green" }}
+                          />
+                        }
                       />
                       <Button
                         onClick={handleCopyToken}
                         className={classes.tokenRefresh}
                         variant="text"
-                        startIcon={<FileCopy style={{ color: copied ? "blue" : "inherit" }} />}
+                        startIcon={
+                          <FileCopy
+                            style={{ color: copied ? "blue" : "inherit" }}
+                          />
+                        }
                       />
                     </Box>
 
@@ -829,7 +974,6 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       <h3>{i18n.t("whatsappModal.form.queueRedirection")}</h3>
                       <p>{i18n.t("whatsappModal.form.queueRedirectionDesc")}</p>
                       <Grid spacing={2} container>
-
                         <Grid xs={6} md={6} item>
                           <FormControl
                             variant="outlined"
@@ -844,21 +988,22 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                               as={Select}
                               name="sendIdQueue"
                               id="sendIdQueue"
-                              value={values.sendIdQueue || '0'}
+                              value={values.sendIdQueue || "0"}
                               required={values.timeSendQueue > 0}
                               label={i18n.t("whatsappModal.form.sendIdQueue")}
-                              placeholder={i18n.t("whatsappModal.form.sendIdQueue")}
+                              placeholder={i18n.t(
+                                "whatsappModal.form.sendIdQueue"
+                              )}
                               labelId="sendIdQueue-selection-label"
                             >
                               <MenuItem value={0}>&nbsp;</MenuItem>
-                              {queues.map(queue => (
+                              {queues.map((queue) => (
                                 <MenuItem key={queue.id} value={queue.id}>
                                   {queue.name}
                                 </MenuItem>
                               ))}
                             </Field>
                           </FormControl>
-
                         </Grid>
 
                         <Grid xs={6} md={6} item>
@@ -869,11 +1014,15 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             name="timeSendQueue"
                             variant="outlined"
                             margin="dense"
-                            error={touched.timeSendQueue && Boolean(errors.timeSendQueue)}
-                            helperText={touched.timeSendQueue && errors.timeSendQueue}
+                            error={
+                              touched.timeSendQueue &&
+                              Boolean(errors.timeSendQueue)
+                            }
+                            helperText={
+                              touched.timeSendQueue && errors.timeSendQueue
+                            }
                           />
                         </Grid>
-
                       </Grid>
                     </div>
                   </DialogContent>
@@ -909,10 +1058,14 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                           variant="outlined"
                           margin="dense"
                           placeholder={i18n.t("queueModal.form.integrationId")}
-                          labelId="integrationId-selection-label"                        >
-                          <MenuItem value={null} >{"Desabilitado"}</MenuItem>
+                          labelId="integrationId-selection-label"
+                        >
+                          <MenuItem value={null}>{"Desabilitado"}</MenuItem>
                           {integrations.map((integration) => (
-                            <MenuItem key={integration.id} value={integration.id}>
+                            <MenuItem
+                              key={integration.id}
+                              value={integration.id}
+                            >
                               {integration.name}
                             </MenuItem>
                           ))}
@@ -920,11 +1073,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       </FormControl>
                     )}
                     {showOpenAi && (
-                      <FormControl
-                        margin="dense"
-                        variant="outlined"
-                        fullWidth
-                      >
+                      <FormControl margin="dense" variant="outlined" fullWidth>
                         <InputLabel>
                           {i18n.t("whatsappModal.form.prompt")}
                         </InputLabel>
@@ -949,10 +1098,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                           }}
                         >
                           {prompts.map((prompt) => (
-                            <MenuItem
-                              key={prompt.id}
-                              value={prompt.id}
-                            >
+                            <MenuItem key={prompt.id} value={prompt.id}>
                               {prompt.name}
                             </MenuItem>
                           ))}
@@ -979,7 +1125,8 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                           fullWidth
                           name="greetingMessage"
                           error={
-                            touched.greetingMessage && Boolean(errors.greetingMessage)
+                            touched.greetingMessage &&
+                            Boolean(errors.greetingMessage)
                           }
                           helperText={
                             touched.greetingMessage && errors.greetingMessage
@@ -1003,7 +1150,8 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             Boolean(errors.complationMessage)
                           }
                           helperText={
-                            touched.complationMessage && errors.complationMessage
+                            touched.complationMessage &&
+                            errors.complationMessage
                           }
                           variant="outlined"
                           margin="dense"
@@ -1019,8 +1167,14 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                           rows={4}
                           fullWidth
                           name="outOfHoursMessage"
-                          error={touched.outOfHoursMessage && Boolean(errors.outOfHoursMessage)}
-                          helperText={touched.outOfHoursMessage && errors.outOfHoursMessage}
+                          error={
+                            touched.outOfHoursMessage &&
+                            Boolean(errors.outOfHoursMessage)
+                          }
+                          helperText={
+                            touched.outOfHoursMessage &&
+                            errors.outOfHoursMessage
+                          }
                           variant="outlined"
                           margin="dense"
                         />
@@ -1029,13 +1183,21 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       <Grid item xs={12} md={12} xl={12}>
                         <Field
                           as={TextField}
-                          label={i18n.t("whatsappModal.form.collectiveVacationMessage")}
+                          label={i18n.t(
+                            "whatsappModal.form.collectiveVacationMessage"
+                          )}
                           multiline
                           rows={4}
                           fullWidth
                           name="collectiveVacationMessage"
-                          error={touched.collectiveVacationMessage && Boolean(errors.collectiveVacationMessage)}
-                          helperText={touched.collectiveVacationMessage && errors.collectiveVacationMessage}
+                          error={
+                            touched.collectiveVacationMessage &&
+                            Boolean(errors.collectiveVacationMessage)
+                          }
+                          helperText={
+                            touched.collectiveVacationMessage &&
+                            errors.collectiveVacationMessage
+                          }
                           variant="outlined"
                           margin="dense"
                         />
@@ -1044,14 +1206,16 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                         <Field
                           fullWidth
                           as={TextField}
-                          label={i18n.t("whatsappModal.form.collectiveVacationStart")}
+                          label={i18n.t(
+                            "whatsappModal.form.collectiveVacationStart"
+                          )}
                           type="date"
                           name="collectiveVacationStart"
-                          required={values.collectiveVacationMessage?.length > 0}
+                          required={
+                            values.collectiveVacationMessage?.length > 0
+                          }
                           inputProps={{
-                            min: moment()
-                              .add(-10, "days")
-                              .format("YYYY-MM-DD"),
+                            min: moment().add(-10, "days").format("YYYY-MM-DD"),
                           }}
                           //min="2022-11-06T22:22:55"
                           InputLabelProps={{
@@ -1062,7 +1226,8 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             Boolean(errors.collectiveVacationStart)
                           }
                           helperText={
-                            touched.collectiveVacationStart && errors.collectiveVacationStart
+                            touched.collectiveVacationStart &&
+                            errors.collectiveVacationStart
                           }
                           variant="outlined"
                         />
@@ -1071,14 +1236,16 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                         <Field
                           fullWidth
                           as={TextField}
-                          label={i18n.t("whatsappModal.form.collectiveVacationEnd")}
+                          label={i18n.t(
+                            "whatsappModal.form.collectiveVacationEnd"
+                          )}
                           type="date"
                           name="collectiveVacationEnd"
-                          required={values.collectiveVacationMessage?.length > 0}
+                          required={
+                            values.collectiveVacationMessage?.length > 0
+                          }
                           inputProps={{
-                            min: moment()
-                              .add(-10, "days")
-                              .format("YYYY-MM-DD")
+                            min: moment().add(-10, "days").format("YYYY-MM-DD"),
                           }}
                           //min="2022-11-06T22:22:55"
                           InputLabelProps={{
@@ -1089,7 +1256,8 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             Boolean(errors.collectiveVacationEnd)
                           }
                           helperText={
-                            touched.collectiveVacationEnd && errors.collectiveVacationEnd
+                            touched.collectiveVacationEnd &&
+                            errors.collectiveVacationEnd
                           }
                           variant="outlined"
                         />
@@ -1109,13 +1277,21 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       <Grid xs={6} md={4} item>
                         <Field
                           as={TextField}
-                          label={i18n.t("whatsappModal.form.timeCreateNewTicket")}
+                          label={i18n.t(
+                            "whatsappModal.form.timeCreateNewTicket"
+                          )}
                           fullWidth
                           name="timeCreateNewTicket"
                           variant="outlined"
                           margin="dense"
-                          error={touched.timeCreateNewTicket && Boolean(errors.timeCreateNewTicket)}
-                          helperText={touched.timeCreateNewTicket && errors.timeCreateNewTicket}
+                          error={
+                            touched.timeCreateNewTicket &&
+                            Boolean(errors.timeCreateNewTicket)
+                          }
+                          helperText={
+                            touched.timeCreateNewTicket &&
+                            errors.timeCreateNewTicket
+                          }
                         />
                       </Grid>
 
@@ -1128,8 +1304,13 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                           name="maxUseBotQueues"
                           variant="outlined"
                           margin="dense"
-                          error={touched.maxUseBotQueues && Boolean(errors.maxUseBotQueues)}
-                          helperText={touched.maxUseBotQueues && errors.maxUseBotQueues}
+                          error={
+                            touched.maxUseBotQueues &&
+                            Boolean(errors.maxUseBotQueues)
+                          }
+                          helperText={
+                            touched.maxUseBotQueues && errors.maxUseBotQueues
+                          }
                         />
                       </Grid>
                       {/* TEMPO PARA ENVIO DO CHATBOT */}
@@ -1141,8 +1322,13 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                           name="timeUseBotQueues"
                           variant="outlined"
                           margin="dense"
-                          error={touched.timeUseBotQueues && Boolean(errors.timeUseBotQueues)}
-                          helperText={touched.timeUseBotQueues && errors.timeUseBotQueues}
+                          error={
+                            touched.timeUseBotQueues &&
+                            Boolean(errors.timeUseBotQueues)
+                          }
+                          helperText={
+                            touched.timeUseBotQueues && errors.timeUseBotQueues
+                          }
                         />
                       </Grid>
                     </Grid>
@@ -1157,8 +1343,13 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                           required={values.timeInactiveMessage > 0}
                           variant="outlined"
                           margin="dense"
-                          error={touched.expiresTicket && Boolean(errors.expiresTicket)}
-                          helperText={touched.expiresTicket && errors.expiresTicket}
+                          error={
+                            touched.expiresTicket &&
+                            Boolean(errors.expiresTicket)
+                          }
+                          helperText={
+                            touched.expiresTicket && errors.expiresTicket
+                          }
                         />
                       </Grid>
                       {/* TEMPO PARA ENVIO DO CHATBOT */}
@@ -1174,7 +1365,9 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                           </InputLabel>
                           <Field
                             as={Select}
-                            label={i18n.t("whatsappModal.form.whenExpiresTicket")}
+                            label={i18n.t(
+                              "whatsappModal.form.whenExpiresTicket"
+                            )}
                             placeholder={i18n.t(
                               "whatsappModal.form.whenExpiresTicket"
                             )}
@@ -1182,8 +1375,16 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             id="whenExpiresTicket"
                             name="whenExpiresTicket"
                           >
-                            <MenuItem value={"0"}>{i18n.t("whatsappModal.form.closeLastMessageOptions1")}</MenuItem>
-                            <MenuItem value={"1"}>{i18n.t("whatsappModal.form.closeLastMessageOptions2")}</MenuItem>
+                            <MenuItem value={"0"}>
+                              {i18n.t(
+                                "whatsappModal.form.closeLastMessageOptions1"
+                              )}
+                            </MenuItem>
+                            <MenuItem value={"1"}>
+                              {i18n.t(
+                                "whatsappModal.form.closeLastMessageOptions2"
+                              )}
+                            </MenuItem>
                           </Field>
                         </FormControl>
                       </Grid>
@@ -1192,13 +1393,21 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                     <div>
                       <Field
                         as={TextField}
-                        label={i18n.t("whatsappModal.form.expiresInactiveMessage")}
+                        label={i18n.t(
+                          "whatsappModal.form.expiresInactiveMessage"
+                        )}
                         multiline
                         rows={4}
                         fullWidth
                         name="expiresInactiveMessage"
-                        error={touched.expiresInactiveMessage && Boolean(errors.expiresInactiveMessage)}
-                        helperText={touched.expiresInactiveMessage && errors.expiresInactiveMessage}
+                        error={
+                          touched.expiresInactiveMessage &&
+                          Boolean(errors.expiresInactiveMessage)
+                        }
+                        helperText={
+                          touched.expiresInactiveMessage &&
+                          errors.expiresInactiveMessage
+                        }
                         variant="outlined"
                         margin="dense"
                       />
@@ -1212,8 +1421,14 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       name="timeInactiveMessage"
                       variant="outlined"
                       margin="dense"
-                      error={touched.timeInactiveMessage && Boolean(errors.timeInactiveMessage)}
-                      helperText={touched.timeInactiveMessage && errors.timeInactiveMessage}
+                      error={
+                        touched.timeInactiveMessage &&
+                        Boolean(errors.timeInactiveMessage)
+                      }
+                      helperText={
+                        touched.timeInactiveMessage &&
+                        errors.timeInactiveMessage
+                      }
                     />
                     {/* MENSAGEM POR INATIVIDADE*/}
                     <div>
@@ -1224,8 +1439,13 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                         rows={4}
                         fullWidth
                         name="inactiveMessage"
-                        error={touched.inactiveMessage && Boolean(errors.inactiveMessage)}
-                        helperText={touched.inactiveMessage && errors.inactiveMessage}
+                        error={
+                          touched.inactiveMessage &&
+                          Boolean(errors.inactiveMessage)
+                        }
+                        helperText={
+                          touched.inactiveMessage && errors.inactiveMessage
+                        }
                         variant="outlined"
                         margin="dense"
                       />
@@ -1247,8 +1467,12 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                         rows={4}
                         fullWidth
                         name="ratingMessage"
-                        error={touched.ratingMessage && Boolean(errors.ratingMessage)}
-                        helperText={touched.ratingMessage && errors.ratingMessage}
+                        error={
+                          touched.ratingMessage && Boolean(errors.ratingMessage)
+                        }
+                        helperText={
+                          touched.ratingMessage && errors.ratingMessage
+                        }
                         variant="outlined"
                         margin="dense"
                       />
@@ -1262,8 +1486,14 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                         name="maxUseBotQueuesNPS"
                         variant="outlined"
                         margin="dense"
-                        error={touched.maxUseBotQueuesNPS && Boolean(errors.maxUseBotQueuesNPS)}
-                        helperText={touched.maxUseBotQueuesNPS && errors.maxUseBotQueuesNPS}
+                        error={
+                          touched.maxUseBotQueuesNPS &&
+                          Boolean(errors.maxUseBotQueuesNPS)
+                        }
+                        helperText={
+                          touched.maxUseBotQueuesNPS &&
+                          errors.maxUseBotQueuesNPS
+                        }
                       />
                     </div>
                     {/* ENCERRAR CHATS NPS APÓS X Minutos */}
@@ -1275,8 +1505,13 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                         name="expiresTicketNPS"
                         variant="outlined"
                         margin="dense"
-                        error={touched.expiresTicketNPS && Boolean(errors.expiresTicketNPS)}
-                        helperText={touched.expiresTicketNPS && errors.expiresTicketNPS}
+                        error={
+                          touched.expiresTicketNPS &&
+                          Boolean(errors.expiresTicketNPS)
+                        }
+                        helperText={
+                          touched.expiresTicketNPS && errors.expiresTicketNPS
+                        }
                       />
                     </div>
                   </DialogContent>
@@ -1291,7 +1526,10 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                     >
                       <DialogContent>
                         <h3>Fluxo de boas vindas</h3>
-                        <p>Este fluxo é disparado apenas para novos contatos, pessoas que voce não possui em sua lista de contatos e que mandaram uma mensagem
+                        <p>
+                          Este fluxo é disparado apenas para novos contatos,
+                          pessoas que voce não possui em sua lista de contatos e
+                          que mandaram uma mensagem
                         </p>
                         <FormControl
                           variant="outlined"
@@ -1306,9 +1544,10 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             id="flowIdWelcome"
                             variant="outlined"
                             margin="dense"
-                            labelId="flowIdWelcome-selection-label"                        >
-                            <MenuItem value={null} >{"Desabilitado"}</MenuItem>
-                            {webhooks.map(webhook => (
+                            labelId="flowIdWelcome-selection-label"
+                          >
+                            <MenuItem value={null}>{"Desabilitado"}</MenuItem>
+                            {webhooks.map((webhook) => (
                               <MenuItem key={webhook.id} value={webhook.id}>
                                 {webhook.name}
                               </MenuItem>
@@ -1318,8 +1557,10 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       </DialogContent>
                       <DialogContent>
                         <h3>Fluxo de resposta padrão</h3>
-                        <p>Resposta Padrão é enviada com qualquer caractere diferente de uma palavra chave. ATENÇÃO! Será disparada se o atendimento ja estiver fechado.
-
+                        <p>
+                          Resposta Padrão é enviada com qualquer caractere
+                          diferente de uma palavra chave. ATENÇÃO! Será
+                          disparada se o atendimento ja estiver fechado.
                         </p>
                         <FormControl
                           variant="outlined"
@@ -1334,9 +1575,10 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             id="flowNotIdPhrase"
                             variant="outlined"
                             margin="dense"
-                            labelId="flowNotIdPhrase-selection-label"                        >
-                            <MenuItem value={null} >{"Desabilitado"}</MenuItem>
-                            {webhooks.map(webhook => (
+                            labelId="flowNotIdPhrase-selection-label"
+                          >
+                            <MenuItem value={null}>{"Desabilitado"}</MenuItem>
+                            {webhooks.map((webhook) => (
                               <MenuItem key={webhook.id} value={webhook.id}>
                                 {webhook.name}
                               </MenuItem>
@@ -1362,7 +1604,6 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       />
                     </Paper>
                   )}
-
                 </TabPanel>
               </Paper>
               <DialogActions>

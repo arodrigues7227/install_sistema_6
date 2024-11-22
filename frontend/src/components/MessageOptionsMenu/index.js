@@ -191,7 +191,7 @@ const MessageOptionsMenu = ({
         onClose={handleClose}
       >
         {message.fromMe && (
-          <MenuItem key="delete" onClick={handleOpenConfirmationModal}>
+          <MenuItem disabled={!user?.canDeleteMessage} key="delete" onClick={handleOpenConfirmationModal}>
             {i18n.t("messageOptionsMenu.delete")}
           </MenuItem>
         )}
