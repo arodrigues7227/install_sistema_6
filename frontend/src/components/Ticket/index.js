@@ -97,6 +97,7 @@ const Ticket = () => {
 
             const { queueId, contact } = data;
             const { queues, profile } = user;
+            
             if (contact?.users?.map((u) => u.id).indexOf(user.id) === -1) {
               const queueAllowed = queues.find((q) => q.id === queueId);
               if (queueAllowed === undefined && profile !== "admin") {

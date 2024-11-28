@@ -615,6 +615,7 @@ const messages = {
           showDashboard: "Ver Dashboard",
           allowRealTime: "Ver Painel de Atendimentos",
           allowConnections: "Permitir ações nas conexões",
+          showCampaign: "Permitir ver Campanhas",
         },
         tabs: {
           general: "Geral",

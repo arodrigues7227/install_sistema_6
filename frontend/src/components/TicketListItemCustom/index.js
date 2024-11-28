@@ -206,6 +206,10 @@ const useStyles = makeStyles((theme) => ({
   connectionIcon: {
     marginRight: theme.spacing(1),
   },
+  presence: {
+    color: theme?.mode === "light" ? "blue" : "lightgreen",
+    fontWeight: "bold",
+  },
 }));
 
 const TicketListItemCustom = ({ setTabOpen, ticket, isNotification = false }) => {
@@ -582,7 +586,7 @@ const TicketListItemCustom = ({ setTabOpen, ticket, isNotification = false }) =>
                 component="span"
                 variant="body2"
                 // color="textSecondary"
-                // style={console.log('ticket.lastMessage', ticket.lastMessage)}
+                style={console.log('ticket.presence', ticket?.presence)}
               >
                 {["composing", "recording"].includes(ticket?.presence) ? (
                   <span className={classes.presence}>

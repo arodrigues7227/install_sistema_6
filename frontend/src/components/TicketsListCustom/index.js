@@ -193,8 +193,12 @@ const reducer = (state, action) => {
     const data = action.payload;
     const ticketIndex = state.findIndex((t) => t.id === data.ticketId);
     if (ticketIndex !== -1) {
+      console.log('aaa', data.presence)
       state[ticketIndex].presence = data.presence;
     }
+
+    console.log('state >>>', state)
+
     return [...state];
   }
 
@@ -289,20 +293,31 @@ const TicketsListCustom = (props) => {
         queueIds.indexOf(t.queueId) > -1
     );
 
-    if (profile === "user") {
-      dispatch({
-        type: "LOAD_TICKETS",
-        payload: filteredTickets,
-        status,
-        sortDir: sortTickets,
-      });
-    } else {
-      dispatch({
-        type: "LOAD_TICKETS",
-        payload: tickets,
-        status,
-        sortDir: sortTickets,
-      });
+    // if (companyId) {
+    //   dispatch({
+    //     type: "LOAD_TICKETS",
+    //     payload: filteredTickets,
+    //     status,
+    //     sortDir: sortTickets,
+    //   });
+    // }
+
+    if (companyId) {
+      if (profile === "user") {
+        dispatch({
+          type: "LOAD_TICKETS",
+          payload: filteredTickets,
+          status,
+          sortDir: sortTickets,
+        });
+      } else {
+        dispatch({
+          type: "LOAD_TICKETS",
+          payload: tickets,
+          status,
+          sortDir: sortTickets,
+        });
+      }
     }
   }, [tickets, status, searchParam, queues, profile]);
 
@@ -328,30 +343,47 @@ const TicketsListCustom = (props) => {
 
   useEffect(() => {
     const shouldUpdateTicket = (ticket) => {
-      const queueIds = queues.map((q) => q.id);
+      // const queueIds = queues.map((q) => q.id);
 
-      if (profile === "user") {
-        if (ticket.contact?.users?.map((u) => u.id).indexOf(user.id) !== -1) {
-          return true;
-        }
+      // if (user?.id) {
+      //   if (profile === "user") {
+      //     console.log(
+      //       "Users Contact Ticket >>>",
+      //       ticket?.contact?.users?.map((u) => u.id).indexOf(user?.id)
+      //     );
 
-        if (
-          queueIds.indexOf(ticket?.queue?.id) === -1 ||
-          ticket.queue === null
-        ) {
-          return false;
-        }
-      }
+      //     if (
+      //       ticket?.contact?.users?.map((u) => u.id).indexOf(user?.id) !== -1
+      //     ) {
+      //       return true;
+      //     }
+
+      //     if (
+      //       queueIds.indexOf(ticket?.queue?.id) === -1 ||
+      //       ticket?.queue === null
+      //     ) {
+      //       return false;
+      //     }
+      //   }
+      // }
 
       return (
         (!ticket?.userId || ticket?.userId === user?.id || showAll) &&
         ((!ticket?.queueId && showTicketWithoutQueue) ||
           selectedQueueIds.indexOf(ticket?.queueId) > -1)
       );
-      // (!blockNonDefaultConnections || (ticket.status == 'group' && ignoreUserConnectionForGroups) || !user?.whatsappId || ticket.whatsappId == user?.whatsappId);
     };
-    // const shouldUpdateTicketUser = (ticket) =>
-    //     selectedQueueIds.indexOf(ticket?.queueId) > -1 && (ticket?.userId === user?.id || !ticket?.userId);
+
+    const shouldUpdateTicket_FUNCIONANDO = (ticket) => {
+      return (
+        (!ticket?.userId || ticket?.userId === user?.id || showAll) &&
+        ((!ticket?.queueId && showTicketWithoutQueue) ||
+          selectedQueueIds.indexOf(ticket?.queueId) > -1)
+      );
+    };
+
+    const notBelongsToUserQueues_FUNCIONANDO = (ticket) =>
+      ticket.queueId && selectedQueueIds.indexOf(ticket.queueId) === -1;
 
     const notBelongsToUserQueues = (ticket) => {
       if (ticket.queueId && selectedQueueIds.indexOf(ticket.queueId) === -1) {
@@ -460,8 +492,8 @@ const TicketsListCustom = (props) => {
       onCompanyAppMessageTicketsList
     );
     socket.on(`company-${companyId}-contact`, onCompanyContactTicketsList);
-
     socket.on(`company-${companyId}-presence`, (data) => {
+      console.log("data >>>", data);
       dispatch({
         type: "UPDATE_TICKET_PRESENCE",
         payload: data,
@@ -481,12 +513,12 @@ const TicketsListCustom = (props) => {
         onCompanyAppMessageTicketsList
       );
       socket.off(`company-${companyId}-contact`, onCompanyContactTicketsList);
-      socket.off(`company-${companyId}-presence`, (data) => {
-        dispatch({
-          type: "UPDATE_TICKET_PRESENCE",
-          payload: data,
-        });
-      });
+      // socket.off(`company-${companyId}-presence`, (data) => {
+      //   dispatch({
+      //     type: "UPDATE_TICKET_PRESENCE",
+      //     payload: data,
+      //   });
+      // });
     };
   }, [
     status,

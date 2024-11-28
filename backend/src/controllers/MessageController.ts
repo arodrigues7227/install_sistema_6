@@ -38,6 +38,7 @@ import CompaniesSettings from "../models/CompaniesSettings";
 import { verifyMessageFace, verifyMessageMedia } from "../services/FacebookServices/facebookMessageListener";
 import EditWhatsAppMessage from "../services/MessageServices/EditWhatsAppMessage";
 import CheckContactNumber from "../services/WbotServices/CheckNumber";
+import SendWhatsAppContact from "../services/WbotServices/SendWhatsAppContact";
 
 type IndexQuery = {
   pageNumber: string;
@@ -274,7 +275,11 @@ export const forwardMessage = async (
   let body = message.body;
   if (message.mediaType === 'conversation' || message.mediaType === 'extendedTextMessage') {
     await SendWhatsAppMessage({ body, ticket: createTicket, quotedMsg, isForwarded: message.fromMe ? false : true });
+  } else if (message.mediaType === 'contactMessage') {
+    await SendWhatsAppContact({ body, ticket: createTicket });
   } else {
+
+    console.log("message >>>", message);
 
     const mediaUrl = message.mediaUrl.replace(`:${process.env.PORT}`, '');
     const fileName = obterNomeEExtensaoDoArquivo(mediaUrl);

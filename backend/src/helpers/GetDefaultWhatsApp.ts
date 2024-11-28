@@ -13,6 +13,7 @@ const GetDefaultWhatsApp = async (
   console.log({ whatsappId, companyId, userId })
   
   if (whatsappId) {
+    console.log("whatsappId", whatsappId)
     defaultWhatsapp = await Whatsapp.findOne({
       where: { id: whatsappId, companyId }
     });
@@ -22,7 +23,7 @@ const GetDefaultWhatsApp = async (
     });
   }
 
-
+  console.log("defaultWhatsapp", defaultWhatsapp)
   if (defaultWhatsapp?.status === 'CONNECTED') {
     connection = defaultWhatsapp;
   } else {
@@ -32,7 +33,6 @@ const GetDefaultWhatsApp = async (
     connection = whatsapp;
   }
 
-  
   if (userId) {
     const whatsappByUser = await GetDefaultWhatsAppByUser(userId);
     if (whatsappByUser?.status === 'CONNECTED') {
@@ -45,6 +45,7 @@ const GetDefaultWhatsApp = async (
     }
   }
 
+  console.log("connection", connection)
 
   if (!connection) {
     throw new AppError(`ERR_NO_DEF_WAPP_FOUND in COMPANY ${companyId}`);

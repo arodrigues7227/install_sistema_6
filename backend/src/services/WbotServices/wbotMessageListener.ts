@@ -3065,6 +3065,61 @@ const handleMessage = async (
           }
         }
 
+        /**
+         * Tratamento para avaliação do atendente
+         */
+        if (ticket.status === "nps" && ticketTraking !== null && verifyRating(ticketTraking)) {
+
+          if (hasMedia) {
+            await verifyMediaMessage(msg, ticket, contact, ticketTraking, false, false, wbot);
+          } else {
+            await verifyMessage(msg, ticket, contact, ticketTraking);
+          }
+
+          if (!isNaN(parseFloat(bodyMessage))) {
+
+            handleRating(parseFloat(bodyMessage), ticket, ticketTraking);
+
+            await ticketTraking.update({
+              ratingAt: moment().toDate(),
+              finishedAt: moment().toDate(),
+              rated: true
+            });
+
+            return;
+          } else {
+
+            if (ticket.amountUsedBotQueuesNPS < whatsapp.maxUseBotQueuesNPS) {
+              let bodyErrorRating = `\u200eOpção inválida, tente novamente.\n`;
+              const sentMessage = await wbot.sendMessage(
+                `${ticket.contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"
+                }`,
+                {
+                  text: bodyErrorRating
+                }
+              );
+
+              await verifyMessage(sentMessage, ticket, contact, ticketTraking);
+
+
+              await delay(1000);
+
+              let bodyRatingMessage = `\u200e${whatsapp.ratingMessage}\n`;
+
+              const msg = await SendWhatsAppMessage({ body: bodyRatingMessage, ticket });
+
+              await verifyMessage(msg, ticket, ticket.contact);
+
+              await ticket.update({
+                amountUsedBotQueuesNPS: ticket.amountUsedBotQueuesNPS + 1
+              })
+            }
+
+            return;
+          }
+
+        }
+
       }
 
     } catch (e) {
@@ -3106,40 +3161,34 @@ const handleMessage = async (
 
     let currentSchedule;
 
-    if (settings.scheduleType === "company") {
-      console.log("log... 3270")
+    if (settings.scheduleType === "company") {    
       currentSchedule = await VerifyCurrentSchedule(companyId, 0, 0);
     } else if (settings.scheduleType === "connection") {
-      console.log("log... 3273")
       currentSchedule = await VerifyCurrentSchedule(companyId, 0, whatsapp.id);
     }
 
     try {
-      if (!msg.key.fromMe && settings.scheduleType && (!ticket.isGroup || whatsapp.groupAsTicket === "enabled") && !["open", "group"].includes(ticket.status)) {
+      if (!msg.key.fromMe && settings.scheduleType && (!ticket.isGroup || whatsapp.groupAsTicket === "enabled") && !["open", "group"].includes(ticket.status) && !isImported) {
         /**
          * Tratamento para envio de mensagem quando a empresa está fora do expediente
          */
-        console.log("log... 3280")
         if (
           (settings.scheduleType === "company" || settings.scheduleType === "connection") &&
           !isNil(currentSchedule) &&
           (!currentSchedule || currentSchedule.inActivity === false)
         ) {
 
-          console.log("log... 3289")
           if (whatsapp.maxUseBotQueues && whatsapp.maxUseBotQueues !== 0 && ticket.amountUsedBotQueues >= whatsapp.maxUseBotQueues) {
             // await UpdateTicketService({
             //   ticketData: { queueId: queues[0].id },
             //   ticketId: ticket.id
             // });
-
+            //resolve();
             return;
           }
 
           if (whatsapp.timeUseBotQueues !== "0") {
-            console.log("log... 3300")
             if (ticket.isOutOfHour === false && ticketTraking.chatbotAt !== null) {
-              console.log("log... 3302")
               await ticketTraking.update({
                 chatbotAt: null
               });
@@ -3155,15 +3204,28 @@ const handleMessage = async (
 
             if (ticketTraking.chatbotAt !== null) {
               dataLimite.setMinutes(ticketTraking.chatbotAt.getMinutes() + (Number(whatsapp.timeUseBotQueues)));
-              console.log("log... 3318")
+
               if (ticketTraking.chatbotAt !== null && Agora < dataLimite && whatsapp.timeUseBotQueues !== "0" && ticket.amountUsedBotQueues !== 0) {
-                return
+                return;
               }
             }
 
             await ticketTraking.update({
               chatbotAt: null
             })
+          }
+
+          if (whatsapp.outOfHoursMessage !== "" && !isImported) {
+            const body = formatBody(`${whatsapp.outOfHoursMessage}`, ticket);
+
+            const debouncedSentMessage = debounce(
+              async () => {
+                await SendWhatsAppMessage({ body, ticket });
+              },
+              1000,
+              ticket.id
+            );
+            debouncedSentMessage();
           }
 
           //atualiza o contador de vezes que enviou o bot e que foi enviado fora de hora
@@ -3177,9 +3239,8 @@ const handleMessage = async (
       }
     } catch (e) {
       Sentry.captureException(e);
-      console.log(e);
+      console.log('error_verify_message_out_of_hour', e);
     }
-
 
     const flow = await FlowBuilderModel.findOne({
       where: {
@@ -3531,8 +3592,6 @@ const verifyCampaignMessageAndCloseTicket = async (message: proto.IWebMessageInf
     return;
   }
 
-
-
   const io = getIO();
   const body = await getBodyMessage(message);
   const isCampaign = /\u200c/.test(body);
@@ -3541,7 +3600,6 @@ const verifyCampaignMessageAndCloseTicket = async (message: proto.IWebMessageInf
     let msgContact: IMe;
     msgContact = await getContactMessage(message, wbot);
     const contact = await verifyContact(msgContact, wbot, companyId);
-
 
     const messageRecord = await Message.findOne({
       where: {
@@ -3578,8 +3636,6 @@ const verifyCampaignMessageAndCloseTicket = async (message: proto.IWebMessageInf
 };
 
 const filterMessages = (msg: WAMessage): boolean => {
-  msgDB.save(msg);
-
   if (msg.message?.protocolMessage?.editedMessage) return true;
   if (msg.message?.protocolMessage) return false;
 
@@ -3758,7 +3814,7 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
   })
 
   wbot.ev.on("presence.update", async ({ id: remoteJid, presences }) => {
-    console.log(3756, "presence.update", { remoteJid, presences })
+    // console.log(3756, "presence.update", { remoteJid, presences })
     try {
       logger.debug(
         { remoteJid, presences },
@@ -3785,17 +3841,18 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
           }
         }
       });
+      console.log("ticket >>>", ticket.id, '-->', presences[remoteJid].lastKnownPresence);
 
       if (ticket) {
         const io = getIO();
 
         io.of(String(companyId))
-        .emit(`company-${companyId}-presence`, {
-          action: "update",
+          .emit(`company-${companyId}-presence`, {
+            action: "update",
             ticket,
             presence: presences[remoteJid].lastKnownPresence
           }
-        );
+          );
 
         // io.to(ticket.id.toString())
         //   .to(`company-${companyId}-${ticket.status}`)

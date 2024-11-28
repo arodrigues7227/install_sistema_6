@@ -141,7 +141,7 @@ const ListMessagesService = async ({
     distinct: true,
     offset,
     subQuery: false,
-    order: [["createdAt", "DESC"]] 
+    order: [["createdAt", "DESC"]]
   });
 
   const hasMore = count > offset + messages.length;
