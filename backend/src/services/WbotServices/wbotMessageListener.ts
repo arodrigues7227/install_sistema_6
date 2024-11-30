@@ -585,7 +585,7 @@ const verifyContact = async (
   //   profilePicUrl = await wbot.profilePictureUrl(msgContact.id, "image");
   // } catch (e) {
   //   Sentry.captureException(e);
-  //   profilePicUrl = `${process.env.FRONTEND_URL}/nopicture.png`;
+  //   profilePicUrl = `${process.env.FRONTEND_URL}/avatarpadrao.png`;
   // }
 
   const contactData = {
@@ -3795,7 +3795,7 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
       //   profilePicUrl = await wbot.profilePictureUrl(group.id, "image");
       // } catch (e) {
       //   Sentry.captureException(e);
-      //   profilePicUrl = `${process.env.FRONTEND_URL}/nopicture.png`;
+      //   profilePicUrl = `${process.env.FRONTEND_URL}/avatarpadrao.png`;
       // }
       const contactData = {
         name: nameGroup,

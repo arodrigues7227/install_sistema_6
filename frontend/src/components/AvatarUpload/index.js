@@ -45,7 +45,7 @@ const AvatarUploader = ({ setAvatar, avatar, companyId }) => {
           style={{ width: 120, height: 120 }}
         /></>
         : !avatar && !previewImage ? <><Avatar
-          src={`${process.env.REACT_APP_BACKEND_URL}/public/app/noimage.png`}
+          src={`${process.env.FRONTEND_URL}/avatarpadrao.png`}
           style={{ width: 120, height: 120 }}
         /></> :
           <Avatar

@@ -14,7 +14,7 @@ module.exports = {
         const passwordHash = await hash("adminpro", 8);
         return queryInterface.bulkInsert('Users', [{
           name: "Admin",
-          email: "admin@workzap.online",
+          email: "admin@admin.com",
           profile: "admin",
           passwordHash,
           companyId: 1,

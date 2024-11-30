@@ -17,7 +17,7 @@ import Select from "@material-ui/core/Select";
 import InputLabel from "@material-ui/core/InputLabel";
 import MenuItem from "@material-ui/core/MenuItem";
 import FormControl from "@material-ui/core/FormControl";
-import whatsappIcon from "../../assets/nopicture.png";
+import whatsappIcon from "../../assets/avatarpadrao.png";
 import { i18n } from "../../translate/i18n";
 
 import api from "../../services/api";
@@ -130,17 +130,17 @@ const UserModal = ({ open, onClose, userId }) => {
     endWork: "23:59",
     farewellMessage: "",
     allTicket: "disable",
-    allowGroup: false,
+    allowGroup: true,
     defaultTheme: "light",
     defaultMenu: "open",
     allHistoric: "disabled",
     allUserChat: "disabled",
-    userClosePendingTicket: "enabled",
+    userClosePendingTicket: "disabled",
     showDashboard: "disabled",
     allowRealTime: "disabled",
     allowConnections: "disabled",
-    canDeleteMessage: true,
-    showCampaign: true,
+    canDeleteMessage: false,
+    showCampaign: false,
   };
 
   const { user: loggedInUser } = useContext(AuthContext);

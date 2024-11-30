@@ -101,7 +101,7 @@ const Login = () => {
 	return (
 		<>
 			<Helmet>
-				<title>{appName || "WORKZAP"}</title>
+				<title>{"CHAT" appName}</title>
 				<link rel="icon" href={appLogoFavicon || "/default-favicon.ico"} />
 			</Helmet>
 			<div className={classes.root}>

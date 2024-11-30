@@ -173,11 +173,11 @@ const App = () => {
       });
     getPublicSetting("appName")
       .then((name) => {
-        setAppName(name || "WORKZAP");
+        setAppName(name || "LIOT");
       })
       .catch((error) => {
         console.log("!==== Erro ao carregar temas: ====!", error);
-        setAppName("WORKZAP");
+        setAppName("LIOT");
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
