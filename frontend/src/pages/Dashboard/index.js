@@ -1069,7 +1069,7 @@ const Dashboard = () => {
                               title={i18n.t("dashboard.assessments.prosecutors")}
                               value={counters.npsPromotersPerc | 0}
                               data={[`{'name': 'Promotores', 'value': 100}`]}
-                              color={["#2EA85A"]}
+                              color={["#71c3dc"]}
                             />
                           </Paper>
                         </Grid2>
