@@ -164,7 +164,7 @@ async function handleSendScheduledMessage(job) {
     }
 
     if (!whatsapp)
-      whatsapp = await GetDefaultWhatsApp(whatsapp.id,schedule.companyId);
+      whatsapp = await GetDefaultWhatsApp(whatsapp.id, schedule.companyId);
 
 
     // const settings = await CompaniesSettings.findOne({
@@ -1170,7 +1170,7 @@ async function handleResumeTicketsOutOfHour(job) {
   }
 };
 
-async function handleVerifyQueue(job) {
+async function handleVerifyQueue1(job) {
   // logger.info("Buscando atendimentos perdidos nas filas");
   try {
     const companies = await Company.findAll({
@@ -1273,6 +1273,118 @@ async function handleVerifyQueue(job) {
               }
             } else {
               logger.info(`Condição não respeitada - Empresa: ${companyId}`);
+            }
+          }
+        }
+      });
+    });
+  } catch (e: any) {
+    Sentry.captureException(e);
+    logger.error("SearchForQueue -> VerifyQueue: error", e.message);
+    throw e;
+  }
+};
+
+async function handleVerifyQueue(job) {
+  // logger.info("Buscando atendimentos perdidos nas filas");
+  try {
+    const companies = await Company.findAll({
+      attributes: ['id', 'name'],
+      where: {
+        status: true
+      },
+      include: [
+        {
+          model: Whatsapp,
+          attributes: ["id", "name", "status", "timeSendQueue", "sendIdQueue"]
+        },
+      ]
+    });
+
+    companies.map(async c => {
+
+      c.whatsapps.map(async w => {
+
+        if (w.status === "CONNECTED") {
+          var companyId = c.id;
+
+          const moveQueueTime = w.timeSendQueue ? w.timeSendQueue : 0;
+          const moveQueueId = w.sendIdQueue;
+
+          if (moveQueueTime > 0 && !isNaN(moveQueueId) && Number.isInteger(moveQueueId)) {
+
+
+            const tempoPassado = moment().subtract(moveQueueTime, "minutes").utc().format();
+            // const tempoAgora = moment().utc().format();
+
+            const { count, rows: tickets } = await Ticket.findAndCountAll({
+              attributes: ["id"],
+              where: {
+                status: "pending",
+                queueId: null,
+                companyId: companyId,
+                whatsappId: w.id,
+                updatedAt: {
+                  [Op.lt]: tempoPassado
+                },
+                // isOutOfHour: false
+              },
+              include: [
+                {
+                  model: Contact,
+                  as: "contact",
+                  attributes: ["id", "name", "number", "email", "profilePicUrl", "acceptAudioMessage", "active", "disableBot", "urlPicture", "lgpdAcceptedAt", "companyId"],
+                  include: ["extraInfo", "tags"]
+                },
+                {
+                  model: Queue,
+                  as: "queue",
+                  attributes: ["id", "name", "color"]
+                },
+                {
+                  model: Whatsapp,
+                  as: "whatsapp",
+                  attributes: ["id", "name", "expiresTicket", "groupAsTicket"]
+                }
+              ]
+            });
+
+            if (count > 0) {
+              const queue = await Queue.findByPk(moveQueueId);
+
+              if (!queue) {
+                logger.info(`Fila não encontrada: ${moveQueueId} - Empresa: ${companyId}`);
+                return;
+              }
+
+              tickets.map(async ticket => {
+                await ticket.update({
+                  queueId: moveQueueId,
+                  isBot: false
+                });
+
+
+                await CreateLogTicketService({
+                  userId: null,
+                  queueId: moveQueueId,
+                  ticketId: ticket.id,
+                  type: "redirect"
+                });
+
+                await ticket.reload();
+
+                const io = getIO();
+                io.of(String(companyId))
+                  // .to("notification")
+                  // .to(ticket.id.toString())
+                  .emit(`company-${companyId}-ticket`, {
+                    action: "update",
+                    ticket,
+                    ticketId: ticket.id
+                  });
+
+                logger.info(`Atendimento Perdido: ${ticket.id} - Empresa: ${companyId}`);
+              });
             }
           }
         }
