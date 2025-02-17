@@ -34,9 +34,6 @@ const CreateOrUpdateContactServiceForImport = async ({
   contact = await Contact.findOne({ where: { number , companyId } });
 
   if (contact) {
-    if (contact.companyId === null)
-      await contact.update({ name ,profilePicUrl, companyId })
-    else
       await contact.update({ name , profilePicUrl });
 
       io.of(String(companyId))

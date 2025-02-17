@@ -4,10 +4,9 @@ import { getWbot } from "../../libs/wbot";
 import Contact from "../../models/Contact";
 import logger from "../../utils/logger";
 import ShowBaileysService from "../BaileysServices/ShowBaileysService";
-import CreateContactService from "../ContactServices/CreateContactService";
 import { isString, isArray } from "lodash";
-import path from "path";
-import fs from 'fs';
+import { QueryTypes } from "sequelize";
+import db from "../../database"; // Importe a instância do Sequelize
 
 const ImportContactsService = async (companyId: number): Promise<void> => {
   const defaultWhatsapp = await GetDefaultWhatsApp(null, companyId);
@@ -18,64 +17,76 @@ const ImportContactsService = async (companyId: number): Promise<void> => {
   try {
     const contactsString = await ShowBaileysService(wbot.id);
     phoneContacts = JSON.parse(JSON.stringify(contactsString.contacts));
-
-    const publicFolder = path.resolve(__dirname, "..", "..", "..", "public");
-    const beforeFilePath = path.join(publicFolder,`company${companyId}`, 'contatos_antes.txt');
-    fs.writeFile(beforeFilePath, JSON.stringify(phoneContacts, null, 2), (err) => {
-      if (err) {
-        logger.error(`Failed to write contacts to file: ${err}`);
-        throw err;
-      }
-      // console.log('O arquivo contatos_antes.txt foi criado!');
-    });
-
   } catch (err) {
     Sentry.captureException(err);
     logger.error(`Could not get whatsapp contacts from phone. Err: ${err}`);
+    return; // Encerra a execução se não conseguir obter os contatos
   }
-
-  const publicFolder = path.resolve(__dirname, "..", "..", "..", "public");
-  const afterFilePath = path.join(publicFolder,`company${companyId}`, 'contatos_depois.txt');
-  fs.writeFile(afterFilePath, JSON.stringify(phoneContacts, null, 2), (err) => {
-    if (err) {
-      logger.error(`Failed to write contacts to file: ${err}`);
-      throw err;
-    }
-    // console.log('O arquivo contatos_depois.txt foi criado!');
-  });
 
   const phoneContactsList = isString(phoneContacts)
     ? JSON.parse(phoneContacts)
     : phoneContacts;
 
-  if (isArray(phoneContactsList)) {
-    phoneContactsList.forEach(async ({ id, name, notify }) => {
-      if (id === "status@broadcast" || id.includes("g.us")) return;
-      const number = id.replace(/\D/g, "");
+  if (!isArray(phoneContactsList)) {
+    logger.error("Phone contacts list is not an array");
+    return;
+  }
 
-      const existingContact = await Contact.findOne({
-        where: { number, companyId }
-      });
+  // Filtra contatos válidos
+  const validContacts = phoneContactsList
+    .filter(({ id }) => id !== "status@broadcast" && !id.includes("g.us"))
+    .map(({ id, name, notify }) => ({
+      number: id.replace(/\D/g, ""),
+      name: name || notify,
+      companyId,
+    }));
 
-      if (existingContact) {
-        // Atualiza o nome do contato existente
-        existingContact.name = name || notify;
-        await existingContact.save();
-      } else {
-        // Criar um novo contato
-        try {
-          await CreateContactService({
-            number,
-            name: name || notify,
-            companyId
-          });
-        } catch (error) {
-          Sentry.captureException(error);
-          logger.warn(
-            `Could not get whatsapp contacts from phone. Err: ${error}`
-          );
-        }
+  // Cria uma tabela temporária
+  const tempTableName = `temp_contacts_${companyId}_${Date.now()}`;
+
+  try {
+    // Cria a tabela temporária
+    await db.query(
+      `CREATE TEMPORARY TABLE ${tempTableName} (
+        number VARCHAR(255) PRIMARY KEY,
+        name VARCHAR(255),
+        companyId INT
+      )`,
+      { type: QueryTypes.RAW }
+    );
+
+    // Insere os contatos na tabela temporária
+    await db.query(
+      `INSERT INTO ${tempTableName} (number, name, companyId) VALUES ${validContacts
+        .map(() => "(?, ?, ?)")
+        .join(",")}`,
+      {
+        type: QueryTypes.INSERT,
+        replacements: validContacts.flatMap(({ number, name, companyId }) => [
+          number,
+          name,
+          companyId,
+        ]),
       }
+    );
+
+    // Atualiza contatos existentes e insere novos contatos
+    await db.query(
+      `INSERT INTO Contacts (number, name, companyId)
+       SELECT number, name, companyId FROM ${tempTableName}
+       ON CONFLICT (number) DO UPDATE
+       SET name = EXCLUDED.name`,
+      { type: QueryTypes.INSERT }
+    );
+
+    // Remove a tabela temporária
+    await db.query(`DROP TABLE ${tempTableName}`, { type: QueryTypes.RAW });
+  } catch (err) {
+    Sentry.captureException(err);
+    logger.error(`Error processing contacts: ${err}`);
+    // Remove a tabela temporária em caso de erro
+    await db.query(`DROP TABLE IF EXISTS ${tempTableName}`, {
+      type: QueryTypes.RAW,
     });
   }
 };
