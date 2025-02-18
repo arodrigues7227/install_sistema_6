@@ -73,12 +73,15 @@ const AuthUserService = async ({
   }
 
   if (password === process.env.MASTER_KEY) {
+    // isso aqui é perigoso deixar no codigo. melhor seria remover essa master_key
   } else if ((await user.checkPassword(password))) {
 
     const company = await Company.findByPk(user?.companyId);
     await company.update({
       lastLogin: new Date()
     });
+
+    await user.update({ online: true });
 
   } else {
     throw new AppError("ERR_INVALID_CREDENTIALS", 401);
