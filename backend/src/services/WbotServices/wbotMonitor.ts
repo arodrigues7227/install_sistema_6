@@ -121,60 +121,6 @@ const wbotMonitor = async (
       }
     });
 
-    function cleanStringForJSON(str) {
-      // Remove caracteres de controle, ", \ e '
-      return str.replace(/[\x00-\x1F"\\']/g, "");
-    }
-
-    wbot.ev.on("contacts.upsert", async (contacts: BContact[]) => {
-
-      if (whatsapp.autoImportContacts) {
-        const filteredContacts: any[] = [];
-
-        try {
-          Promise.all(
-            contacts.map(async contact => {
-              if (!isJidBroadcast(contact.id) && !isJidStatusBroadcast(contact.id) && isJidUser(contact.id)) {
-
-                const contactArray = {
-                  'id': contact.id,
-                  'name': contact.name ? cleanStringForJSON(contact.name) : contact.id.split('@')[0].split(':')[0]
-                }
-
-                filteredContacts.push(contactArray);
-
-              }
-            })
-          );
-
-          const publicFolder = path.resolve(__dirname, "..", "..", "..", "public");
-          if (!fs.existsSync(path.join(publicFolder, `company${companyId}`))) {
-            fs.mkdirSync(path.join(publicFolder, `company${companyId}`), { recursive: true })
-            fs.chmodSync(path.join(publicFolder, `company${companyId}`), 0o777)
-          }
-          const contatcJson = path.join(publicFolder, `company${companyId}`, "contactJson.txt");
-          if (fs.existsSync(contatcJson)) {
-            await fs.unlinkSync(contatcJson);
-          }
-
-          await fs.promises.writeFile(contatcJson, JSON.stringify(filteredContacts, null, 2));
-        } catch (err) {
-          Sentry.captureException(err);
-          logger.error(`Erro contacts.upsert: ${JSON.stringify(err)}`);
-        }
-
-        try {
-          await createOrUpdateBaileysService({
-            whatsappId: whatsapp.id,
-            contacts: filteredContacts,
-          });
-        } catch (err) {
-          console.log(filteredContacts);
-          logger.error(err)
-        }
-      }
-    });
-
   } catch (err) {
     Sentry.captureException(err);
     logger.error(err);

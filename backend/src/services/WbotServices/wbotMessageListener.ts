@@ -581,12 +581,12 @@ const verifyContact = async (
 ): Promise<Contact> => {
 
   let profilePicUrl: string = "";
-  // try {
-  //   profilePicUrl = await wbot.profilePictureUrl(msgContact.id, "image");
-  // } catch (e) {
-  //   Sentry.captureException(e);
-  //   profilePicUrl = `${process.env.FRONTEND_URL}/avatarpadrao.png`;
-  // }
+  try {
+     profilePicUrl = await wbot.profilePictureUrl(msgContact.id, "image");
+   } catch (e) {
+     Sentry.captureException(e);
+     profilePicUrl = `${process.env.FRONTEND_URL}/avatarpadrao.png`;
+   }
 
   const contactData = {
     name: msgContact.name || msgContact.id.replace(/\D/g, ""),
@@ -3760,24 +3760,46 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
 
     if (whatsapp.autoImportContacts) {
       contacts.forEach(async (contact: any) => {
-        if (!contact?.id) return
-
-        if (typeof contact.imgUrl !== 'undefined') {
-          const newUrl = contact.imgUrl === ""
-            ? ""
-            : await wbot!.profilePictureUrl(contact.id!).catch(() => null)
+        if (!contact?.id) return;
+      
+        // Verifica se a URL da imagem do perfil está definida e se é diferente de 'null'
+        if (typeof contact.imgUrl !== 'undefined' && contact.imgUrl !== null) {
+          try {
+            // Tenta obter a nova URL da foto de perfil
+            const newUrl = await wbot.profilePictureUrl(contact.id.replace(/\D/g, ""), "image", 60_000);
+      
+            // Prepara os dados do contato para atualização
+            const contactData = {
+              name: contact.name,
+              number: contact.id.replace(/\D/g, ""),
+              isGroup: contact.id.includes("@g.us") ? true : false,
+              companyId: companyId,
+              remoteJid: contact.id,
+              profilePicUrl: newUrl,
+              whatsappId: wbot.id,
+              wbot: wbot
+            };
+      
+            // Chama o serviço para criar ou atualizar o contato
+            await CreateOrUpdateContactService(contactData);
+          } catch (error) {
+            console.error(`Erro ao obter a foto de perfil do contato ${contact.name}:`, error);
+          }
+        } else if (contact.imgUrl === null) {
+          // Se a imagem do perfil for null (ou seja, o contato não tem uma foto de perfil definida)
           const contactData = {
             name: contact.id.replace(/\D/g, ""),
             number: contact.id.replace(/\D/g, ""),
             isGroup: contact.id.includes("@g.us") ? true : false,
             companyId: companyId,
             remoteJid: contact.id,
-            profilePicUrl: newUrl,
+            profilePicUrl: null, // Define a URL da foto de perfil como null
             whatsappId: wbot.id,
             wbot: wbot
-          }
-
-          await CreateOrUpdateContactService(contactData)
+          };
+      
+          // Chama o serviço para criar ou atualizar o contato
+          await CreateOrUpdateContactService(contactData);
         }
       });
     }
@@ -3791,12 +3813,7 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
       const nameGroup = group.subject || number;
 
       let profilePicUrl: string = "";
-      // try {
-      //   profilePicUrl = await wbot.profilePictureUrl(group.id, "image");
-      // } catch (e) {
-      //   Sentry.captureException(e);
-      //   profilePicUrl = `${process.env.FRONTEND_URL}/avatarpadrao.png`;
-      // }
+
       const contactData = {
         name: nameGroup,
         number: number,
@@ -3814,24 +3831,28 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
   })
 
   wbot.ev.on("presence.update", async ({ id: remoteJid, presences }) => {
-    // console.log(3756, "presence.update", { remoteJid, presences })
     try {
       logger.debug(
         { remoteJid, presences },
         "Received contact presence"
       );
+  
       if (!presences[remoteJid]?.lastKnownPresence) {
         return;
       }
+  
       const contact = await Contact.findOne({
         where: {
           number: remoteJid.replace(/\D/g, ""),
           companyId: companyId
         }
       });
+  
       if (!contact) {
+        logger.warn("No contact found for remoteJid:", remoteJid);
         return;
       }
+  
       const ticket = await Ticket.findOne({
         where: {
           contactId: contact.id,
@@ -3841,40 +3862,29 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
           }
         }
       });
-      console.log("ticket >>>", ticket.id, '-->', presences[remoteJid].lastKnownPresence);
-
-      if (ticket) {
-        const io = getIO();
-
-        io.of(String(companyId))
-          .emit(`company-${companyId}-presence`, {
-            action: "update",
-            ticket,
-            presence: presences[remoteJid].lastKnownPresence
-          }
-          );
-
-        // io.to(ticket.id.toString())
-        //   .to(`company-${companyId}-${ticket.status}`)
-        //   .to(`queue-${ticket.queueId}-${ticket.status}`)
-        //   .emit(`company-${companyId}-presence`, {
-        //     ticketId: ticket.id,
-        //     presence: presences[remoteJid].lastKnownPresence
-        //   });
+  
+      if (!ticket) {
+        logger.warn("No ticket found for contact:", remoteJid);
+        return;
       }
+  
+      console.log("ticket >>>", ticket.id, '-->', presences[remoteJid].lastKnownPresence);
+  
+      const io = getIO();
+      io.of(String(companyId))
+        .emit(`company-${companyId}-presence`, {
+          action: "update",
+          ticket,
+          presence: presences[remoteJid].lastKnownPresence
+        });
+  
     } catch (error) {
       logger.error(
-        { remoteJid, presences },
+        { remoteJid, presences, error: error.stack },
         "presence.update: error processing"
       );
-      if (error instanceof Error) {
-        logger.error(`Error: ${error.name} ${error.message}`);
-      } else {
-        logger.error(`Error was object of type: ${typeof error}`);
-      }
     }
-  }
-  );
+  });
 
 
 };

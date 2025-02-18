@@ -86,7 +86,7 @@ const CreateOrUpdateContactService = async ({
       where: { number, companyId }
     });
 
-    let updateImage = (!contact || contact?.profilePicUrl !== profilePicUrl && profilePicUrl !== "") && wbot || false;
+    let updateImage = true;
 
     if (contact) {
       contact.remoteJid = remoteJid;

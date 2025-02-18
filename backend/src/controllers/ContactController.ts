@@ -204,16 +204,12 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
 
 
   const validNumber = await CheckContactNumber(newContact.number, companyId);
-
-  /**
-   * Código desabilitado por demora no retorno
-   */
-  // const profilePicUrl = await GetProfilePicUrl(validNumber.jid, companyId);
+  const profilePicUrl = await GetProfilePicUrl(validNumber, companyId);
 
   const contact = await CreateContactService({
     ...newContact,
     number: validNumber,
-    // profilePicUrl,
+    profilePicUrl,
     companyId
   });
 

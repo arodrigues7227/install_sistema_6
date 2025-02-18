@@ -1048,15 +1048,15 @@ async function handleDispatchCampaign(job) {
 }
 
 async function handleLoginStatus(job) {
-  const thresholdTime = new Date();
-  thresholdTime.setMinutes(thresholdTime.getMinutes() - 5);
-
-  await User.update({ online: false }, {
-    where: {
-      updatedAt: { [Op.lt]: thresholdTime },
-      online: true,
-    },
-  });
+  const users: { id: number }[] = await sequelize.query(
+    `select id from "Users" where "updatedAt" < now() - '5 minutes'::interval and online = true`,
+    { type: QueryTypes.SELECT }
+  );
+  for (let item of users) {
+      const user = await User.findByPk(item.id);
+      await user.update({ online: false });
+      logger.info(`Usuário passado para offline: ${item.id}`);
+  }
 }
 
 async function handleResumeTicketsOutOfHour(job) {
@@ -1454,11 +1454,11 @@ async function handleRandomUser() {
                   if (user.online === true) {
                     return user.id;
                   } else {
-                    // logger.info("USER OFFLINE");
+                    logger.info("USER OFFLINE");
                     return 0;
                   }
                 } else {
-                  // logger.info("ADMIN");
+                  logger.info("ADMIN");
                   return 0;
                 }
 
