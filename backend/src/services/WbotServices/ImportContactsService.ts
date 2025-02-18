@@ -72,7 +72,7 @@ const ImportContactsService = async (companyId: number): Promise<void> => {
 
     // Atualiza contatos existentes e insere novos contatos
     await db.query(
-      `INSERT INTO Contacts (number, name, companyId)
+      `INSERT INTO Contact (number, name, companyId)
        SELECT number, name, companyId FROM ${tempTableName}
        ON CONFLICT (number) DO UPDATE
        SET name = EXCLUDED.name`,
