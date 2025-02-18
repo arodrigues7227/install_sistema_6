@@ -33,8 +33,8 @@ async function handleUserConnection(job) {
     if (!isNil(id) && id !== "null") {
       const user = await User.findByPk(id);
       if (user) {
-        user.online = true;
-        await user.save();
+        await user.update({ online: true});
+
       }
     }
   } catch (e) {
