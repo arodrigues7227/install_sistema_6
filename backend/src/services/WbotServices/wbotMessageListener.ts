@@ -3770,7 +3770,7 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
       
             // Prepara os dados do contato para atualização
             const contactData = {
-              name: contact.name || "Sem nome",
+              name: contact.name,
               number: contact.id.replace(/\D/g, ""),
               isGroup: contact.id.includes("@g.us") ? true : false,
               companyId: companyId,
@@ -3788,12 +3788,12 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
         } else if (contact.imgUrl === null) {
           // Se a imagem do perfil for null (ou seja, o contato não tem uma foto de perfil definida)
           const contactData = {
-            name: contact.name.replace(/\D/g, "") || "Sem nome",
+            name: contact.id.replace(/\D/g, ""),
             number: contact.id.replace(/\D/g, ""),
             isGroup: contact.id.includes("@g.us") ? true : false,
             companyId: companyId,
             remoteJid: contact.id,
-            profilePicUrl: `${process.env.FRONTEND_URL}/avatarpadrao.png`, // Define a URL da foto de perfil como null
+            profilePicUrl: null, // Define a URL da foto de perfil como null
             whatsappId: wbot.id,
             wbot: wbot
           };
@@ -3812,7 +3812,7 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
       const number = group.id.replace(/\D/g, "");
       const nameGroup = group.subject || number;
 
-      let profilePicUrl: string = `${process.env.FRONTEND_URL}/avatarpadrao.png`;
+      let profilePicUrl: string = "";
 
       const contactData = {
         name: nameGroup,
