@@ -532,7 +532,7 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
         
                     // Prepara os dados do contato para atualização no seu sistema
                     const contactData = {
-                      name: contact.id.replace(/\D/g, ""),
+                      name: contact.name.replace(/\D/g, "") || "Sem nome",
                       number: contact.id.replace(/\D/g, ""),
                       isGroup: contact.id.includes("@g.us") ? true : false,
                       companyId: companyId,
@@ -550,12 +550,12 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
                 } else if (contact.imgUrl === null) {
                   // Se a imagem do perfil for null (ou seja, o contato não tem uma foto de perfil definida)
                   const contactData = {
-                    name: contact.id.replace(/\D/g, ""),
+                    name: contact.name.replace(/\D/g, "") || "Sem nome",
                     number: contact.id.replace(/\D/g, ""),
                     isGroup: contact.id.includes("@g.us") ? true : false,
                     companyId: companyId,
                     remoteJid: contact.id,
-                    profilePicUrl: null, // Define a URL da foto de perfil como null
+                    profilePicUrl: `${process.env.FRONTEND_URL}/avatarpadrao.png`, // Define a URL da foto de perfil como null
                     whatsappId: wsocket.id,
                     wbot: wsocket
                   };
@@ -591,7 +591,7 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
                     const newUrl = await wsocket.profilePictureUrl(contact.id.replace(/\D/g, ""), "image", 60_000);
         
                     const contactData = {
-                      name: contact.id.replace(/\D/g, ""),
+                      name: contact.name.replace(/\D/g, "") || "Sem nome",
                       number: contact.id.replace(/\D/g, ""),
                       isGroup: contact.id.includes("@g.us") ? true : false,
                       companyId: companyId,
@@ -607,12 +607,12 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
                   }
                 } else if (contact.imgUrl === null) {
                   const contactData = {
-                    name: contact.id.replace(/\D/g, ""),
+                    name: contact.name.replace(/\D/g, "") || "Sem nome",
                     number: contact.id.replace(/\D/g, ""),
                     isGroup: contact.id.includes("@g.us") ? true : false,
                     companyId: companyId,
                     remoteJid: contact.id,
-                    profilePicUrl: null,
+                    profilePicUrl: `${process.env.FRONTEND_URL}/avatarpadrao.png`,
                     whatsappId: wsocket.id,
                     wbot: wsocket
                   };
