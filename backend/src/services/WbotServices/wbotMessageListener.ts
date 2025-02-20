@@ -3759,66 +3759,66 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
   });
 
   wbot.ev.on("contacts.update", async (contacts: any) => {
+    try {
+      const whatsapp = await Whatsapp.findByPk(wbot.id);
 
-    const whatsapp = await Whatsapp.findByPk(wbot.id);
-
-    if (whatsapp.autoImportContacts) {
-      contacts.forEach(async (contact: any) => {
-        if (!contact?.id) return;
-      
-        // Verifica se a URL da imagem do perfil está definida e se é diferente de 'null'
-        if (typeof contact.imgUrl !== 'undefined' && contact.imgUrl !== null) {
+      if (whatsapp.autoImportContacts) {
+        for (const contact of contacts) {
+          // Verifica se o contato é válido
+          if (!contact?.id) continue;
+          
           try {
-            // Tenta obter a nova URL da foto de perfil
-            const newUrl = await wbot.profilePictureUrl(contact.id.replace(/\D/g, ""), "image", 60_000);
-      
-
+            // Prepara o JID limpo independente de ter URL ou não
             const cleanJid = contact.id.includes('@g.us')
-  ? contact.id.replace(/[^0-9-]/g, "") + "@g.us" // Mantém o traço nos grupos
-  : contact.id.replace(/\D/g, "") + "@s.whatsapp.net"; // Remove tudo exceto números para usuários normais
-
+              ? contact.id.replace(/[^0-9-]/g, "") + "@g.us" // Mantém o traço nos grupos
+              : contact.id.replace(/\D/g, "") + "@s.whatsapp.net"; // Remove tudo exceto números para usuários normais
+              
+            let profilePicUrl = null;
+            
+            // Tenta obter a URL da foto de perfil apenas se houver indicação que ela existe
+            if (typeof contact.imgUrl !== 'undefined' && contact.imgUrl !== null) {
+              try {
+                profilePicUrl = await wbot.profilePictureUrl(
+                  contact.id, 
+                  "image", 
+                  30000 
+              );
+              } catch (pictureError) {
+                // Se falhar ao buscar a imagem, apenas registra o erro e continua
+                logger.warn(
+                  `Não foi possível obter foto de perfil para ${contact.id}: ${pictureError.message}`
+                );
+                // Usa a URL padrão se estiver definida no frontend
+                profilePicUrl = `${process.env.FRONTEND_URL}/nopicture.png`;
+              }
+            }
 
             // Prepara os dados do contato para atualização
             const contactData = {
-              name: contact.name,
+              name: contact.name || cleanJid.split('@')[0],
               number: cleanJid,
-              isGroup: contact.id.includes("@g.us") ? true : false,
-              companyId: companyId,
+              isGroup: contact.id.includes("@g.us"),
+              companyId,
               remoteJid: contact.id,
-              profilePicUrl: newUrl,
+              profilePicUrl,
               whatsappId: wbot.id,
-              wbot: wbot
+              wbot
             };
-      
+          
             // Chama o serviço para criar ou atualizar o contato
             await CreateOrUpdateContactService(contactData);
-          } catch (error) {
-            console.error(`Erro ao obter a foto de perfil do contato ${contact.name}:`, error);
+            
+          } catch (contactError) {
+            logger.error(
+              `Erro ao processar contato ${contact.id}: ${contactError.message}`
+            );
+            Sentry.captureException(contactError);
           }
-        } else if (contact.imgUrl === null) {
-
-          const cleanJid = contact.id.includes('@g.us')
-          ? contact.id.replace(/[^0-9-]/g, "") + "@g.us" // Mantém o traço nos grupos
-          : contact.id.replace(/\D/g, "") + "@s.whatsapp.net"; // Remove tudo exceto números para usuários normais
-        
-        
-
-          // Se a imagem do perfil for null (ou seja, o contato não tem uma foto de perfil definida)
-          const contactData = {
-            name: contact.name,
-            number: cleanJid,
-            isGroup: contact.id.includes("@g.us") ? true : false,
-            companyId: companyId,
-            remoteJid: contact.id,
-            profilePicUrl: null, // Define a URL da foto de perfil como null
-            whatsappId: wbot.id,
-            wbot: wbot
-          };
-      
-          // Chama o serviço para criar ou atualizar o contato
-          await CreateOrUpdateContactService(contactData);
         }
-      });
+      }
+    } catch (error) {
+      logger.error(`Erro no evento contacts.update: ${error.message}`);
+      Sentry.captureException(error);
     }
   })
 
