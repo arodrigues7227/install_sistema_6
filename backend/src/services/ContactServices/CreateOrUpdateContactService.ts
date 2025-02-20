@@ -78,7 +78,7 @@ const CreateOrUpdateContactService = async ({
   try {
     let createContact = false;
     const publicFolder = path.resolve(__dirname, "..", "..", "..", "public");
-    const number = isGroup ? rawNumber : rawNumber.replace(/[^0-9]/g, "");
+    const number = isGroup ? rawNumber : rawNumber.replace(/[^0-9-]/g, "");
     const io = getIO();
     let contact: Contact | null;
 

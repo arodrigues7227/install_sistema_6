@@ -588,9 +588,13 @@ const verifyContact = async (
      profilePicUrl = `${process.env.FRONTEND_URL}/avatarpadrao.png`;
    }
 
+   const cleanJid = msgContact.id.includes('@g.us')
+   ? msgContact.id.replace(/[^0-9-]/g, "") + "@g.us" // Mantém o traço nos grupos
+   : msgContact.id.replace(/\D/g, "") + "@s.whatsapp.net"; // Remove tudo exceto números para usuários normais
+
   const contactData = {
-    name: msgContact.name || msgContact.id.replace(/\D/g, ""),
-    number: msgContact.id.replace(/\D/g, ""),
+    name: msgContact.name,
+    number: cleanJid,
     profilePicUrl,
     isGroup: msgContact.id.includes("g.us"),
     companyId,
@@ -3768,10 +3772,16 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
             // Tenta obter a nova URL da foto de perfil
             const newUrl = await wbot.profilePictureUrl(contact.id.replace(/\D/g, ""), "image", 60_000);
       
+
+            const cleanJid = contact.id.includes('@g.us')
+  ? contact.id.replace(/[^0-9-]/g, "") + "@g.us" // Mantém o traço nos grupos
+  : contact.id.replace(/\D/g, "") + "@s.whatsapp.net"; // Remove tudo exceto números para usuários normais
+
+
             // Prepara os dados do contato para atualização
             const contactData = {
               name: contact.name,
-              number: contact.id.replace(/\D/g, ""),
+              number: cleanJid,
               isGroup: contact.id.includes("@g.us") ? true : false,
               companyId: companyId,
               remoteJid: contact.id,
@@ -3786,10 +3796,17 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
             console.error(`Erro ao obter a foto de perfil do contato ${contact.name}:`, error);
           }
         } else if (contact.imgUrl === null) {
+
+          const cleanJid = contact.id.includes('@g.us')
+          ? contact.id.replace(/[^0-9-]/g, "") + "@g.us" // Mantém o traço nos grupos
+          : contact.id.replace(/\D/g, "") + "@s.whatsapp.net"; // Remove tudo exceto números para usuários normais
+        
+        
+
           // Se a imagem do perfil for null (ou seja, o contato não tem uma foto de perfil definida)
           const contactData = {
-            name: contact.id.replace(/\D/g, ""),
-            number: contact.id.replace(/\D/g, ""),
+            name: contact.name,
+            number: cleanJid,
             isGroup: contact.id.includes("@g.us") ? true : false,
             companyId: companyId,
             remoteJid: contact.id,
@@ -3809,8 +3826,11 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
     if (!groupUpdate[0]?.id) return
     if (groupUpdate.length === 0) return;
     groupUpdate.forEach(async (group: GroupMetadata) => {
-      const number = group.id.replace(/\D/g, "");
+
+      const number = group.id.replace(/[^0-9-]/g, "");
       const nameGroup = group.subject || number;
+
+
 
       let profilePicUrl: string = "";
 
