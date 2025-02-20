@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/node";
 import { QueryTypes } from "sequelize";
 import { isNil } from "lodash";
 
+
 import logger from "./utils/logger";
 import sequelize from "./database";
 import User from "./models/User";
@@ -19,7 +20,7 @@ async function handleLoginStatus(job) {
     try {
       const user = await User.findByPk(item.id);
       await user.update({ online: false });
-      logger.info(`Usuário passado para offline: ${item.id}`);
+      logger.info(`Usuario passado para offline: ${item.id}`);
     } catch (e: any) {
       Sentry.captureException(e);
     }
@@ -33,8 +34,8 @@ async function handleUserConnection(job) {
     if (!isNil(id) && id !== "null") {
       const user = await User.findByPk(id);
       if (user) {
-        await user.update({ online: true});
-
+        user.online = true;
+        await user.save();
       }
     }
   } catch (e) {
@@ -55,7 +56,7 @@ export async function initUserMonitorQueues() {
     "VerifyLoginStatus",
     {},
     {
-      repeat: { cron: "* * * * *", key: "verify-login-status"},
+      repeat: { cron: "* * * * *", key: "verify-loginstatus" },
       removeOnComplete: { age: 60 * 60, count: 10 },
       removeOnFail: { age: 60 * 60, count: 10 }
     }

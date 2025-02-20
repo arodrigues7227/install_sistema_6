@@ -28,28 +28,13 @@ const isAuth = async (req: Request, res: Response, next: NextFunction): Promise<
     console.log("Header de autorização não encontrado.");
 
   }
-
-  // const check = await verifyHelper();
-
-  // if (!check) {
-  //   throw new AppError("ERR_SYSTEM_INVALID", 401);
-  // }
-
   const [, token] = authHeader.split(" ");
 
-
   try {
-
     const decoded = verify(token, authConfig.secret);
-
-
     const { id, profile, companyId } = decoded as TokenPayload;
 
-
-
     updateUser(id, companyId);
-
-
     req.user = {
       id,
       profile,

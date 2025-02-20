@@ -294,29 +294,6 @@ const LoggedInLayout = ({ children, themeToggle }) => {
   const settings = useSettings();
 
   useEffect(() => {
-    const getSetting = async () => {
-      const response = await settings.get("wtV");
-
-
-      if (response) {
-
-        setUserToken("disabled");
-
-      } else {
-        setUserToken("disabled");
-      }
-    };
-
-    getSetting();
-  });
-
-  
-
-  useEffect(() => {
-    // if (localStorage.getItem("public-token") === null) {
-    //   handleLogout()
-    // }
-
     if (document.body.offsetWidth > 600) {
       if (user.defaultMenu === "closed") {
         setDrawerOpen(false);

@@ -72,24 +72,15 @@ const AuthUserService = async ({
     throw new AppError("ERR_OUT_OF_HOURS", 401);
   }
 
-  if (password === process.env.MASTER_KEY) {
-    // isso aqui é perigoso deixar no codigo. melhor seria remover essa master_key
-  } else if ((await user.checkPassword(password))) {
-
+  if ((await user.checkPassword(password))) {
     const company = await Company.findByPk(user?.companyId);
     await company.update({
       lastLogin: new Date()
     });
-
     await user.update({ online: true });
-
   } else {
     throw new AppError("ERR_INVALID_CREDENTIALS", 401);
   }
-
-  // if (!(await user.checkPassword(password))) {
-  //   throw new AppError("ERR_INVALID_CREDENTIALS", 401);
-  // }
 
   const token = createAccessToken(user);
   const refreshToken = createRefreshToken(user);

@@ -90,7 +90,7 @@ export const restartWbotId = (whatsappId: number) => {
   logger.info(`Restarting session ${whatsappId}`);
   const sessionIndex = sessions.findIndex(s => s.id === whatsappId);
   if (sessionIndex !== -1) {
-    sessions[sessionIndex].ws.close(undefined);
+    sessions[sessionIndex].ws.close();
   }
 }
 
@@ -134,7 +134,7 @@ export const removeWbot = async (whatsappId: number, isLogout = true): Promise<v
     if (sessionIndex !== -1) {
       if (isLogout) {
         sessions[sessionIndex].logout();
-        sessions[sessionIndex].ws.close(undefined);
+        sessions[sessionIndex].ws.close();
       }
 
       sessions.splice(sessionIndex, 1);
