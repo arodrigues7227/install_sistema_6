@@ -176,24 +176,28 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
 
   console.log("store", { companyId, newContact })
 
+  const cleanedNumber = newContact.number.includes("@g.us")
+    ? newContact.number.replace(/[^0-9-]/g, "")
+    : newContact.number.replace(/\D/g, "");
+
   const findContact = await Contact.findOne({
     where: {
-      number: newContact.number.replace("-", "").replace(" ", ""),
+      number: cleanedNumber,
       companyId
     }
-  })
+  });
+
   if (findContact) {
     throw new AppError("Contact already exists");
   }
 
-  newContact.number = newContact.number.replace("-", "").replace(" ", "");
-
+  newContact.number = cleanedNumber;
 
   const schema = Yup.object().shape({
     name: Yup.string().required(),
     number: Yup.string()
       .required()
-      .matches(/^\d+$/, "Invalid number format. Only numbers is allowed.")
+      .matches(/^\d+(-\d+)?$/, "Invalid number format. Only numbers and '-' for groups are allowed.")
   });
 
   try {
@@ -201,7 +205,6 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   } catch (err: any) {
     throw new AppError(err.message);
   }
-
 
   const validNumber = await CheckContactNumber(newContact.number, companyId);
   const profilePicUrl = await GetProfilePicUrl(validNumber, companyId);
@@ -243,8 +246,8 @@ export const update = async (
   const schema = Yup.object().shape({
     name: Yup.string(),
     number: Yup.string().matches(
-      /^\d+$/,
-      "Invalid number format. Only numbers is allowed."
+      /^\d+(-\d+)?$/, 
+      "Invalid number format. Only numbers and '-' for groups are allowed."
     )
   });
 
@@ -259,8 +262,7 @@ export const update = async (
   if (oldContact.number != contactData.number && oldContact.channel == "whatsapp") {
     const isGroup = oldContact && oldContact.remoteJid ? oldContact.remoteJid.endsWith("@g.us") : oldContact.isGroup;
     const validNumber = await CheckContactNumber(contactData.number, companyId, isGroup);
-    const number = validNumber;
-    contactData.number = number;
+    contactData.number = validNumber;
   }
 
   const contact = await UpdateContactService({
@@ -278,6 +280,7 @@ export const update = async (
 
   return res.status(200).json(contact);
 };
+
 
 export const remove = async (
   req: Request,
