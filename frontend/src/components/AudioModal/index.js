@@ -3,77 +3,56 @@ import React, { useRef, useEffect, useState } from "react";
 
 const LS_NAME = 'audioMessageRate';
 
-const AudioModal = ({ url }) => {
+const AudioModal = ({url}) => {
     const audioRef = useRef(null);
     const [audioRate, setAudioRate] = useState(parseFloat(localStorage.getItem(LS_NAME) || "1"));
     const [showButtonRate, setShowButtonRate] = useState(false);
     const [audioUrl, setAudioUrl] = useState('');
-    const [isAudioLoaded, setIsAudioLoaded] = useState(false);
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
     useEffect(() => {
+        // Determina a URL correta com base no sistema operacional
         let sourceUrl = url;
-        // Sempre usar MP3 para iOS
         if (isIOS && sourceUrl.endsWith('.ogg')) {
             sourceUrl = sourceUrl.replace(".ogg", ".mp3");
         }
         setAudioUrl(sourceUrl);
     }, [url, isIOS]);
-
+  
     useEffect(() => {
         if (audioRef.current) {
             audioRef.current.playbackRate = audioRate;
             localStorage.setItem(LS_NAME, audioRate);
         }
     }, [audioRate]);
-
+  
     useEffect(() => {
         if (audioRef.current) {
-            const audio = audioRef.current;
-
             const handlePlaying = () => setShowButtonRate(true);
             const handlePauseEnd = () => setShowButtonRate(false);
-            const handleCanPlay = () => setIsAudioLoaded(true);
             
-            // Configurações específicas para iOS
-            if (isIOS) {
-                audio.preload = "auto";
-                // Força o carregamento inicial
-                audio.load();
-                
-                // Configura playsinline novamente via JavaScript
-                audio.playsInline = true;
-                audio.setAttribute('playsinline', 'true');
-                audio.setAttribute('webkit-playsinline', 'true');
-            }
-
-            audio.addEventListener('playing', handlePlaying);
-            audio.addEventListener('pause', handlePauseEnd);
-            audio.addEventListener('ended', handlePauseEnd);
-            audio.addEventListener('canplay', handleCanPlay);
+            audioRef.current.addEventListener('playing', handlePlaying);
+            audioRef.current.addEventListener('pause', handlePauseEnd);
+            audioRef.current.addEventListener('ended', handlePauseEnd);
             
-            // Tratamento específico para iOS
+            // Para iOS, precisamos carregar o áudio explicitamente
             if (isIOS) {
-                audio.addEventListener('loadedmetadata', () => {
-                    audio.currentTime = 0;
-                });
+                audioRef.current.load();
             }
-
+            
             return () => {
-                audio.removeEventListener('playing', handlePlaying);
-                audio.removeEventListener('pause', handlePauseEnd);
-                audio.removeEventListener('ended', handlePauseEnd);
-                audio.removeEventListener('canplay', handleCanPlay);
-                if (isIOS) {
-                    audio.removeEventListener('loadedmetadata', () => {});
+                if (audioRef.current) {
+                    audioRef.current.removeEventListener('playing', handlePlaying);
+                    audioRef.current.removeEventListener('pause', handlePauseEnd);
+                    audioRef.current.removeEventListener('ended', handlePauseEnd);
                 }
             };
         }
     }, [isIOS, audioUrl]);
-
+  
     const toggleRate = () => {
         let newRate = null;
-
+  
         switch (audioRate) {
             case 0.5:
                 newRate = 1;
@@ -91,26 +70,23 @@ const AudioModal = ({ url }) => {
                 newRate = 1;
                 break;
         }
-
+  
         setAudioRate(newRate);
     };
-
+  
     return (
         <>
             {audioUrl && (
                 <audio
                     ref={audioRef}
                     controls
-                    preload={isIOS ? "auto" : "metadata"}
+                    preload="metadata"
                     playsInline
-                    webkit-playsinline="true"
-                    x-webkit-airplay="allow"
                     controlsList="nodownload"
-                    style={{ display: isAudioLoaded ? 'block' : 'none' }}
                 >
                     <source 
                         src={audioUrl} 
-                        type={isIOS || audioUrl.endsWith('.mp3') ? "audio/mpeg" : "audio/ogg"} 
+                        type={isIOS || audioUrl.endsWith('.mp3') ? "audio/mp3" : "audio/ogg"} 
                     />
                     Seu navegador não suporta o elemento de áudio.
                 </audio>
