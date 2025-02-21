@@ -30,7 +30,7 @@ import MenuIcon from "@material-ui/icons/Menu";
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 // import AccountCircle from "@material-ui/icons/AccountCircle";
 import CachedIcon from "@material-ui/icons/Cached";
-// import whatsappIcon from "../assets/avatarpadrao.png";
+// import whatsappIcon from "../assets/nopicture.png";
 
 import MainListItems from "./MainListItems";
 import NotificationsPopOver from "../components/NotificationsPopOver";
@@ -326,7 +326,7 @@ const LoggedInLayout = ({ children, themeToggle }) => {
         setProfileUrl(
           `${backendUrl}/public/company${companyId}/user/${ImageUrl}`
         );
-      else setProfileUrl(`${process.env.FRONTEND_URL}/avatarpadrao.png`);
+      else setProfileUrl(`${process.env.FRONTEND_URL}/nopicture.png`);
 
       const onCompanyAuthLayout = (data) => {
         if (data.user.id === +userId) {

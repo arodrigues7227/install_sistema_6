@@ -116,7 +116,7 @@ const CreateOrUpdateContactService = async ({
             profilePicUrl = await wbot.profilePictureUrl(remoteJid, "image");
           } catch (e) {
             Sentry.captureException(e);
-            profilePicUrl = `${process.env.FRONTEND_URL}/avatarpadrao.png`;
+            profilePicUrl = `${process.env.FRONTEND_URL}/nopicture.png`;
           }
           contact.profilePicUrl = profilePicUrl;
           updateImage = true;
@@ -143,7 +143,7 @@ const CreateOrUpdateContactService = async ({
         profilePicUrl = await wbot.profilePictureUrl(remoteJid, "image");
       } catch (e) {
         Sentry.captureException(e);
-        profilePicUrl = `${process.env.FRONTEND_URL}/avatarpadrao.png`;
+        profilePicUrl = `${process.env.FRONTEND_URL}/nopicture.png`;
       }
 
       contact = await Contact.create({
