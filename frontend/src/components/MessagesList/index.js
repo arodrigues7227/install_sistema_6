@@ -656,15 +656,11 @@ const checkMessageMedia = (message) => {
         return <ModalImageCors imageUrl={message.mediaUrl} />;
       } else
 
-        if (message.mediaType === "audio") {
-          return (
-            <AudioModal url={message.mediaUrl} />
-            // <audio controls>
-            //   <source src={message.mediaUrl} type="audio/ogg"></source>
-            //   {/* <source src={message.mediaUrl} type="audio/mp3"></source> */}
-            // </audio>
-          );
-        } else
+
+      if (message.mediaType === "audio" || message.mediaType === "ptt" || message.mediaType === "voice") {
+        console.log("Rendering audio player for URL:", message.mediaUrl);
+        return <AudioModal url={message.mediaUrl} />;
+      } else
 
           if (message.mediaType === "video") {
             return (
