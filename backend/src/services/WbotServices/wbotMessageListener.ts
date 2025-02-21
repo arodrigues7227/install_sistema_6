@@ -585,7 +585,7 @@ const verifyContact = async (
      profilePicUrl = await wbot.profilePictureUrl(msgContact.id, "image");
    } catch (e) {
      Sentry.captureException(e);
-     profilePicUrl = `${process.env.FRONTEND_URL}/avatarpadrao.png`;
+     profilePicUrl = `${process.env.FRONTEND_URL}/nopicture.png`;
    }
 
    const cleanJid = msgContact.id.includes('@g.us')
