@@ -118,11 +118,15 @@ const App = () => {
   );
 
   useEffect(() => {
-    const i18nlocale = localStorage.getItem("i18nextLng");
-    const browserLocale = i18nlocale.substring(0, 2) + i18nlocale.substring(3, 5);
-
-    if (browserLocale === "ptBR") {
-      setLocale(ptBR);
+    const language = localStorage.getItem("language") || "pt"; // Usa a chave correta "language"
+  
+    try {
+      if (language === "pt") {
+        setLocale(ptBR);
+      }
+    } catch (error) {
+      console.error("Erro ao processar locale:", error);
+      setLocale(ptBR); // Fallback para ptBR em caso de erro
     }
   }, []);
 
