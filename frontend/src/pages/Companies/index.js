@@ -351,10 +351,9 @@ const Companies = () => {
                                     <TableCell align="center">{dateToClient(company.createdAt)}</TableCell>
                                     <TableCell align="center">{dateToClient(company.dueDate)}<br /><span>{company.recurrence}</span></TableCell>
                                     <TableCell align="center">{datetimeToClient(company.lastLogin)}</TableCell>
-                                    <TableCell align="center">{datetimeToClient(company.lastLogin)}</TableCell>
                                     <TableCell align="center">{formatFolderSize(company?.metrics?.folderSize || 0)}</TableCell>
-<TableCell align="center">{company?.metrics?.numberOfFiles || 0}</TableCell>
-<TableCell align="center">{company?.metrics?.lastUpdate || 'Não disponível'}</TableCell>
+                                    <TableCell align="center">{company?.metrics?.numberOfFiles || 0}</TableCell>
+                                    <TableCell align="center">{company?.metrics?.lastUpdate || 'Não disponível'}</TableCell>
                                     {/* <TableCell align="center">{company.plan.users}</TableCell> */}
                                     {/* <TableCell align="center">{company.plan.connections}</TableCell> */}
                                     {/* <TableCell align="center">{company.plan.queues}</TableCell> */}
