@@ -53,9 +53,6 @@ const UserLanguageSelector = () => {
                 <MenuItem onClick={() => handleChangeLanguage("es")}>
                     {i18n.t("languages.es")}
                 </MenuItem>
-                <MenuItem onClick={() => handleChangeLanguage("tr")}>
-                    {i18n.t("languages.tr")}
-                </MenuItem>
             </Menu>
         </>
     );
