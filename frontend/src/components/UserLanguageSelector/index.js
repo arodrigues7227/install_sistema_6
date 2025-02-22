@@ -3,12 +3,12 @@ import { Button, Menu, MenuItem } from "@material-ui/core";
 import TranslateIcon from "@material-ui/icons/Translate";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import { i18n } from "../../translate/i18n";
-import { AuthContext } from "../../context/Auth/AuthContext";
 
 const UserLanguageSelector = () => {
     const [langueMenuAnchorEl, setLangueMenuAnchorEl] = useState(null);
 
-    const { user } = useContext(AuthContext);
+    // Obtém o idioma atual do localStorage
+    const currentLanguage = localStorage.getItem("language") || "pt"; // Define um idioma padrão caso não haja nenhum salvo
 
     const handleOpenLanguageMenu = e => {
         setLangueMenuAnchorEl(e.currentTarget);
@@ -17,7 +17,7 @@ const UserLanguageSelector = () => {
     const handleChangeLanguage = async language => {
         localStorage.setItem("language", language);
         handleCloseLanguageMenu();
-        window.location.reload(false);
+        window.location.reload(false); // Recarrega a página para aplicar o novo idioma
     };
 
     const handleCloseLanguageMenu = () => {
@@ -32,9 +32,7 @@ const UserLanguageSelector = () => {
                 startIcon={<TranslateIcon />}
                 endIcon={<ExpandMoreIcon />}
             >
-                {user.language
-                    ? i18n.t(`languages.${user.language}`)
-                    : i18n.t(`languages.${user.undefined}`)}
+                {i18n.t(`languages.${currentLanguage}`)}
             </Button>
             <Menu
                 anchorEl={langueMenuAnchorEl}
@@ -42,7 +40,7 @@ const UserLanguageSelector = () => {
                 open={Boolean(langueMenuAnchorEl)}
                 onClose={handleCloseLanguageMenu}
             >
-                <MenuItem onClick={() => handleChangeLanguage("pt-BR")}>
+                <MenuItem onClick={() => handleChangeLanguage("pt")}>
                     {i18n.t("languages.pt-BR")}
                 </MenuItem>
                 <MenuItem onClick={() => handleChangeLanguage("en")}>
