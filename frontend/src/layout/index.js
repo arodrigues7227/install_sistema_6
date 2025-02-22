@@ -48,7 +48,7 @@ import logoDark from "../assets/logo-black.png";
 import ChatPopover from "../pages/Chat/ChatPopover";
 
 import { useDate } from "../hooks/useDate";
-// import UserLanguageSelector from "../components/UserLanguageSelector";
+import UserLanguageSelector from "../components/UserLanguageSelector";
 
 import ColorModeContext from "./themeContext";
 import Brightness4Icon from "@material-ui/icons/Brightness4";
@@ -480,7 +480,7 @@ const LoggedInLayout = ({ children, themeToggle }) => {
           <VersionControl />
 
           {/* DESABILITADO POIS TEM BUGS */}
-          {/* <UserLanguageSelector /> */}
+          <UserLanguageSelector />
           {/* <SoftPhone
             callVolume={33} //Set Default callVolume
             ringVolume={44} //Set Default ringVolume

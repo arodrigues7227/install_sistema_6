@@ -18,20 +18,18 @@ const UserLanguageSelector = () => {
         setLangueMenuAnchorEl(e.currentTarget);
     };
 
-    const handleCloseLanguageMenu = () => {
-        setLangueMenuAnchorEl(null);
-    };
-
     const handleChangeLanguage = async language => {
-        try {
-            await i18n.changeLanguage(language);
-            await api.put(`/users/${user.id}`, { language });
-        } catch (err) {
-            toastError(err);
-        }
-
+        localStorage.setItem("language", language);
         handleCloseLanguageMenu();
+        window.location.reload(false);
     };
+
+
+      const handleCloseLanguageMenu = () => {
+        setLanguageAnchorEl(null);
+        setLanguageMenuOpen(false);
+      };
+    
 
     return (
         <>
