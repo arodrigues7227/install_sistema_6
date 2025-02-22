@@ -50,6 +50,22 @@ type CompanyData = {
   paymentMethod?: string;
 };
 
+interface CompanyAttributes {
+  id: number;
+  name: string;
+  email?: string;
+  status: boolean;
+  dueDate?: Date;
+  createdAt: Date;
+  phone?: string;
+  document?: string;
+  lastLogin?: Date;
+  plan?: {
+    name: string;
+    amount: number;
+  };
+}
+
 type SchedulesData = {
   schedules: [];
 };
@@ -303,14 +319,22 @@ export const indexPlan = async (req: Request, res: Response): Promise<Response> 
   const [, token] = authHeader.split(" ");
   const decoded = verify(token, authConfig.secret);
   const { id, profile, companyId } = decoded as TokenPayload;
-  // const company = await Company.findByPk(companyId);
   const requestUser = await User.findByPk(id);
 
   if (requestUser.super === true) {
     try {
       const companies = await ListCompaniesPlanService();
-  
-      const companiesWithMetrics = await Promise.all(companies.map(async (company) => {
+      
+      // Transformar os dados das empresas com tipagem correta
+      const companiesData = companies.map(company => {
+        const plainCompany = company.get({ plain: true }) as CompanyAttributes;
+        return {
+          ...plainCompany,
+          status: !!plainCompany.status
+        };
+      });
+
+      const companiesWithMetrics = await Promise.all(companiesData.map(async (company) => {
         const metrics = await calculateDirectoryMetrics(company.id);
         return {
           ...company,
@@ -321,13 +345,13 @@ export const indexPlan = async (req: Request, res: Response): Promise<Response> 
           }
         };
       }));
+
       return res.status(200).json({ companies: companiesWithMetrics });
     } catch (error) {
       console.error("Error fetching companies:", error);
-      return res.status(500).json({ error: "Internal server error" });
+      return res.status(500).json({ error: "Erro ao buscar dados das empresas" });
     }
   } else {
     return res.status(400).json({ error: "Você não possui permissão para acessar este recurso!" });
   }
-
 };

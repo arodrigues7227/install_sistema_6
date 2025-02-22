@@ -247,15 +247,18 @@ const Companies = () => {
     };
 
     const formatFolderSize = (size) => {
+        if (!size || size === 0) return '0 Bytes';
+        
         const units = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
         let index = 0;
+        let formattedSize = size;
     
-        while (size >= 1024 && index < units.length - 1) {
-            size /= 1024;
+        while (formattedSize >= 1024 && index < units.length - 1) {
+            formattedSize /= 1024;
             index++;
         }
     
-        return `${size.toFixed(2)} ${units[index]}`;
+        return `${formattedSize.toFixed(2)} ${units[index]}`;
     };
 
     return (
@@ -349,9 +352,9 @@ const Companies = () => {
                                     <TableCell align="center">{dateToClient(company.dueDate)}<br /><span>{company.recurrence}</span></TableCell>
                                     <TableCell align="center">{datetimeToClient(company.lastLogin)}</TableCell>
                                     <TableCell align="center">{datetimeToClient(company.lastLogin)}</TableCell>
-                                    <TableCell align="center">{formatFolderSize(company.metrics.folderSize)}</TableCell>
-                                    <TableCell align="center">{company.metrics.numberOfFiles}</TableCell>
-                                    <TableCell align="center">{company.metrics.lastUpdate || 'Não disponível'}</TableCell>
+                                    <TableCell align="center">{formatFolderSize(company?.metrics?.folderSize || 0)}</TableCell>
+<TableCell align="center">{company?.metrics?.numberOfFiles || 0}</TableCell>
+<TableCell align="center">{company?.metrics?.lastUpdate || 'Não disponível'}</TableCell>
                                     {/* <TableCell align="center">{company.plan.users}</TableCell> */}
                                     {/* <TableCell align="center">{company.plan.connections}</TableCell> */}
                                     {/* <TableCell align="center">{company.plan.queues}</TableCell> */}
