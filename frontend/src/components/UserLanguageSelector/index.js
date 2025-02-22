@@ -1,9 +1,7 @@
 import React, { useContext, useState } from "react";
-
 import { Button, Menu, MenuItem } from "@material-ui/core";
 import TranslateIcon from "@material-ui/icons/Translate";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
-
 import { i18n } from "../../translate/i18n";
 import { AuthContext } from "../../context/Auth/AuthContext";
 import toastError from "../../errors/toastError";
@@ -24,12 +22,9 @@ const UserLanguageSelector = () => {
         window.location.reload(false);
     };
 
-
-      const handleCloseLanguageMenu = () => {
-        setLanguageAnchorEl(null);
-        setLanguageMenuOpen(false);
-      };
-    
+    const handleCloseLanguageMenu = () => {
+        setLangueMenuAnchorEl(null);
+    };
 
     return (
         <>
