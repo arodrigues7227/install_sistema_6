@@ -26,6 +26,7 @@ import {
   generateWAMessageContent,
   generateWAMessageFromContent
 } from "@whiskeysockets/baileys";
+import Baileys from "../../models/Baileys";
 import Contact from "../../models/Contact";
 import Ticket from "../../models/Ticket";
 import Message from "../../models/Message";
@@ -3758,6 +3759,105 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
     });
   });
 
+  wbot.ev.on("contacts.upsert", async (contacts: any) => {
+    try {
+      const baileysData = await Baileys.findOne({
+        where: { whatsappId: wbot.id }
+      });
+  
+      if (baileysData) {
+        const currentContacts = baileysData.contacts
+          ? JSON.parse(baileysData.contacts)
+          : [];
+  
+        const updatedContacts = [...currentContacts];
+  
+        contacts.forEach(async (contact) => {
+          const index = updatedContacts.findIndex(
+            c => c.id === contact.id
+          );
+          if (index > -1) {
+            updatedContacts[index] = contact;
+          } else {
+            updatedContacts.push(contact);
+          }
+  
+          // Verifica o nome do contato nas diferentes possibilidades
+          const contactName = contact.notify || contact.name || contact.verifiedName || contact.pushName;
+  
+          if (contact.id !== 'status@broadcast') {
+            try {
+              let profilePicUrl = null;
+              try {
+                profilePicUrl = await wbot.profilePictureUrl(contact.id, "image", 60_000);
+              } catch (error) {
+                profilePicUrl = `${process.env.FRONTEND_URL}/nopicture.png`;
+              }
+  
+              const contactData = {
+                name: contactName || contact.id.replace(/\D/g, ""), // Usa o nome se disponível
+                number: contact.id.replace(/\D/g, ""),
+                isGroup: contact.id.includes("@g.us"),
+                companyId: companyId,
+                remoteJid: contact.id,
+                profilePicUrl,
+                whatsappId: wbot.id,
+                wbot
+              };
+  
+              await CreateOrUpdateContactService(contactData);
+            } catch (error) {
+              logger.error(`Erro ao processar contato ${contact.id}: ${error.message}`);
+            }
+          }
+        });
+  
+        await baileysData.update({
+          contacts: JSON.stringify(updatedContacts)
+        });
+  
+      } else {
+        await Baileys.create({
+          whatsappId: wbot.id,
+          contacts: JSON.stringify(contacts)
+        });
+  
+        contacts.forEach(async (contact) => {
+          if (contact.id !== 'status@broadcast') {
+            const contactName = contact.notify || contact.name || contact.verifiedName || contact.pushName;
+  
+            try {
+              let profilePicUrl = null;
+              try {
+                profilePicUrl = await wbot.profilePictureUrl(contact.id, "image", 60_000);
+              } catch (error) {
+                profilePicUrl = `${process.env.FRONTEND_URL}/nopicture.png`;
+              }
+  
+              const contactData = {
+                name: contactName || contact.id.replace(/\D/g, ""),
+                number: contact.id.replace(/\D/g, ""),
+                isGroup: contact.id.includes("@g.us"),
+                companyId: companyId,
+                remoteJid: contact.id,
+                profilePicUrl,
+                whatsappId: wbot.id,
+                wbot
+              };
+  
+              await CreateOrUpdateContactService(contactData);
+            } catch (error) {
+              logger.error(`Erro ao processar contato ${contact.id}: ${error.message}`);
+            }
+          }
+        });
+      }
+    } catch (error) {
+      logger.error(`Erro ao salvar contatos do WhatsApp ${wbot.id}:`, error);
+      Sentry.captureException(error);
+    }
+  });
+
   wbot.ev.on("contacts.update", async (contacts: any) => {
     try {
       const whatsapp = await Whatsapp.findByPk(wbot.id);
@@ -3797,6 +3897,70 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
             const contactData = {
               name: contact.name || cleanJid.split('@')[0],
               number: cleanJid,
+              isGroup: contact.id.includes("@g.us"),
+              companyId,
+              remoteJid: contact.id,
+              profilePicUrl,
+              whatsappId: wbot.id,
+              wbot
+            };
+          
+            // Chama o serviço para criar ou atualizar o contato
+            await CreateOrUpdateContactService(contactData);
+            
+          } catch (contactError) {
+            logger.error(
+              `Erro ao processar contato ${contact.id}: ${contactError.message}`
+            );
+            Sentry.captureException(contactError);
+          }
+        }
+      }
+    } catch (error) {
+      logger.error(`Erro no evento contacts.update: ${error.message}`);
+      Sentry.captureException(error);
+    }
+  })
+
+  wbot.ev.on("contacts.update", async (contacts: any) => {
+    try {
+      const whatsapp = await Whatsapp.findByPk(wbot.id);
+  
+      if (whatsapp.autoImportContacts) {
+        for (const contact of contacts) {
+          // Verifica se o contato é válido
+          if (!contact?.id) continue;
+          
+          try {
+            // Prepara o JID limpo independente de ter URL ou não
+            const cleanJid = contact.id.includes('@g.us')
+              ? contact.id.replace(/[^0-9-]/g, "") + "@g.us" // Mantém o traço nos grupos
+              : contact.id.replace(/\D/g, "") + "@s.whatsapp.net"; // Remove tudo exceto números para usuários normais
+              
+            let profilePicUrl = null;
+            
+            // Tenta obter a URL da foto de perfil apenas se houver indicação que ela existe
+            if (typeof contact.imgUrl !== 'undefined' && contact.imgUrl !== null) {
+              try {
+                profilePicUrl = await wbot.profilePictureUrl(
+                  contact.id, 
+                  "image", 
+                  30000 
+              );
+              } catch (pictureError) {
+                // Se falhar ao buscar a imagem, apenas registra o erro e continua
+                logger.warn(
+                  `Não foi possível obter foto de perfil para ${contact.id}: ${pictureError.message}`
+                );
+                // Usa a URL padrão se estiver definida no frontend
+                profilePicUrl = `${process.env.FRONTEND_URL}/nopicture.png`;
+              }
+            }
+  
+            // Prepara os dados do contato para atualização
+            const contactData = {
+              name: contact.name || cleanJid.split('@')[0],
+              number: cleanJid.split('@')[0],
               isGroup: contact.id.includes("@g.us"),
               companyId,
               remoteJid: contact.id,

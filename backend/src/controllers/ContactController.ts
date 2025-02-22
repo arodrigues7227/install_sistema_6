@@ -24,7 +24,7 @@ import { ImportContactsService } from "../services/ContactServices/ImportContact
 import NumberSimpleListService from "../services/ContactServices/NumberSimpleListService";
 import CreateOrUpdateContactServiceForImport from "../services/ContactServices/CreateOrUpdateContactServiceForImport";
 import UpdateContactWalletsService from "../services/ContactServices/UpdateContactWalletsService";
-
+import DeleteAllContactService from "../services/ContactServices/DeleteAllContactService";
 import FindContactTags from "../services/ContactServices/FindContactTags";
 import { log } from "console";
 import ToggleDisableBotContactService from "../services/ContactServices/ToggleDisableBotContactService";
@@ -280,6 +280,35 @@ export const update = async (
 
   return res.status(200).json(contact);
 };
+
+export const removeAll = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { companyId } = req.user;
+
+  try {
+    logger.info(`Deleting all contacts. Company: ${companyId}`);
+
+    await DeleteAllContactService(companyId);
+
+    logger.info(`All contacts deleted for company ${companyId}`);
+
+    const io = getIO();
+    io.emit(`company-${companyId}-contact`, {
+      action: "delete-all"
+    });
+
+    return res.status(200).json({ message: "All contacts deleted successfully" });
+  } catch (err) {
+    logger.error(`Error deleting all contacts: ${err.message}`);
+    if (err instanceof AppError) {
+      throw err;
+    }
+    throw new AppError(`Error deleting all contacts: ${err.message}`);
+  }
+};
+
 
 
 export const remove = async (

@@ -22,6 +22,8 @@ contactRoutes.put("/contacts/toggleAcceptAudio/:contactId", isAuth, ContactContr
 contactRoutes.get("/contacts", isAuth, ContactController.getContactVcard);
 contactRoutes.get("/contacts/profile/:number", isAuth, ContactController.getContactProfileURL);
 
+
+contactRoutes.delete("/contacts", isAuth, ContactController.removeAll);
 contactRoutes.put("/contacts/block/:contactId", isAuth, ContactController.blockUnblock);
 contactRoutes.post("/contacts/upload", isAuth, upload.array("file"), ContactController.upload);
 contactRoutes.get("/contactTags/:contactId", isAuth, ContactController.getContactTags);

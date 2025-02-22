@@ -143,6 +143,7 @@ const Contacts = () => {
     const [contactTicket, setContactTicket] = useState({});
     const fileUploadRef = useRef(null);
     const [selectedTags, setSelectedTags] = useState([]);
+    const [deletingAllContact, setDeletingAllContact] = useState(null);
     const { setCurrentTicket } = useContext(TicketsContext);
 
 
@@ -317,6 +318,16 @@ const Contacts = () => {
         }
     };
 
+    const handledeleteAllContact = async () => {
+        try {
+          await api.delete("/contacts");
+          history.go(0);
+          toast.success(i18n.t("contacts.toasts.deletedAll"));
+        } catch (err) {
+          toastError(err);
+        }
+    }
+
     const handleimportChats = async () => {
         try {
             await api.post("/contacts/import/chats");
@@ -374,49 +385,50 @@ const Contacts = () => {
                 aria-labelledby="form-dialog-title"
                 contactId={selectedContactId}
             ></ContactModal>
-            <ConfirmationModal
-                title={
-                    deletingContact
-                        ? `${i18n.t(
-                            "contacts.confirmationModal.deleteTitle"
-                        )} ${deletingContact.name}?`
-                        : blockingContact
-                            ? `Bloquear Contato ${blockingContact.name}?`
-                            : unBlockingContact
-                                ? `Desbloquear Contato ${unBlockingContact.name}?`
-                                : ImportContacts
-                                    ? `${i18n.t("contacts.confirmationModal.importTitlte")}`
-                                    : `${i18n.t("contactListItems.confirmationModal.importTitlte")}`
-                }
-                open={confirmOpen}
-                onClose={setConfirmOpen}
-                onConfirm={(e) =>
-                    deletingContact
-                        ? handleDeleteContact(deletingContact.id)
-                        : blockingContact
-                            ? handleBlockContact(blockingContact.id)
-                            : unBlockingContact
-                                ? handleUnBlockContact(unBlockingContact.id)
-                                : ImportContacts
-                                    ? handleimportContact()
-                                    : handleImportExcel()
-                }
-            >
-                {exportContact
-                    ?
-                    `${i18n.t("contacts.confirmationModal.exportContact")}`
-                    : deletingContact
-                        ? `${i18n.t("contacts.confirmationModal.deleteMessage")}`
-                        : blockingContact
-                            ? `${i18n.t("contacts.confirmationModal.blockContact")}`
-                            : unBlockingContact
-                                ? `${i18n.t("contacts.confirmationModal.unblockContact")}`
-                                : ImportContacts
-                                    ? `${i18n.t("contacts.confirmationModal.importMessage")}`
-                                    : `${i18n.t(
-                                        "contactListItems.confirmationModal.importMessage"
-                                    )}`}
-            </ConfirmationModal>
+<ConfirmationModal
+  title={
+    deletingContact
+      ? `${i18n.t("contacts.confirmationModal.deleteTitle")} ${deletingContact.name}?`
+      : blockingContact
+        ? `Bloquear Contato ${blockingContact.name}?`
+        : unBlockingContact
+          ? `Desbloquear Contato ${unBlockingContact.name}?`
+          : ImportContacts
+            ? `${i18n.t("contacts.confirmationModal.importTitlte")}`
+            : deletingAllContact
+              ? "Deseja realmente excluir todos os contatos?"
+              : `${i18n.t("contactListItems.confirmationModal.importTitlte")}`
+  }
+  open={confirmOpen}
+  onClose={setConfirmOpen}
+  onConfirm={(e) =>
+    deletingContact
+      ? handleDeleteContact(deletingContact.id)
+      : blockingContact
+        ? handleBlockContact(blockingContact.id)
+        : unBlockingContact
+          ? handleUnBlockContact(unBlockingContact.id)
+          : ImportContacts
+            ? handleimportContact()
+            : deletingAllContact
+              ? handledeleteAllContact()
+              : handleImportExcel()
+  }
+>
+  {exportContact
+    ? `${i18n.t("contacts.confirmationModal.exportContact")}`
+    : deletingContact
+      ? `${i18n.t("contacts.confirmationModal.deleteMessage")}`
+      : blockingContact
+        ? `${i18n.t("contacts.confirmationModal.blockContact")}`
+        : unBlockingContact
+          ? `${i18n.t("contacts.confirmationModal.unblockContact")}`
+          : ImportContacts
+            ? `${i18n.t("contacts.confirmationModal.importMessage")}`
+            : deletingAllContact
+              ? "Esta ação não poderá ser revertida."
+              : `${i18n.t("contactListItems.confirmationModal.importMessage")}`}
+</ConfirmationModal>
             <ConfirmationModal
                 title={i18n.t("contacts.confirmationModal.importChat")}
                 open={confirmChatsOpen}
@@ -519,6 +531,17 @@ const Contacts = () => {
                             </React.Fragment>
                         )}
                     </PopupState>
+                    <Button
+  variant="contained"
+  style={{ backgroundColor: "#da4231", marginRight: 10 }}  
+  onClick={() => {
+    setConfirmOpen(true);
+    setDeletingAllContact(true);
+  }}
+>
+  <DeleteOutlineIcon style={{ marginRight: 5 }} />
+  Excluir Todos
+</Button>
                     <Button
                         variant="contained"
                         color="primary"
