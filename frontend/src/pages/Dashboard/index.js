@@ -5,7 +5,6 @@ import Typography from "@material-ui/core/Typography";
 // import {  Button, Grid } from "@material-ui/core";
 import { makeStyles } from "@material-ui/core/styles";
 import { useTheme } from "@material-ui/core/styles";
-import Alert from '@material-ui/lab/Alert';
 import { IconButton } from "@mui/material";
 import { Groups, SaveAlt } from "@mui/icons-material";
 
@@ -21,7 +20,7 @@ import MessageIcon from '@material-ui/icons/Message';
 import AccessAlarmIcon from '@material-ui/icons/AccessAlarm';
 import TimerIcon from '@material-ui/icons/Timer';
 import * as XLSX from 'xlsx';
-
+import CustomAlert from './CustomAlert';
 import { grey, blue } from "@material-ui/core/colors";
 import { toast } from "react-toastify";
 
@@ -1136,13 +1135,13 @@ const Dashboard = () => {
                             elevation={6}
                             className={classes.fixedHeightPaper}
                           >
-                            <Alert severity="info">
+                            <CustomAlert severity="info">
                                 Prezado atendente,<p />
                                 Esta tela exibe uma lista de usuários cadastrados na plataforma, atualizando a cada <b>1 minuto</b>. Para manter a precisão das informações exibidas, o status de conexão de cada atendente é automaticamente atualizado. <p />
                                 Se você não estiver interagindo ativamente com o sistema, seu status será alterado para <b>"Desconectado"</b> após 5 minutos. Assim que retomar a interação (por exemplo, ao clicar em menus ou enviar mensagens), seu status será atualizado para <b>"Conectado"</b>. <p />
                                 Isso permite uma visualização precisa da presença dos usuários e ajuda na gestão eficiente da plataforma. <br />
                                 Obrigado pela compreensão e aproveite o uso do sistema! <p />
-                            </Alert>
+                            </CustomAlert>
                           </Paper>
                       </Grid2> 
 

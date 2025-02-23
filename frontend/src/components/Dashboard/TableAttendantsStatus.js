@@ -16,7 +16,7 @@ import { green, grey } from '@material-ui/core/colors';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import ErrorIcon from '@material-ui/icons/Error';
 import moment from 'moment';
-
+import CustomAlert from './CustomAlert';
 import Rating from '@material-ui/lab/Rating';
 import { i18n } from "../../translate/i18n";
 
