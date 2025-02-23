@@ -23,6 +23,11 @@ interface Request {
   whatsappId: string;
 }
 
+interface ServiceResponse {
+  ticketExists: boolean;
+  ticket: Ticket | null;
+}
+
 const CreateTicketService = async ({
   contactId,
   status,
@@ -30,7 +35,7 @@ const CreateTicketService = async ({
   queueId,
   companyId,
   whatsappId = ""
-}: Request): Promise<Ticket> => {
+}: Request):  Promise<ServiceResponse> => {
 
   const io = getIO();
 
@@ -51,8 +56,18 @@ const CreateTicketService = async ({
   if (!defaultWhatsapp)
     defaultWhatsapp = await GetDefaultWhatsApp(whatsapp.id, companyId);
 
-  // console.log("defaultWhatsapp", defaultWhatsapp.id, defaultWhatsapp.channel)
-  await CheckContactOpenTickets(contactId, defaultWhatsapp.id, companyId);
+
+  const checkTicket = await CheckContactOpenTickets(contactId, companyId, defaultWhatsapp.id);
+
+  if (checkTicket.ticketExists) {
+    // Se o ticket existe e pertence a outro usuário
+    if (checkTicket.ticket.userId !== userId) {
+      return {
+        ticketExists: true,
+        ticket: checkTicket.ticket
+      };
+    }
+  }
 
   const { isGroup } = await ShowContactService(contactId, companyId);
 
@@ -96,7 +111,10 @@ const CreateTicketService = async ({
     type: "create"
   });
 
-  return ticket;
+  return {
+    ticketExists: false,
+    ticket: ticket
+  };
 };
 
 export default CreateTicketService;
