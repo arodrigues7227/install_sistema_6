@@ -39,7 +39,7 @@ import { Store } from "./store";
 import Message from "../models/Message";
 import { Sequelize } from "sequelize-typescript";
 
-const version: WAVersion = [2, 3000, 1016249039];
+const version: WAVersion = [2, 3000, 1020371015];
 
 const maxRetriesQrCode = 3;
 
@@ -196,11 +196,9 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
           ],
           msgRetryCounterCache,
           markOnlineOnConnect: true,
-          maxMsgRetryCount: 5,
           emitOwnEvents: true,
           syncFullHistory: true,
           defaultQueryTimeoutMs: 60_000,
-          fireInitQueries: true,
           transactionOpts: { maxCommitRetries: 10, delayBetweenTriesMs: 3000 },
           connectTimeoutMs: 30_000,
           keepAliveIntervalMs: 15_000,
