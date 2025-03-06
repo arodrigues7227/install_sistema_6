@@ -305,7 +305,6 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
       ticket: data.ticket
     });
 
-  // Aqui é a mudança principal - retornamos o ticket diretamente
   return res.status(200).json(data.ticket);
 };
 

@@ -147,7 +147,6 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
   const handleCloseAlert = () => {
     setOpenAlert(false);
     setLoading(false);
-    setOpenAlert(false);
     setUserTicketOpen("");
     setQueueTicketOpen("");
   };
@@ -162,7 +161,7 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
     try {
       const queueId = selectedQueue !== "" ? selectedQueue : null;
       const whatsappId = selectedWhatsapp !== "" ? selectedWhatsapp : null;
-      const { data: ticket } = await api.post("/tickets", {
+      const { data } = await api.post("/tickets", {
         contactId: contactId,
         queueId,
         whatsappId,
@@ -170,8 +169,18 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
         status: "open",
       });
 
-      onClose(ticket);
+      // Verifica se a resposta contém informações sobre um ticket já existente
+      if (data.error && data.type === "TICKET_ALREADY_EXISTS" && data.ticket) {
+        setOpenAlert(true);
+        setUserTicketOpen(data.ticket.user.name);
+        setQueueTicketOpen(data.ticket.queue.name);
+        setLoading(false);
+        return;
+      }
+
+      onClose(data);
     } catch (err) {
+      // Esta parte ainda é mantida para compatibilidade, caso o backend retorne um erro em vez de um status 200 com error=true
       if (err.response?.status === 400 && err.response?.data?.error === true) {
         const ticket = err.response.data.ticket;
         if (ticket.user?.name) {
@@ -289,7 +298,6 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
 
   return (
     <>
-
       <Dialog open={modalOpen} onClose={handleClose}>
         <DialogTitle id="form-dialog-title">
           {i18n.t("newTicketModal.title")}
