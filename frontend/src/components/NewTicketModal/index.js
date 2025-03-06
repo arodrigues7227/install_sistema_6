@@ -20,7 +20,6 @@ import { AuthContext } from "../../context/Auth/AuthContext";
 import { Grid, ListItemText, MenuItem, Select } from "@material-ui/core";
 import { toast } from "react-toastify";
 import { Facebook, Instagram, WhatsApp } from "@material-ui/icons";
-import ShowTicketOpen from "../ShowTicketOpenModal";
 
 const useStyles = makeStyles((theme) => ({
   online: {
@@ -39,6 +38,7 @@ const filter = createFilterOptions({
 
 const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
   const classes = useStyles();
+  const history = useHistory();
   const [options, setOptions] = useState([]);
   const [channelFilter, setChannelFilter] = useState(null);
 
@@ -53,8 +53,9 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
   const { user } = useContext(AuthContext);
   const { companyId, whatsappId } = user;
 
+  // Estado para controlar a exibição do modal de ticket já existente
   const [openAlert, setOpenAlert] = useState(false);
-  const [ticketDataAlert, setTicketDataAlert] = useState(null);
+  const [existingTicket, setExistingTicket] = useState(null);
 
   useEffect(() => {
     if (initialContact?.id !== undefined) {
@@ -126,13 +127,13 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
     onClose();
     setSearchParam("");
     setOpenAlert(false);
-    setTicketDataAlert(null);
+    setExistingTicket(null);
     setSelectedContact(null);
   };
 
   const handleCloseAlert = () => {
     setOpenAlert(false);
-    setTicketDataAlert(null);
+    setExistingTicket(null);
     setLoading(false);
   };
 
@@ -146,32 +147,45 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
     try {
       const queueId = selectedQueue !== "" ? selectedQueue : null;
       const whatsappId = selectedWhatsapp !== "" ? selectedWhatsapp : null;
-      const { data } = await api.post("/tickets", {
+      
+      // Envio da requisição para criar o ticket
+      const response = await api.post("/tickets", {
         contactId: contactId,
         queueId,
         whatsappId,
         userId: user.id,
         status: "open",
       });
-
-      // Verifica se a resposta contém informações sobre um ticket já existente
+      
+      const data = response.data;
+      
+      // Verificação detalhada da resposta
+      console.log("Resposta da API:", data);
+      
+      // Se a resposta contém a flag de erro e o tipo TICKET_ALREADY_EXISTS
       if (data && data.error === true && data.type === "TICKET_ALREADY_EXISTS") {
-        setTicketDataAlert(data.ticket);
+        console.log("Ticket já existe, exibindo modal:", data.ticket);
+        setExistingTicket(data.ticket);
         setOpenAlert(true);
         setLoading(false);
         return;
       }
 
+      // Se chegou aqui, é porque o ticket foi criado com sucesso
       onClose(data);
     } catch (err) {
-      console.error(err);
-      // Se for um erro de resposta com dados de ticket existente
+      console.error("Erro ao criar ticket:", err);
+      console.error("Resposta de erro:", err.response?.data);
+      
+      // Verificar se é um erro 400 com a flag de erro
       if (err.response?.data?.error === true && err.response?.data?.type === "TICKET_ALREADY_EXISTS") {
-        setTicketDataAlert(err.response.data.ticket);
+        console.log("Ticket já existe (capturado do erro):", err.response.data.ticket);
+        setExistingTicket(err.response.data.ticket);
         setOpenAlert(true);
         setLoading(false);
         return;
       }
+      
       toastError(err);
     }
     setLoading(false);
@@ -276,6 +290,11 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
     }
     return null;
   }
+
+  const navigateToTicket = (ticketId) => {
+    handleCloseAlert();
+    history.push(`/tickets/${ticketId}`);
+  };
 
   return (
     <>
@@ -403,14 +422,50 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
             onSave={handleAddNewContactTicket}
           ></ContactModal>
         )}
-        {openAlert && (
-          <ShowTicketOpen
-            isOpen={openAlert}
-            handleClose={handleCloseAlert}
-            ticketData={ticketDataAlert}
-          />
-        )}
-      </Dialog >
+      </Dialog>
+
+      {/* Modal de alerta para ticket já existente */}
+      <Dialog
+        open={openAlert}
+        onClose={handleCloseAlert}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Ticket em Atendimento
+        </DialogTitle>
+        <DialogContent style={{ padding: '16px' }}>
+          <Typography paragraph>
+            Este contato já possui um ticket em atendimento com:
+          </Typography>
+          <Typography paragraph>
+            <span style={{ fontWeight: 'bold' }}>Atendente: </span>
+            {existingTicket?.user?.name || "Não atribuído"}
+          </Typography>
+          <Typography paragraph>
+            <span style={{ fontWeight: 'bold' }}>Fila: </span>
+            {existingTicket?.queue?.name || "Não atribuído"}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={handleCloseAlert}
+            color="secondary"
+            variant="outlined"
+          >
+            Fechar
+          </Button>
+          {existingTicket?.id && (
+            <Button 
+              onClick={() => navigateToTicket(existingTicket.id)}
+              color="primary"
+              variant="contained"
+            >
+              Ir para o Ticket
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
