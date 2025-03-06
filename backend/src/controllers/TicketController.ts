@@ -281,7 +281,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   });
 
   if (data.ticketExists && data.ticket) {
-    return res.status(400).json({
+    return res.status(200).json({
       error: true,
       type: "TICKET_ALREADY_EXISTS",
       ticket: {
