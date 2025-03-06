@@ -455,15 +455,6 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
           >
             Fechar
           </Button>
-          {existingTicket?.id && (
-            <Button 
-              onClick={() => navigateToTicket(existingTicket.id)}
-              color="primary"
-              variant="contained"
-            >
-              Ir para o Ticket
-            </Button>
-          )}
         </DialogActions>
       </Dialog>
     </>
