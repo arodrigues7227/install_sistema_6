@@ -20,7 +20,7 @@ import MessageIcon from '@material-ui/icons/Message';
 import AccessAlarmIcon from '@material-ui/icons/AccessAlarm';
 import TimerIcon from '@material-ui/icons/Timer';
 import * as XLSX from 'xlsx';
-
+import CustomAlert from './CustomAlert';
 import { grey, blue } from "@material-ui/core/colors";
 import { toast } from "react-toastify";
 
@@ -1130,22 +1130,24 @@ const Dashboard = () => {
                       </IconButton>
 
                       <Grid2 container width="100%">
-                        {/* CARD DE GRAFICO */}
-                        {/* <Grid2 item xs={12}>
-                  <Paper
-                    elevation={6}
-                    className={classes.fixedHeightPaper}
-                  >
-                    <Chart
-                      dateStartTicket={dateStartTicket}
-                      dateEndTicket={dateEndTicket}
-                      queueTicket={queueTicket}
-                    />
-                  </Paper>
-                </Grid2>  */}
+                        <Grid2 item xs={12}>
+                          <Paper
+                            elevation={6}
+                            className={classes.fixedHeightPaper}
+                          >
+                            <CustomAlert severity="info">
+                                Prezado atendente,<p />
+                                Esta tela exibe uma lista de usuários cadastrados na plataforma, atualizando a cada <b>1 minuto</b>. Para manter a precisão das informações exibidas, o status de conexão de cada atendente é automaticamente atualizado. <p />
+                                Se você não estiver interagindo ativamente com o sistema, seu status será alterado para <b>"Desconectado"</b> após 5 minutos. Assim que retomar a interação (por exemplo, ao clicar em menus ou enviar mensagens), seu status será atualizado para <b>"Conectado"</b>. <p />
+                                Isso permite uma visualização precisa da presença dos usuários e ajuda na gestão eficiente da plataforma. <br />
+                                Obrigado pela compreensão e aproveite o uso do sistema! <p />
+                            </CustomAlert>
+                          </Paper>
+                      </Grid2> 
 
                         {/* INFO DOS USUARIOS */}
                         <Grid2 xs={12} id="grid-attendants">
+                          
                           {attendants.length ? (
                             <TableAttendantsStatus
                               attendants={attendants}

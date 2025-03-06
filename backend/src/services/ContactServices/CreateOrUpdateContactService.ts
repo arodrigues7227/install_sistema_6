@@ -78,7 +78,7 @@ const CreateOrUpdateContactService = async ({
   try {
     let createContact = false;
     const publicFolder = path.resolve(__dirname, "..", "..", "..", "public");
-    const number = isGroup ? rawNumber : rawNumber.replace(/[^0-9]/g, "");
+    const number = isGroup ? rawNumber : rawNumber.replace(/[^0-9-]/g, "");
     const io = getIO();
     let contact: Contact | null;
 
@@ -86,7 +86,7 @@ const CreateOrUpdateContactService = async ({
       where: { number, companyId }
     });
 
-    let updateImage = (!contact || contact?.profilePicUrl !== profilePicUrl && profilePicUrl !== "") && wbot || false;
+    let updateImage = true;
 
     if (contact) {
       contact.remoteJid = remoteJid;
@@ -116,7 +116,7 @@ const CreateOrUpdateContactService = async ({
             profilePicUrl = await wbot.profilePictureUrl(remoteJid, "image");
           } catch (e) {
             Sentry.captureException(e);
-            profilePicUrl = `${process.env.FRONTEND_URL}/avatarpadrao.png`;
+            profilePicUrl = `${process.env.FRONTEND_URL}/nopicture.png`;
           }
           contact.profilePicUrl = profilePicUrl;
           updateImage = true;
@@ -143,7 +143,7 @@ const CreateOrUpdateContactService = async ({
         profilePicUrl = await wbot.profilePictureUrl(remoteJid, "image");
       } catch (e) {
         Sentry.captureException(e);
-        profilePicUrl = `${process.env.FRONTEND_URL}/avatarpadrao.png`;
+        profilePicUrl = `${process.env.FRONTEND_URL}/nopicture.png`;
       }
 
       contact = await Contact.create({

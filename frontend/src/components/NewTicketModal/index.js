@@ -20,7 +20,6 @@ import { AuthContext } from "../../context/Auth/AuthContext";
 import { Grid, ListItemText, MenuItem, Select } from "@material-ui/core";
 import { toast } from "react-toastify";
 import { Facebook, Instagram, WhatsApp } from "@material-ui/icons";
-import ShowTicketOpen from "../ShowTicketOpenModal";
 
 const useStyles = makeStyles((theme) => ({
   online: {
@@ -39,6 +38,7 @@ const filter = createFilterOptions({
 
 const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
   const classes = useStyles();
+  const history = useHistory();
   const [options, setOptions] = useState([]);
   const [channelFilter, setChannelFilter] = useState(null);
 
@@ -53,9 +53,9 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
   const { user } = useContext(AuthContext);
   const { companyId, whatsappId } = user;
 
+  // Estado para controlar a exibição do modal de ticket já existente
   const [openAlert, setOpenAlert] = useState(false);
-  const [userTicketOpen, setUserTicketOpen] = useState("");
-  const [queueTicketOpen, setQueueTicketOpen] = useState("");
+  const [existingTicket, setExistingTicket] = useState(null);
 
   useEffect(() => {
     if (initialContact?.id !== undefined) {
@@ -69,20 +69,8 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
     const delayDebounceFn = setTimeout(() => {
       const fetchContacts = async () => {
         api
-          // .get(`/whatsapp/filter`, { params: { companyId, session: 0, channel: channelFilter } })
           .get(`/whatsapp`, { params: { companyId, session: 0 } })
           .then(({ data }) => setWhatsapps(data));
-
-          // .then(({ data }) => {
-          //   const mappedWhatsapps = data.map((whatsapp) => ({
-          //     ...whatsapp,
-          //     selected: false,
-          //   }));
-          //   setWhatsapps(mappedWhatsapps);
-          //   if (channelFilter && mappedWhatsapps.length && mappedWhatsapps?.length === 1 && (user.whatsappId === null || user?.whatsapp?.channel !== channelFilter)) {
-          //     setSelectedWhatsapp(mappedWhatsapps[0].id)
-          //   }
-          // });
       };
 
       if (whatsappId !== null && whatsappId !== undefined) {
@@ -96,7 +84,7 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
       setLoading(false);
     }, 500);
     return () => clearTimeout(delayDebounceFn);
-  }, [selectedContact, channelFilter])
+  }, [selectedContact, channelFilter, companyId, user.queues, whatsappId])
 
   useEffect(() => {
     if (!modalOpen || searchParam.length < 3) {
@@ -139,55 +127,66 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
     onClose();
     setSearchParam("");
     setOpenAlert(false);
-    setUserTicketOpen("");
-    setQueueTicketOpen("");
+    setExistingTicket(null);
     setSelectedContact(null);
   };
 
   const handleCloseAlert = () => {
     setOpenAlert(false);
+    setExistingTicket(null);
     setLoading(false);
-    setOpenAlert(false);
-    setUserTicketOpen("");
-    setQueueTicketOpen("");
   };
 
   const handleSaveTicket = async contactId => {
     if (!contactId) return;
-    // if (selectedQueue === "" && user.profile !== 'admin') {
     if (selectedQueue === "") {
       toast.error("Selecione uma fila");
       return;
     }
-
     setLoading(true);
     try {
       const queueId = selectedQueue !== "" ? selectedQueue : null;
       const whatsappId = selectedWhatsapp !== "" ? selectedWhatsapp : null;
-      const { data: ticket } = await api.post("/tickets", {
+      
+      // Envio da requisição para criar o ticket
+      const response = await api.post("/tickets", {
         contactId: contactId,
         queueId,
         whatsappId,
         userId: user.id,
         status: "open",
       });
-
-      onClose(ticket);
-    } catch (err) {
-
-      const ticket = JSON.parse(err.response.data.error);
-
-      if (ticket.userId !== user?.id) {
+      
+      const data = response.data;
+      
+      // Verificação detalhada da resposta
+      console.log("Resposta da API:", data);
+      
+      // Se a resposta contém a flag de erro e o tipo TICKET_ALREADY_EXISTS
+      if (data && data.error === true && data.type === "TICKET_ALREADY_EXISTS") {
+        console.log("Ticket já existe, exibindo modal:", data.ticket);
+        setExistingTicket(data.ticket);
         setOpenAlert(true);
-        setUserTicketOpen(ticket?.user?.name);
-        setQueueTicketOpen(ticket?.queue?.name);
-      } else {
-        setOpenAlert(false);
-        setUserTicketOpen("");
-        setQueueTicketOpen("");
         setLoading(false);
-        onClose(ticket);
+        return;
       }
+
+      // Se chegou aqui, é porque o ticket foi criado com sucesso
+      onClose(data);
+    } catch (err) {
+      console.error("Erro ao criar ticket:", err);
+      console.error("Resposta de erro:", err.response?.data);
+      
+      // Verificar se é um erro 400 com a flag de erro
+      if (err.response?.data?.error === true && err.response?.data?.type === "TICKET_ALREADY_EXISTS") {
+        console.log("Ticket já existe (capturado do erro):", err.response.data.ticket);
+        setExistingTicket(err.response.data.ticket);
+        setOpenAlert(true);
+        setLoading(false);
+        return;
+      }
+      
+      toastError(err);
     }
     setLoading(false);
   };
@@ -292,9 +291,13 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
     return null;
   }
 
+  const navigateToTicket = (ticketId) => {
+    handleCloseAlert();
+    history.push(`/tickets/${ticketId}`);
+  };
+
   return (
     <>
-
       <Dialog open={modalOpen} onClose={handleClose}>
         <DialogTitle id="form-dialog-title">
           {i18n.t("newTicketModal.title")}
@@ -419,15 +422,41 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
             onSave={handleAddNewContactTicket}
           ></ContactModal>
         )}
-        {openAlert && (
-          <ShowTicketOpen
-            isOpen={openAlert}
-            handleClose={handleCloseAlert}
-            user={userTicketOpen}
-            queue={queueTicketOpen}
-          />
-        )}
-      </Dialog >
+      </Dialog>
+
+      {/* Modal de alerta para ticket já existente */}
+      <Dialog
+        open={openAlert}
+        onClose={handleCloseAlert}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Ticket em Atendimento
+        </DialogTitle>
+        <DialogContent style={{ padding: '16px' }}>
+          <Typography paragraph>
+            Este contato já possui um ticket em atendimento com:
+          </Typography>
+          <Typography paragraph>
+            <span style={{ fontWeight: 'bold' }}>Atendente: </span>
+            {existingTicket?.user?.name || "Não atribuído"}
+          </Typography>
+          <Typography paragraph>
+            <span style={{ fontWeight: 'bold' }}>Fila: </span>
+            {existingTicket?.queue?.name || "Não atribuído"}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={handleCloseAlert}
+            color="secondary"
+            variant="outlined"
+          >
+            Fechar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

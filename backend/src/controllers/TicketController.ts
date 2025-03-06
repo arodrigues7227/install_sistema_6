@@ -62,6 +62,11 @@ interface TicketData {
   whatsappId?: string;
 }
 
+interface ServiceResponse {
+  ticketExists: boolean;
+  ticket: Ticket | null;
+}
+
 export const index = async (req: Request, res: Response): Promise<Response> => {
   const {
     pageNumber,
@@ -266,7 +271,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   const { contactId, status, userId, queueId, whatsappId }: TicketData = req.body;
   const { companyId } = req.user;
 
-  const ticket = await CreateTicketService({
+  const data: ServiceResponse = await CreateTicketService({
     contactId,
     status,
     userId,
@@ -275,15 +280,32 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     whatsappId
   });
 
+  if (data.ticketExists && data.ticket) {
+    return res.status(200).json({
+      error: true,
+      type: "TICKET_ALREADY_EXISTS",
+      ticket: {
+        id: data.ticket.id,
+        user: {
+          id: data.ticket.user?.id,
+          name: data.ticket.user?.name || 'Não atribuído'
+        },
+        queue: {
+          id: data.ticket.queue?.id,
+          name: data.ticket.queue?.name || 'Não atribuído'
+        }
+      }
+    });
+  }
+
   const io = getIO();
   io.of(String(companyId))
-    // .to(ticket.status)
     .emit(`company-${companyId}-ticket`, {
       action: "update",
-      ticket
+      ticket: data.ticket
     });
 
-  return res.status(200).json(ticket);
+  return res.status(200).json(data.ticket);
 };
 
 export const show = async (req: Request, res: Response): Promise<Response> => {

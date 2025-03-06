@@ -255,7 +255,7 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   const schema = Yup.object().shape({
     number: Yup.string()
       .required()
-      .matches(/^\d+$/, "Invalid number format. Only numbers is allowed.")
+      .matches(/^\d+(-\d+)?$/, "Invalid number format. Only numbers and '-' for groups are allowed.")
   });
 
   try {
@@ -490,7 +490,7 @@ export const indexImage = async (req: Request, res: Response): Promise<Response>
   const schema = Yup.object().shape({
     number: Yup.string()
       .required()
-      .matches(/^\d+$/, "Invalid number format. Only numbers is allowed.")
+      .matches(/^\d+(-\d+)?$/, "Invalid number format. Only numbers and '-' for groups are allowed.")
   });
 
   try {

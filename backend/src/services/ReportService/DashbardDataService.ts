@@ -6,10 +6,20 @@ import sequelize from "../../database";
 import path from "path";
 const fs = require('fs');
 
+export interface Attendant {
+  id: number;
+  name: string;
+  online: boolean;
+  avgWaitTime: number;
+  avgSupportTime: number;
+  tickets: number;
+  rating: number;
+  countRating: number;
+}
 
 export interface DashboardData {
   counters: any;
-  attendants: [];
+  attendants: Attendant[];
 }
 
 export interface Params {
@@ -17,7 +27,6 @@ export interface Params {
   date_from?: string;
   date_to?: string;
 }
-
 export default async function DashboardDataService(
   companyId: string | number,
   params: Params
@@ -132,22 +141,22 @@ export default async function DashboardDataService(
                     and ur.rate < 7)) nps
             ) "npsScore"
     ),
-    attedants as (
-      select
-        u1.id,
-        u1."name",
-        u1."online",
-        avg(t."waitTime") "avgWaitTime",
-        avg(t."supportTime") "avgSupportTime",
-        count(t."id") "tickets",
-        round(coalesce(avg(ur."rate"), 0),2) "rating",
-        coalesce(count(ur."id"), 0) "countRating"
-      from "Users" u1
-        left join traking t on t."userId" = u1.id
-        left join "UserRatings" ur on ur."userId" = t."userId" and ur."ticketId" = t."ticketId"
-      where u1."companyId" = ?
-      group by 1, 2
-      order by u1."name"
+attedants as (
+  select
+    u1.id,
+    u1."name",
+    coalesce(u1."online", false) as "online",
+    avg(t."waitTime") "avgWaitTime",
+    avg(t."supportTime") "avgSupportTime",
+    count(t."id") "tickets",
+    round(coalesce(avg(ur."rate"), 0),2) "rating",
+    coalesce(count(ur."id"), 0) "countRating"
+  from "Users" u1
+    left join traking t on t."userId" = u1.id
+    left join "UserRatings" ur on ur."userId" = t."userId" and ur."ticketId" = t."ticketId"
+  where u1."companyId" = ?
+  group by 1, 2, u1."online"
+  order by u1."name"
       )
       select
           (select coalesce(jsonb_build_object('counters', c.*)->>'counters', '{}')::jsonb from counters c) counters,
@@ -185,6 +194,42 @@ export default async function DashboardDataService(
     type: QueryTypes.SELECT,
     plain: true
   });
+
+  // Logs com tipagem correta
+  console.log('=== INÍCIO DO LOG DE RETORNO DA QUERY ===');
+  console.log('Query final executada:', finalQuery);
+  console.log('Replacements utilizados:', replacements);
+
+  // Log específico para os atendentes e seus status
+  if (responseData && responseData.attendants) {
+    console.log('=== STATUS DOS ATENDENTES ===');
+    const attendantsStatus = (responseData.attendants as Attendant[]).map(att => ({
+      id: att.id,
+      name: att.name,
+      online: att.online,
+    }));
+    console.log('Status dos atendentes:', JSON.stringify(attendantsStatus, null, 2));
+  }
+
+  // Verificação adicional do status no banco
+  interface UserStatus {
+    id: number;
+    name: string;
+    online: boolean;
+  }
+
+  const usersStatus = await sequelize.query<UserStatus>(`
+    SELECT id, name, online 
+    FROM "Users" 
+    WHERE "companyId" = ? 
+  `, {
+    replacements: [companyId],
+    type: QueryTypes.SELECT
+  });
+
+  console.log('=== STATUS DIRETO DA TABELA USERS ===');
+  console.log(JSON.stringify(usersStatus, null, 2));
+  console.log('=== FIM DO LOG ===');
 
   return responseData;
 }

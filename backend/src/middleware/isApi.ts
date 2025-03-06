@@ -1,22 +1,23 @@
 import { Request, Response, NextFunction } from "express";
 
 import AppError from "../errors/AppError";
+import Whatsapp from "../models/Whatsapp";
 
-const isAuthCompany = async (
+const isAuthApi = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   const authHeader = req.headers.authorization;
-
   if (!authHeader) {
     throw new AppError("ERR_SESSION_EXPIRED", 401);
   }
 
   const [, token] = authHeader.split(" ");
-  
   try {
-    const getToken = "4a1f3e8d9c7b2a6e5f4c3d2a1b0e9f8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2";
+    const whatsapp = await Whatsapp.findOne({ where: { token } });
+
+    const getToken = whatsapp?.token;
     if (!getToken) {
       throw new AppError("ERR_SESSION_EXPIRED", 401);
     }
@@ -34,4 +35,4 @@ const isAuthCompany = async (
   return next();
 };
 
-export default isAuthCompany;
+export default isAuthApi;

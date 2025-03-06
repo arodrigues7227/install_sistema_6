@@ -30,7 +30,7 @@ import MenuIcon from "@material-ui/icons/Menu";
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 // import AccountCircle from "@material-ui/icons/AccountCircle";
 import CachedIcon from "@material-ui/icons/Cached";
-// import whatsappIcon from "../assets/avatarpadrao.png";
+// import whatsappIcon from "../assets/nopicture.png";
 
 import MainListItems from "./MainListItems";
 import NotificationsPopOver from "../components/NotificationsPopOver";
@@ -48,7 +48,7 @@ import logoDark from "../assets/logo-black.png";
 import ChatPopover from "../pages/Chat/ChatPopover";
 
 import { useDate } from "../hooks/useDate";
-// import UserLanguageSelector from "../components/UserLanguageSelector";
+import UserLanguageSelector from "../components/UserLanguageSelector";
 
 import ColorModeContext from "./themeContext";
 import Brightness4Icon from "@material-ui/icons/Brightness4";
@@ -294,29 +294,6 @@ const LoggedInLayout = ({ children, themeToggle }) => {
   const settings = useSettings();
 
   useEffect(() => {
-    const getSetting = async () => {
-      const response = await settings.get("wtV");
-
-
-      if (response) {
-
-        setUserToken("disabled");
-
-      } else {
-        setUserToken("disabled");
-      }
-    };
-
-    getSetting();
-  });
-
-  
-
-  useEffect(() => {
-    // if (localStorage.getItem("public-token") === null) {
-    //   handleLogout()
-    // }
-
     if (document.body.offsetWidth > 600) {
       if (user.defaultMenu === "closed") {
         setDrawerOpen(false);
@@ -349,7 +326,7 @@ const LoggedInLayout = ({ children, themeToggle }) => {
         setProfileUrl(
           `${backendUrl}/public/company${companyId}/user/${ImageUrl}`
         );
-      else setProfileUrl(`${process.env.FRONTEND_URL}/avatarpadrao.png`);
+      else setProfileUrl(`${process.env.FRONTEND_URL}/nopicture.png`);
 
       const onCompanyAuthLayout = (data) => {
         if (data.user.id === +userId) {
@@ -503,7 +480,7 @@ const LoggedInLayout = ({ children, themeToggle }) => {
           <VersionControl />
 
           {/* DESABILITADO POIS TEM BUGS */}
-          {/* <UserLanguageSelector /> */}
+          <UserLanguageSelector />
           {/* <SoftPhone
             callVolume={33} //Set Default callVolume
             ringVolume={44} //Set Default ringVolume

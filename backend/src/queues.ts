@@ -31,7 +31,6 @@ import ShowTicketService from "./services/TicketServices/ShowTicketService";
 import SendWhatsAppMessage from "./services/WbotServices/SendWhatsAppMessage";
 import UpdateTicketService from "./services/TicketServices/UpdateTicketService";
 import { addSeconds, differenceInSeconds } from "date-fns";
-import { GetWhatsapp } from "./helpers/GetWhatsapp";
 const CronJob = require('cron').CronJob;
 import CompaniesSettings from "./models/CompaniesSettings";
 import { verifyMediaMessage, verifyMessage } from "./services/WbotServices/wbotMessageListener";
@@ -1048,15 +1047,15 @@ async function handleDispatchCampaign(job) {
 }
 
 async function handleLoginStatus(job) {
-  const thresholdTime = new Date();
-  thresholdTime.setMinutes(thresholdTime.getMinutes() - 5);
-
-  await User.update({ online: false }, {
-    where: {
-      updatedAt: { [Op.lt]: thresholdTime },
-      online: true,
-    },
-  });
+  const users: { id: number }[] = await sequelize.query(
+    `select id from "Users" where "updatedAt" < now() - '5 minutes'::interval and online = true`,
+    { type: QueryTypes.SELECT }
+  );
+  for (let item of users) {
+      const user = await User.findByPk(item.id);
+      await user.update({ online: false });
+      logger.info(`Usuário passado para offline: ${item.id}`);
+  }
 }
 
 async function handleResumeTicketsOutOfHour(job) {
@@ -1454,11 +1453,11 @@ async function handleRandomUser() {
                   if (user.online === true) {
                     return user.id;
                   } else {
-                    // logger.info("USER OFFLINE");
+                    logger.info("USER OFFLINE");
                     return 0;
                   }
                 } else {
-                  // logger.info("ADMIN");
+                  logger.info("ADMIN");
                   return 0;
                 }
 
@@ -1684,16 +1683,6 @@ async function handleCloseTicketsAutomatic() {
   job.start()
 }
 
-async function handleWhatsapp() {
-  const jobW = new CronJob('* 15 3 * * *', async () => {
-    //*Whatsapp
-    GetWhatsapp();
-    jobW.stop();
-  }, null, false, 'America/Sao_Paulo')
-  jobW.start();
-}
-
-handleWhatsapp();
 handleProcessLanes();
 handleCloseTicketsAutomatic();
 handleRandomUser();

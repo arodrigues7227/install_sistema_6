@@ -24,7 +24,7 @@ import { ImportContactsService } from "../services/ContactServices/ImportContact
 import NumberSimpleListService from "../services/ContactServices/NumberSimpleListService";
 import CreateOrUpdateContactServiceForImport from "../services/ContactServices/CreateOrUpdateContactServiceForImport";
 import UpdateContactWalletsService from "../services/ContactServices/UpdateContactWalletsService";
-
+import DeleteAllContactService from "../services/ContactServices/DeleteAllContactService";
 import FindContactTags from "../services/ContactServices/FindContactTags";
 import { log } from "console";
 import ToggleDisableBotContactService from "../services/ContactServices/ToggleDisableBotContactService";
@@ -176,24 +176,28 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
 
   console.log("store", { companyId, newContact })
 
+  const cleanedNumber = newContact.number.includes("@g.us")
+    ? newContact.number.replace(/[^0-9-]/g, "")
+    : newContact.number.replace(/\D/g, "");
+
   const findContact = await Contact.findOne({
     where: {
-      number: newContact.number.replace("-", "").replace(" ", ""),
+      number: cleanedNumber,
       companyId
     }
-  })
+  });
+
   if (findContact) {
     throw new AppError("Contact already exists");
   }
 
-  newContact.number = newContact.number.replace("-", "").replace(" ", "");
-
+  newContact.number = cleanedNumber;
 
   const schema = Yup.object().shape({
     name: Yup.string().required(),
     number: Yup.string()
       .required()
-      .matches(/^\d+$/, "Invalid number format. Only numbers is allowed.")
+      .matches(/^\d+(-\d+)?$/, "Invalid number format. Only numbers and '-' for groups are allowed.")
   });
 
   try {
@@ -202,18 +206,13 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     throw new AppError(err.message);
   }
 
-
   const validNumber = await CheckContactNumber(newContact.number, companyId);
-
-  /**
-   * Código desabilitado por demora no retorno
-   */
-  // const profilePicUrl = await GetProfilePicUrl(validNumber.jid, companyId);
+  const profilePicUrl = await GetProfilePicUrl(validNumber, companyId);
 
   const contact = await CreateContactService({
     ...newContact,
     number: validNumber,
-    // profilePicUrl,
+    profilePicUrl,
     companyId
   });
 
@@ -247,8 +246,8 @@ export const update = async (
   const schema = Yup.object().shape({
     name: Yup.string(),
     number: Yup.string().matches(
-      /^\d+$/,
-      "Invalid number format. Only numbers is allowed."
+      /^\d+(-\d+)?$/, 
+      "Invalid number format. Only numbers and '-' for groups are allowed."
     )
   });
 
@@ -263,8 +262,7 @@ export const update = async (
   if (oldContact.number != contactData.number && oldContact.channel == "whatsapp") {
     const isGroup = oldContact && oldContact.remoteJid ? oldContact.remoteJid.endsWith("@g.us") : oldContact.isGroup;
     const validNumber = await CheckContactNumber(contactData.number, companyId, isGroup);
-    const number = validNumber;
-    contactData.number = number;
+    contactData.number = validNumber;
   }
 
   const contact = await UpdateContactService({
@@ -282,6 +280,36 @@ export const update = async (
 
   return res.status(200).json(contact);
 };
+
+export const removeAll = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { companyId } = req.user;
+
+  try {
+    logger.info(`Deleting all contacts. Company: ${companyId}`);
+
+    await DeleteAllContactService(companyId);
+
+    logger.info(`All contacts deleted for company ${companyId}`);
+
+    const io = getIO();
+    io.emit(`company-${companyId}-contact`, {
+      action: "delete-all"
+    });
+
+    return res.status(200).json({ message: "All contacts deleted successfully" });
+  } catch (err) {
+    logger.error(`Error deleting all contacts: ${err.message}`);
+    if (err instanceof AppError) {
+      throw err;
+    }
+    throw new AppError(`Error deleting all contacts: ${err.message}`);
+  }
+};
+
+
 
 export const remove = async (
   req: Request,

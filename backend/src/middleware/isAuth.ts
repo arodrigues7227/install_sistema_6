@@ -19,18 +19,15 @@ interface TokenPayload {
 }
 
 const isAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+
+
   const authHeader = req.headers.authorization;
 
+
   if (!authHeader) {
-    throw new AppError("ERR_SESSION_EXPIRED", 401);
+    console.log("Header de autorização não encontrado.");
+
   }
-
-  // const check = await verifyHelper();
-
-  // if (!check) {
-  //   throw new AppError("ERR_SYSTEM_INVALID", 401);
-  // }
-
   const [, token] = authHeader.split(" ");
 
   try {
@@ -38,22 +35,27 @@ const isAuth = async (req: Request, res: Response, next: NextFunction): Promise<
     const { id, profile, companyId } = decoded as TokenPayload;
 
     updateUser(id, companyId);
-
     req.user = {
       id,
       profile,
       companyId
     };
+
   } catch (err: any) {
+
+
     if (err.message === "ERR_SESSION_EXPIRED" && err.statusCode === 401) {
+
       throw new AppError(err.message, 401);
     } else {
+
       throw new AppError(
         "Invalid token. We'll try to assign a new one on next request",
         403
       );
     }
   }
+
 
   return next();
 };

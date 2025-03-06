@@ -1,36 +1,55 @@
-import React, { useContext, useState } from "react";
-
+import React, { useState, useEffect } from "react";
 import { Button, Menu, MenuItem } from "@material-ui/core";
 import TranslateIcon from "@material-ui/icons/Translate";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
-
-import { i18n } from "../../translate/i18n";
-import { AuthContext } from "../../context/Auth/AuthContext";
-import toastError from "../../errors/toastError";
-import api from "../../services/api";
+import { i18n, normalizeLanguageCode } from "../../translate/i18n";
 
 const UserLanguageSelector = () => {
     const [langueMenuAnchorEl, setLangueMenuAnchorEl] = useState(null);
+    const [currentLanguage, setCurrentLanguage] = useState("pt");
 
-    const { user, socket } = useContext(AuthContext);
+    useEffect(() => {
+        const savedLanguage = localStorage.getItem("language");
+        const normalizedLanguage = normalizeLanguageCode(savedLanguage);
+        setCurrentLanguage(normalizedLanguage);
+        
+        if (savedLanguage !== normalizedLanguage) {
+            localStorage.setItem("language", normalizedLanguage);
+        }
+    }, []);
 
-    const handleOpenLanguageMenu = e => {
+    const handleOpenLanguageMenu = (e) => {
         setLangueMenuAnchorEl(e.currentTarget);
+    };
+
+    const handleChangeLanguage = async (language) => {
+        try {
+            const normalizedLanguage = normalizeLanguageCode(language);
+            localStorage.setItem("language", normalizedLanguage);
+            setCurrentLanguage(normalizedLanguage);
+            
+            await i18n.changeLanguage(normalizedLanguage);
+            handleCloseLanguageMenu();
+            window.location.reload(false);
+        } catch (error) {
+            console.error("Erro ao mudar idioma:", error);
+            const defaultLang = "pt";
+            localStorage.setItem("language", defaultLang);
+            setCurrentLanguage(defaultLang);
+        }
     };
 
     const handleCloseLanguageMenu = () => {
         setLangueMenuAnchorEl(null);
     };
 
-    const handleChangeLanguage = async language => {
-        try {
-            await i18n.changeLanguage(language);
-            await api.put(`/users/${user.id}`, { language });
-        } catch (err) {
-            toastError(err);
-        }
-
-        handleCloseLanguageMenu();
+    const getLanguageLabel = (lang) => {
+        const labels = {
+            pt: "Português (Brasil)",
+            en: "English",
+            es: "Español"
+        };
+        return labels[normalizeLanguageCode(lang)] || labels.pt;
     };
 
     return (
@@ -38,12 +57,11 @@ const UserLanguageSelector = () => {
             <Button
                 color="inherit"
                 onClick={handleOpenLanguageMenu}
-                startIcon={<TranslateIcon />}
-                endIcon={<ExpandMoreIcon />}
+                startIcon={<TranslateIcon style={{ color: "white" }} />}
+                endIcon={<ExpandMoreIcon style={{ color: "white" }} />}
+                style={{ color: "white" }}
             >
-                {user.language
-                    ? i18n.t(`languages.${user.language}`)
-                    : i18n.t(`languages.${user.undefined}`)}
+                {getLanguageLabel(currentLanguage)}
             </Button>
             <Menu
                 anchorEl={langueMenuAnchorEl}
@@ -51,17 +69,14 @@ const UserLanguageSelector = () => {
                 open={Boolean(langueMenuAnchorEl)}
                 onClose={handleCloseLanguageMenu}
             >
-                <MenuItem onClick={() => handleChangeLanguage("pt-BR")}>
-                    {i18n.t("languages.pt-BR")}
+                <MenuItem onClick={() => handleChangeLanguage("pt")}>
+                    Português (Brasil)
                 </MenuItem>
                 <MenuItem onClick={() => handleChangeLanguage("en")}>
-                    {i18n.t("languages.en")}
+                    English
                 </MenuItem>
                 <MenuItem onClick={() => handleChangeLanguage("es")}>
-                    {i18n.t("languages.es")}
-                </MenuItem>
-                <MenuItem onClick={() => handleChangeLanguage("tr")}>
-                    {i18n.t("languages.tr")}
+                    Español
                 </MenuItem>
             </Menu>
         </>

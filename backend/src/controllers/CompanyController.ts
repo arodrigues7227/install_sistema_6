@@ -1,7 +1,11 @@
 import { verify } from "jsonwebtoken";
+import fs from "fs"; // Importa o módulo fs para operações sincrônicas
+import fsPromises from "fs/promises"; // Importa o módulo fs/promises para operações assíncronas
 import authConfig from "../config/auth";
 import * as Yup from "yup";
 import { Request, Response } from "express";
+import moment from "moment";
+import path from "path";
 // import { getIO } from "../libs/socket";
 import AppError from "../errors/AppError";
 import Company from "../models/Company";
@@ -46,8 +50,68 @@ type CompanyData = {
   paymentMethod?: string;
 };
 
+interface CompanyAttributes {
+  id: number;
+  name: string;
+  email?: string;
+  status: boolean;
+  dueDate?: Date;
+  createdAt: Date;
+  phone?: string;
+  document?: string;
+  lastLogin?: Date;
+  plan?: {
+    name: string;
+    amount: number;
+  };
+}
+
 type SchedulesData = {
   schedules: [];
+};
+
+const publicFolder = path.resolve(__dirname, "..", "..", "public");
+
+const calculateDirectoryMetrics = async (companyId: number) => {
+  const folderPath = path.join(publicFolder, `company${companyId}`);
+
+  try {
+    if (!fs.existsSync(folderPath)) {
+      console.warn(`Directory does not exist: ${folderPath}`);
+      return {
+        folderSize: 0,
+        numberOfFiles: 0,
+        lastUpdate: null, // Mudando de lastUpdated para lastUpdate
+      };
+    }
+
+    const files = await fsPromises.readdir(folderPath);
+    let totalSize = 0;
+    let numberOfFiles = files.length;
+    let lastUpdate = new Date(0); // Mudando de lastUpdated para lastUpdate
+
+    for (const file of files) {
+      const filePath = path.join(folderPath, file);
+      const stats = await fsPromises.stat(filePath);
+      totalSize += stats.size;
+      if (stats.mtime > lastUpdate) {
+        lastUpdate = stats.mtime;
+      }
+    }
+
+    return {
+      folderSize: totalSize,
+      numberOfFiles,
+      lastUpdate, // Mudando de lastUpdated para lastUpdate
+    };
+  } catch (error) {
+    console.error(`Error calculating directory metrics for company ${companyId}:`, error);
+    return {
+      folderSize: 0,
+      numberOfFiles: 0,
+      lastUpdate: null, // Mudando de lastUpdated para lastUpdate
+    };
+  }
 };
 
 export const index = async (req: Request, res: Response): Promise<Response> => {
@@ -255,14 +319,39 @@ export const indexPlan = async (req: Request, res: Response): Promise<Response> 
   const [, token] = authHeader.split(" ");
   const decoded = verify(token, authConfig.secret);
   const { id, profile, companyId } = decoded as TokenPayload;
-  // const company = await Company.findByPk(companyId);
   const requestUser = await User.findByPk(id);
 
   if (requestUser.super === true) {
-    const companies = await ListCompaniesPlanService();
-    return res.json({ companies });
+    try {
+      const companies = await ListCompaniesPlanService();
+      
+      // Transformar os dados das empresas com tipagem correta
+      const companiesData = companies.map(company => {
+        const plainCompany = company.get({ plain: true }) as CompanyAttributes;
+        return {
+          ...plainCompany,
+          status: !!plainCompany.status
+        };
+      });
+
+      const companiesWithMetrics = await Promise.all(companiesData.map(async (company) => {
+        const metrics = await calculateDirectoryMetrics(company.id);
+        return {
+          ...company,
+          metrics: {
+            folderSize: metrics.folderSize,
+            numberOfFiles: metrics.numberOfFiles,
+            lastUpdate: metrics.lastUpdate ? moment(metrics.lastUpdate).format('DD/MM/YYYY HH:mm:ss') : null
+          }
+        };
+      }));
+
+      return res.status(200).json({ companies: companiesWithMetrics });
+    } catch (error) {
+      console.error("Error fetching companies:", error);
+      return res.status(500).json({ error: "Erro ao buscar dados das empresas" });
+    }
   } else {
     return res.status(400).json({ error: "Você não possui permissão para acessar este recurso!" });
   }
-
 };

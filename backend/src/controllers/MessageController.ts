@@ -13,6 +13,9 @@ import authConfig from "../config/auth";
 import path from "path";
 import { isNil, isNull } from "lodash";
 import { Mutex } from "async-mutex";
+import { promisify } from "util";
+import { exec } from 'child_process';
+import ffmpegPath from "@ffmpeg-installer/ffmpeg";
 
 import ListMessagesService from "../services/MessageServices/ListMessagesService";
 import ShowTicketService from "../services/TicketServices/ShowTicketService";
@@ -40,6 +43,12 @@ import EditWhatsAppMessage from "../services/MessageServices/EditWhatsAppMessage
 import CheckContactNumber from "../services/WbotServices/CheckNumber";
 import SendWhatsAppContact from "../services/WbotServices/SendWhatsAppContact";
 
+const execPromise = promisify(exec);
+const writeFilePromise = promisify(fs.writeFile);
+const unlinkPromise = promisify(fs.unlink);
+const existsPromise = promisify(fs.exists);
+const mkdirPromise = promisify(fs.mkdir);
+
 type IndexQuery = {
   pageNumber: string;
   ticketTrakingId: string;
@@ -55,7 +64,6 @@ interface TokenPayload {
   exp: number;
 }
 
-
 type MessageData = {
   body: string;
   fromMe: boolean;
@@ -65,6 +73,69 @@ type MessageData = {
   isPrivate?: string;
   vCard?: Contact;
 };
+
+const convertAudio = async (inputPath: string, outputPath: string, format: 'ogg' | 'mp3'): Promise<void> => {
+  const codecParams = format === 'ogg' 
+    ? '-c:a libopus -b:a 16k -ac 1 -ar 48000' 
+    : '-c:a libmp3lame -b:a 64k -ac 1 -ar 44100';
+
+  try {
+    await execPromise(
+      `${ffmpegPath.path} -y -i ${inputPath} ${codecParams} -avoid_negative_ts make_zero ${outputPath}`
+    );
+    console.log(`Conversão para ${format} finalizada com sucesso`);
+  } catch (error) {
+    console.error(`Erro na conversão para ${format}:`, error);
+    throw error;
+  }
+};
+
+const processAudio = async (media: Express.Multer.File, companyId: number) => {
+  const publicFolder = path.resolve("public");
+  const companyFolder = path.join(publicFolder, `company${companyId}`);
+  
+  // Garante que a pasta da empresa existe
+  if (!fs.existsSync(companyFolder)) {
+    await mkdirPromise(companyFolder, { recursive: true });
+  }
+
+  const timestamp = new Date().getTime();
+  const baseFileName = `audio_${timestamp}`;
+  const oggPath = path.join(companyFolder, `${baseFileName}.ogg`);
+  const mp3Path = path.join(companyFolder, `${baseFileName}.mp3`);
+
+  try {
+    // Converte para ambos os formatos
+    await Promise.all([
+      convertAudio(media.path, oggPath, 'ogg'),
+      convertAudio(media.path, mp3Path, 'mp3')
+    ]);
+
+    // Remove arquivo temporário original
+    await unlinkPromise(media.path);
+
+    return {
+      oggPath,
+      mp3Path,
+      filename: `${baseFileName}.ogg` // Nome do arquivo para o WhatsApp
+    };
+  } catch (error) {
+    console.error("Erro no processamento do áudio:", error);
+    throw error;
+  }
+};
+
+function obterNomeEExtensaoDoArquivo(url: string) {
+  const urlObj = new URL(url);
+  const pathname = urlObj.pathname;
+  const filename = pathname.split('/').pop();
+  const parts = filename.split('.');
+
+  const nomeDoArquivo = parts[0];
+  const extensao = parts[1];
+
+  return `${nomeDoArquivo}.${extensao}`;
+}
 
 export const index = async (req: Request, res: Response): Promise<Response> => {
   const { ticketId } = req.params;
@@ -99,21 +170,8 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   return res.json({ count, messages, ticket, hasMore });
 };
 
-function obterNomeEExtensaoDoArquivo(url) {
-  var urlObj = new URL(url);
-  var pathname = urlObj.pathname;
-  var filename = pathname.split('/').pop();
-  var parts = filename.split('.');
-
-  var nomeDoArquivo = parts[0];
-  var extensao = parts[1];
-
-  return `${nomeDoArquivo}.${extensao}`;
-}
-
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const { ticketId } = req.params;
-
   const { body, quotedMsg, vCard, isPrivate = "false" }: MessageData = req.body;
   const medias = req.files as Express.Multer.File[];
   const { companyId } = req.user;
@@ -129,7 +187,46 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
       await Promise.all(
         medias.map(async (media: Express.Multer.File, index) => {
           if (ticket.channel === "whatsapp") {
-            await SendWhatsAppMedia({ media, ticket, body: Array.isArray(body) ? body[index] : body, isPrivate: isPrivate === "true", isForwarded: false });
+            if (media.mimetype.startsWith('audio/')) {
+              const { oggPath, mp3Path, filename } = await processAudio(media, companyId);
+              
+              // Ajusta o media object para o WhatsApp
+              const mediaInfo = {
+                ...media,
+                filename,
+                path: oggPath
+              };
+
+              await SendWhatsAppMedia({
+                media: mediaInfo,
+                ticket,
+                body: Array.isArray(body) ? body[index] : body,
+                isPrivate: isPrivate === "true"
+              });
+
+              // Se for mensagem privada, remove ambos os arquivos
+              if (isPrivate === "true") {
+                await Promise.all([
+                  unlinkPromise(oggPath),
+                  unlinkPromise(mp3Path)
+                ]).catch(console.error);
+              }
+            } else {
+              await SendWhatsAppMedia({
+                media,
+                ticket,
+                body: Array.isArray(body) ? body[index] : body,
+                isPrivate: isPrivate === "true"
+              });
+
+              // Limpa arquivo não utilizado após envio
+              if (isPrivate === "true") {
+                const filePath = path.resolve("public", `company${companyId}`, media.filename);
+                if (fs.existsSync(filePath)) {
+                  await unlinkPromise(filePath).catch(console.error);
+                }
+              }
+            }
           }
 
           if (["facebook", "instagram"].includes(ticket.channel)) {
@@ -146,14 +243,6 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
             } catch (error) {
               console.log(error);
             }
-          }
-
-          //limpar arquivo nao utilizado mais após envio
-          const filePath = path.resolve("public", `company${companyId}`, media.filename);
-          const fileExists = fs.existsSync(filePath);
-
-          if (fileExists && isPrivate === "false") {
-            fs.unlinkSync(filePath);
           }
         })
       );
@@ -179,7 +268,6 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
         };
 
         await CreateMessageService({ messageData, companyId: ticket.companyId });
-
       } else if (["facebook", "instagram"].includes(ticket.channel)) {
         const sendText = await sendFaceMessage({ body, ticket, quotedMsg });
 
@@ -199,7 +287,6 @@ export const forwardMessage = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-
   const { quotedMsg, signMessage, messageId, contactId } = req.body;
   const { id: userId, companyId } = req.user;
   const requestUser = await User.findByPk(userId);
@@ -219,8 +306,7 @@ export const forwardMessage = async (
 
   const settings = await CompaniesSettings.findOne({
     where: { companyId }
-  }
-  )
+  });
 
   const whatsAppConnectionId = await GetWhatsAppFromMessage(message);
   if (!whatsAppConnectionId) {
@@ -258,12 +344,12 @@ export const forwardMessage = async (
       status: createTicket.isGroup ? "group" : "open",
       userId: requestUser.id,
       queueId: ticket.queueId
-    }
+    };
   } else {
     ticketData = {
       status: createTicket.isGroup ? "group" : "open",
       userId: requestUser.id
-    }
+    };
   }
 
   await UpdateTicketService({
@@ -278,7 +364,6 @@ export const forwardMessage = async (
   } else if (message.mediaType === 'contactMessage') {
     await SendWhatsAppContact({ body, ticket: createTicket });
   } else {
-
     console.log("message >>>", message);
 
     const mediaUrl = message.mediaUrl.replace(`:${process.env.PORT}`, '');
@@ -289,8 +374,7 @@ export const forwardMessage = async (
     }
 
     const publicFolder = path.join(__dirname, '..', '..', '..', 'backend', 'public');
-
-    const filePath = path.join(publicFolder, `company${createTicket.companyId}`, fileName)
+    const filePath = path.join(publicFolder, `company${createTicket.companyId}`, fileName);
 
     const mediaSrc = {
       fieldname: 'medias',
@@ -299,13 +383,13 @@ export const forwardMessage = async (
       mimetype: message.mediaType,
       filename: fileName,
       path: filePath
-    } as Express.Multer.File
+    } as Express.Multer.File;
 
     await SendWhatsAppMedia({ media: mediaSrc, ticket: createTicket, body, isForwarded: message.fromMe ? false : true });
   }
 
   return res.send();
-}
+};
 
 export const remove = async (
   req: Request,
@@ -324,7 +408,6 @@ export const remove = async (
       }
     });
     io.of(String(companyId))
-      // .to(message.ticketId.toString())
       .emit(`company-${companyId}-appMessage`, {
         action: "delete",
         message
@@ -332,7 +415,6 @@ export const remove = async (
   }
 
   io.of(String(companyId))
-    // .to(message.ticketId.toString())
     .emit(`company-${companyId}-appMessage`, {
       action: "update",
       message
@@ -342,7 +424,6 @@ export const remove = async (
 };
 
 export const allMe = async (req: Request, res: Response): Promise<Response> => {
-
   const dateStart: any = req.query.dateStart;
   const dateEnd: any = req.query.dateEnd;
   const fromMe: any = req.query.fromMe;
@@ -364,17 +445,15 @@ export const send = async (req: Request, res: Response): Promise<Response> => {
   const medias = req.files as Express.Multer.File[];
 
   try {
-
     const authHeader = req.headers.authorization;
     const [, token] = authHeader.split(" ");
 
     const whatsapp = await Whatsapp.findOne({ where: { token } });
     const companyId = whatsapp.companyId;
     const company = await ShowPlanCompanyService(companyId);
-    const sendMessageWithExternalApi = company.plan.useExternalApi
+    const sendMessageWithExternalApi = company.plan.useExternalApi;
 
     if (sendMessageWithExternalApi) {
-
       if (!whatsapp) {
         throw new Error("Não foi possível realizar a operação");
       }
@@ -421,7 +500,6 @@ export const send = async (req: Request, res: Response): Promise<Response> => {
     return res.status(400).json({ error: 'Essa empresa não tem permissão para usar a API Externa. Entre em contato com o Suporte para verificar nossos planos!' });
 
   } catch (err: any) {
-
     console.log(err);
     if (Object.keys(err).length === 0) {
       throw new AppError(
@@ -442,22 +520,18 @@ export const edit = async (req: Request, res: Response): Promise<Response> => {
 
   const io = getIO();
   io.of(String(companyId))
-    // .to(String(ticket.id))
     .emit(`company-${companyId}-appMessage`, {
       action: "update",
       message
     });
 
   io.of(String(companyId))
-    // .to(ticket.status)
-    // .to("notification")
-    // .to(String(ticket.id))
     .emit(`company-${companyId}-ticket`, {
       action: "update",
       ticket
     });
   return res.send();
-}
+};
 
 export const sendMessageFlow = async (
   whatsappId: number,
@@ -480,8 +554,6 @@ export const sendMessageFlow = async (
     }
 
     const numberToTest = messageData.number;
-    const body = messageData.body;
-
     const companyId = messageData.companyId;
 
     const CheckValidNumber = await CheckContactNumber(numberToTest, companyId);
@@ -511,10 +583,9 @@ export const sendMessageFlow = async (
           whatsappId,
           data: {
             number,
-            body
+            body: messageData.body
           }
         },
-
         { removeOnComplete: false, attempts: 3 }
       );
     }

@@ -16,12 +16,14 @@ import makeWASocket, {
   proto
 } from "@whiskeysockets/baileys";
 import { FindOptions } from "sequelize/types";
+import Baileys from "../models/Baileys";
 import Whatsapp from "../models/Whatsapp";
 import logger from "../utils/logger";
 import MAIN_LOGGER from "@whiskeysockets/baileys/lib/Utils/logger";
 import cacheLayer from "./cache";
 import { useMultiFileAuthState } from '../helpers/useMultiFileAuthState';
-
+import ImportContactsService from "../services/WbotServices/ImportContactsService";
+import CreateOrUpdateContactService from "../services/ContactServices/CreateOrUpdateContactService";
 import { Boom } from "@hapi/boom";
 import AppError from "../errors/AppError";
 import { getIO } from "./socket";
@@ -37,7 +39,7 @@ import { Store } from "./store";
 import Message from "../models/Message";
 import { Sequelize } from "sequelize-typescript";
 
-const version: WAVersion = [2, 3000, 1016249039];
+const version: WAVersion = [2, 3000, 1020371015];
 
 const maxRetriesQrCode = 3;
 
@@ -88,7 +90,7 @@ export const restartWbotId = (whatsappId: number) => {
   logger.info(`Restarting session ${whatsappId}`);
   const sessionIndex = sessions.findIndex(s => s.id === whatsappId);
   if (sessionIndex !== -1) {
-    sessions[sessionIndex].ws.close(undefined);
+    sessions[sessionIndex].ws.close();
   }
 }
 
@@ -132,7 +134,7 @@ export const removeWbot = async (whatsappId: number, isLogout = true): Promise<v
     if (sessionIndex !== -1) {
       if (isLogout) {
         sessions[sessionIndex].logout();
-        sessions[sessionIndex].ws.close(undefined);
+        sessions[sessionIndex].ws.close();
       }
 
       sessions.splice(sessionIndex, 1);
@@ -194,13 +196,11 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
           ],
           msgRetryCounterCache,
           markOnlineOnConnect: true,
-          maxMsgRetryCount: 5,
           emitOwnEvents: true,
           syncFullHistory: true,
-          defaultQueryTimeoutMs: 20_000,
-          fireInitQueries: true,
+          defaultQueryTimeoutMs: 60_000,
           transactionOpts: { maxCommitRetries: 10, delayBetweenTriesMs: 3000 },
-          connectTimeoutMs: 10_000,
+          connectTimeoutMs: 30_000,
           keepAliveIntervalMs: 15_000,
           getMessage: async (key) => await msgDB.get(key, companyId),          
         });
@@ -495,6 +495,7 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
             }
           }
         );
+
         wsocket.ev.on("creds.update", saveCreds);
         // wsocket.store = store;
         // store.bind(wsocket.ev);
