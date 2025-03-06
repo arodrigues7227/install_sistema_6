@@ -54,8 +54,7 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
   const { companyId, whatsappId } = user;
 
   const [openAlert, setOpenAlert] = useState(false);
-  const [userTicketOpen, setUserTicketOpen] = useState("");
-  const [queueTicketOpen, setQueueTicketOpen] = useState("");
+  const [ticketDataAlert, setTicketDataAlert] = useState(null);
 
   useEffect(() => {
     if (initialContact?.id !== undefined) {
@@ -69,20 +68,8 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
     const delayDebounceFn = setTimeout(() => {
       const fetchContacts = async () => {
         api
-          // .get(`/whatsapp/filter`, { params: { companyId, session: 0, channel: channelFilter } })
           .get(`/whatsapp`, { params: { companyId, session: 0 } })
           .then(({ data }) => setWhatsapps(data));
-
-          // .then(({ data }) => {
-          //   const mappedWhatsapps = data.map((whatsapp) => ({
-          //     ...whatsapp,
-          //     selected: false,
-          //   }));
-          //   setWhatsapps(mappedWhatsapps);
-          //   if (channelFilter && mappedWhatsapps.length && mappedWhatsapps?.length === 1 && (user.whatsappId === null || user?.whatsapp?.channel !== channelFilter)) {
-          //     setSelectedWhatsapp(mappedWhatsapps[0].id)
-          //   }
-          // });
       };
 
       if (whatsappId !== null && whatsappId !== undefined) {
@@ -96,7 +83,7 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
       setLoading(false);
     }, 500);
     return () => clearTimeout(delayDebounceFn);
-  }, [selectedContact, channelFilter])
+  }, [selectedContact, channelFilter, companyId, user.queues, whatsappId])
 
   useEffect(() => {
     if (!modalOpen || searchParam.length < 3) {
@@ -139,16 +126,14 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
     onClose();
     setSearchParam("");
     setOpenAlert(false);
-    setUserTicketOpen("");
-    setQueueTicketOpen("");
+    setTicketDataAlert(null);
     setSelectedContact(null);
   };
 
   const handleCloseAlert = () => {
     setOpenAlert(false);
+    setTicketDataAlert(null);
     setLoading(false);
-    setUserTicketOpen("");
-    setQueueTicketOpen("");
   };
 
   const handleSaveTicket = async contactId => {
@@ -170,26 +155,22 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
       });
 
       // Verifica se a resposta contém informações sobre um ticket já existente
-      if (data.error && data.type === "TICKET_ALREADY_EXISTS" && data.ticket) {
+      if (data && data.error === true && data.type === "TICKET_ALREADY_EXISTS") {
+        setTicketDataAlert(data.ticket);
         setOpenAlert(true);
-        setUserTicketOpen(data.ticket.user.name);
-        setQueueTicketOpen(data.ticket.queue.name);
         setLoading(false);
         return;
       }
 
       onClose(data);
     } catch (err) {
-      // Esta parte ainda é mantida para compatibilidade, caso o backend retorne um erro em vez de um status 200 com error=true
-      if (err.response?.status === 400 && err.response?.data?.error === true) {
-        const ticket = err.response.data.ticket;
-        if (ticket.user?.name) {
-          setOpenAlert(true);
-          setUserTicketOpen(ticket.user.name);
-          setQueueTicketOpen(ticket.queue?.name || "Não atribuído");
-          setLoading(false);
-          return;
-        }
+      console.error(err);
+      // Se for um erro de resposta com dados de ticket existente
+      if (err.response?.data?.error === true && err.response?.data?.type === "TICKET_ALREADY_EXISTS") {
+        setTicketDataAlert(err.response.data.ticket);
+        setOpenAlert(true);
+        setLoading(false);
+        return;
       }
       toastError(err);
     }
@@ -426,8 +407,7 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
           <ShowTicketOpen
             isOpen={openAlert}
             handleClose={handleCloseAlert}
-            user={userTicketOpen}
-            queue={queueTicketOpen}
+            ticketData={ticketDataAlert}
           />
         )}
       </Dialog >

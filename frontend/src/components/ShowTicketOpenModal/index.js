@@ -20,7 +20,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const ShowTicketOpenModal = ({ isOpen, handleClose, ticketData }) => {
+const ShowTicketOpenModal = ({ isOpen, handleClose, ticketData, user, queue }) => {
   const classes = useStyles();
   const history = useHistory();
 
@@ -30,8 +30,6 @@ const ShowTicketOpenModal = ({ isOpen, handleClose, ticketData }) => {
       history.push(`/tickets/${ticketData.id}`);
     }
   };
-
-  if (!ticketData) return null;
 
   return (
     <Dialog
@@ -49,11 +47,11 @@ const ShowTicketOpenModal = ({ isOpen, handleClose, ticketData }) => {
         </Typography>
         <Typography paragraph>
           <span className={classes.textBold}>Atendente: </span>
-          {ticketData.user ? ticketData.user.name : "Não atribuído"}
+          {ticketData?.user?.name || user || "Não atribuído"}
         </Typography>
         <Typography paragraph>
           <span className={classes.textBold}>Fila: </span>
-          {ticketData.queue ? ticketData.queue.name : "Não atribuído"}
+          {ticketData?.queue?.name || queue || "Não atribuído"}
         </Typography>
       </DialogContent>
       <DialogActions>
@@ -64,6 +62,15 @@ const ShowTicketOpenModal = ({ isOpen, handleClose, ticketData }) => {
         >
           Fechar
         </Button>
+        {ticketData?.id && (
+          <Button 
+            onClick={handleClickTicket}
+            color="primary"
+            variant="contained"
+          >
+            Ir para o Ticket
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   );
