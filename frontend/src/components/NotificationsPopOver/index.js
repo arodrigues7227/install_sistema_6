@@ -167,6 +167,49 @@ const NotificationsPopOver = ({ volume }) => {
 					return prevState;
 				});
 			}
+			
+			// Nova lógica para notificar quando um ticket for atribuído a uma fila
+			if (data.action === "update" && data.ticket) {
+				const { ticket } = data;
+				// Verificar se o ticket tem uma fila que o usuário pode acessar
+				const canUserAccessQueue = user?.queues?.some(queue => queue.id === ticket.queueId);
+				
+				// Verificar se o ticket já está nas notificações
+				const ticketAlreadyInNotifications = notifications.some(t => t.id === ticket.id);
+				
+				// Condições para notificar:
+				// 1. O ticket tem uma fila (queueId)
+				// 2. A fila está entre as filas do usuário OU o usuário pode ver tickets sem fila
+				// 3. O ticket ainda não está nas notificações
+				// 4. O status do ticket é apropriado para notificação
+				if (
+					ticket.queueId && 
+					(canUserAccessQueue || (showTicketWithoutQueue === true)) &&
+					!ticketAlreadyInNotifications &&
+					(!["lgpd", "nps"].includes(ticket.status) || 
+					 (ticket.status === "pending" && showNotificationPending === true) ||
+					 (ticket.status === "group" && ticket.whatsapp?.groupAsTicket === "enabled" && showGroupNotification === true))
+				) {
+					setNotifications(prevState => {
+						return [ticket, ...prevState];
+					});
+
+					// Não notificar se o ticket já estiver aberto e visível
+					const shouldNotNotificate =
+						(ticket.id === ticketIdRef.current &&
+							document.visibilityState === "visible") ||
+						(ticket.userId && ticket.userId !== user?.id) ||
+						(ticket.isGroup && ticket.whatsapp?.groupAsTicket === "disabled" && showGroupNotification === false);
+
+					if (shouldNotNotificate === true) return;
+
+					handleNotifications({
+						ticket,
+						message: { body: i18n.t("tickets.notification.newTicketQueue") },
+						contact: ticket.contact || { name: i18n.t("tickets.notification.unknownContact") }
+					});
+				}
+			}
 		};
 
 		const onCompanyAppMessageNotificationsPopover = (data) => {
@@ -217,7 +260,8 @@ const NotificationsPopOver = ({ volume }) => {
 		showTicketWithoutQueue, 
 		socket, 
 		showNotificationPending, 
-		showGroupNotification
+		showGroupNotification, 
+		notifications
 	]);
 
 	const handleNotifications = data => {
