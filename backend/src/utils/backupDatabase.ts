@@ -18,14 +18,26 @@ export const runBackupDatabase = async (): Promise<string> => {
     return `${ano}-${mes}-${dia}-${horas}-${minutos}`;
   }
 
+  // Função para formatar tamanho de arquivo para exibição
+  function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return bytes + " bytes";
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + " KB";
+    else if (bytes < 1073741824) return (bytes / 1048576).toFixed(2) + " MB";
+    else return (bytes / 1073741824).toFixed(2) + " GB";
+  }
+
   const nameDB = `${process.env.DB_NAME}-${timestamp()}`;
   const backendDir = path.resolve(__dirname, "..", "..", "public");
   const backupDir = path.join(backendDir, 'backups');
   const backupPath = path.join(backupDir, nameDB);
   const zipPath = `${backupPath}.zip`;
+  const sqlFilePath = `${backupPath}.sql`;
 
   try {
     logger.info("Iniciando processo de backup do banco de dados...");
+    logger.info(`Database: ${process.env.DB_NAME}`);
+    logger.info(`Usuário: ${process.env.DB_USER}`);
+    logger.info(`Host: localhost`);
 
     // Garantir que o diretório de backup existe
     if (!fs.existsSync(backupDir)) {
@@ -34,10 +46,32 @@ export const runBackupDatabase = async (): Promise<string> => {
     }
 
     // Criar backup do banco de dados
-    const stringBackup = `PGPASSWORD="${process.env.DB_PASS}" pg_dump -Fc -U ${process.env.DB_USER} -h localhost ${process.env.DB_NAME} > "${backupPath}.sql"`;
+    const stringBackup = `PGPASSWORD="${process.env.DB_PASS}" pg_dump -Fc -U ${process.env.DB_USER} -h localhost ${process.env.DB_NAME} > "${sqlFilePath}"`;
     logger.info("Executando comando de backup do banco de dados...");
+    logger.info(`Comando: pg_dump -Fc -U ${process.env.DB_USER} -h localhost ${process.env.DB_NAME}`);
+    
     await execPromise(stringBackup);
-    logger.info("Backup do banco de dados gerado com sucesso!");
+    
+    // Verificar se o arquivo foi criado
+    if (!fs.existsSync(sqlFilePath)) {
+      throw new Error(`Arquivo de backup SQL não foi criado: ${sqlFilePath}`);
+    }
+    
+    // Obter e logar o tamanho do arquivo SQL
+    const stats = fs.statSync(sqlFilePath);
+    const fileSizeInBytes = stats.size;
+    logger.info(`Backup do banco de dados gerado com sucesso! Tamanho: ${formatFileSize(fileSizeInBytes)}`);
+    
+    // Obter lista de tabelas para debug
+    logger.info("Verificando tabelas incluídas no backup...");
+    try {
+      const { stdout } = await execPromise(
+        `PGPASSWORD="${process.env.DB_PASS}" psql -U ${process.env.DB_USER} -h localhost -d ${process.env.DB_NAME} -c "\\dt" -t`
+      );
+      logger.info(`Tabelas no banco de dados: \n${stdout}`);
+    } catch (err) {
+      logger.warn("Não foi possível listar as tabelas do banco de dados:", err);
+    }
 
     // Criar arquivo zip
     const output = fs.createWriteStream(zipPath);
@@ -45,11 +79,17 @@ export const runBackupDatabase = async (): Promise<string> => {
 
     return new Promise((resolve, reject) => {
       output.on('close', () => {
-        logger.info(`Arquivo zip criado com sucesso: ${zipPath} (${archive.pointer()} bytes)`);
+        const zipStats = fs.statSync(zipPath);
+        const zipSizeInBytes = zipStats.size;
+        
+        logger.info(`Arquivo SQL original: ${formatFileSize(fileSizeInBytes)}`);
+        logger.info(`Arquivo zip gerado: ${formatFileSize(zipSizeInBytes)}`);
+        logger.info(`Taxa de compressão: ${((1 - zipSizeInBytes / fileSizeInBytes) * 100).toFixed(2)}%`);
+        logger.info(`Arquivo zip criado com sucesso: ${zipPath}`);
         
         // Remover arquivo SQL original
         logger.info("Removendo arquivo SQL original...");
-        fs.unlinkSync(`${backupPath}.sql`);
+        fs.unlinkSync(sqlFilePath);
         logger.info("Arquivo SQL original removido.");
 
         // Remover backups antigos (mais de 6 horas)
@@ -67,12 +107,14 @@ export const runBackupDatabase = async (): Promise<string> => {
       });
 
       archive.pipe(output);
-      archive.file(`${backupPath}.sql`, { name: `${nameDB}.sql` });
+      archive.file(sqlFilePath, { name: `${nameDB}.sql` });
       archive.finalize();
     });
 
   } catch (error) {
     logger.error("Não foi possível efetuar o backup e compressão do banco de dados!", error);
+    logger.error("Detalhes do erro:", error.message || error);
+    if (error.stderr) logger.error("Saída de erro:", error.stderr);
     throw error;
   }
 };
