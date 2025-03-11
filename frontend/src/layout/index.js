@@ -31,7 +31,7 @@ import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 // import AccountCircle from "@material-ui/icons/AccountCircle";
 import CachedIcon from "@material-ui/icons/Cached";
 // import whatsappIcon from "../assets/nopicture.png";
-import BackupIcon from "@material-ui/icons/Backup";
+import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import BackupModal from "../components/BackupModal";
 import MainListItems from "./MainListItems";
 import NotificationsPopOver from "../components/NotificationsPopOver";
@@ -520,7 +520,7 @@ const LoggedInLayout = ({ children, themeToggle }) => {
               aria-label={i18n.t("mainDrawer.appBar.backup") || "Backup"}
               color="inherit"
             >
-              <BackupIcon style={{ color: "white" }} />
+              <CloudDownloadIcon style={{ color: "white" }} />
             </IconButton>
           )}
 
@@ -613,6 +613,13 @@ const LoggedInLayout = ({ children, themeToggle }) => {
           </div>
         </Toolbar>
       </AppBar>
+
+      <BackupModal
+        open={backupModalOpen}
+        onClose={handleCloseBackupModal}
+        backupUrl={backupUrl}
+      />
+
       <main className={classes.content}>
         <div className={classes.appBarSpacer} />
 
