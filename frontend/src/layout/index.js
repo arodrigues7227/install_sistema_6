@@ -411,13 +411,26 @@ const LoggedInLayout = ({ children, themeToggle }) => {
       const response = await api.get(`${backendUrl}/api/backup`, {
         responseType: "blob",
       });
-
+  
+      // Criar URL para o blob
       const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      // Obter o nome do arquivo com a extensão correta
+      let fileName = "backup.zip"; // Nome padrão com extensão correta
+      
+      // Tentar extrair o nome do arquivo do cabeçalho, se disponível
       const contentDisposition = response.headers["content-disposition"];
-      const fileName = contentDisposition
-        ? contentDisposition.split("filename=")[1]
-        : "backup.sql";
-
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename=(.+)$/);
+        if (fileNameMatch && fileNameMatch[1]) {
+          fileName = fileNameMatch[1].trim();
+          // Garantir que a extensão seja .zip
+          if (!fileName.toLowerCase().endsWith('.zip')) {
+            fileName += '.zip';
+          }
+        }
+      }
+  
       setBackupUrl({ url, fileName });
       handleOpenBackupModal();
     } catch (error) {
