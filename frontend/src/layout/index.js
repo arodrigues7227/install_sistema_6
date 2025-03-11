@@ -31,7 +31,8 @@ import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 // import AccountCircle from "@material-ui/icons/AccountCircle";
 import CachedIcon from "@material-ui/icons/Cached";
 // import whatsappIcon from "../assets/nopicture.png";
-
+import BackupIcon from "@material-ui/icons/Backup";
+import BackupModal from "../components/BackupModal";
 import MainListItems from "./MainListItems";
 import NotificationsPopOver from "../components/NotificationsPopOver";
 import NotificationsVolume from "../components/NotificationsVolume";
@@ -275,7 +276,9 @@ const LoggedInLayout = ({ children, themeToggle }) => {
   // const [dueDate, setDueDate] = useState("");
   //   const socketManager = useContext(SocketContext);
   const { user, socket } = useContext(AuthContext);
-
+  const [backupUrl, setBackupUrl] = useState(null);
+  const [backupModalOpen, setBackupModalOpen] = useState(false);
+  
   const theme = useTheme();
   const { colorMode } = useContext(ColorModeContext);
   const greaterThenSm = useMediaQuery(theme.breakpoints.up("sm"));
@@ -379,6 +382,16 @@ const LoggedInLayout = ({ children, themeToggle }) => {
     }
   };
 
+    // Função para abrir o modal de backup
+    const handleOpenBackupModal = () => {
+      setBackupModalOpen(true);
+    };
+  
+    // Função para fechar o modal de backup
+    const handleCloseBackupModal = () => {
+      setBackupModalOpen(false);
+    };
+
   const handleRefreshPage = () => {
     window.location.reload(false);
   };
@@ -387,6 +400,28 @@ const LoggedInLayout = ({ children, themeToggle }) => {
     const { innerWidth: width } = window;
     if (width <= 600) {
       setDrawerOpen(false);
+    }
+  };
+
+  // Função para executar o backup
+  const handleBackup = async () => {
+    try {
+      const backendUrl = getBackendUrl();
+      const response = await api.get(`${backendUrl}/api/backup`, {
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const contentDisposition = response.headers["content-disposition"];
+      const fileName = contentDisposition
+        ? contentDisposition.split("filename=")[1]
+        : "backup.sql";
+
+      setBackupUrl({ url, fileName });
+      handleOpenBackupModal();
+    } catch (error) {
+      console.log(error);
+      toast.error("Erro ao gerar backup");
     }
   };
 
@@ -478,6 +513,16 @@ const LoggedInLayout = ({ children, themeToggle }) => {
             />
           )}
           <VersionControl />
+
+          {user.profile === "admin" && user?.companyId === 1 && (
+            <IconButton
+              onClick={handleBackup}
+              aria-label={i18n.t("mainDrawer.appBar.backup") || "Backup"}
+              color="inherit"
+            >
+              <BackupIcon style={{ color: "white" }} />
+            </IconButton>
+          )}
 
           {/* DESABILITADO POIS TEM BUGS */}
           <UserLanguageSelector />
