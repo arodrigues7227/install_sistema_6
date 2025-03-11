@@ -9,7 +9,7 @@ import {
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import CloseIcon from '@material-ui/icons/Close';
-import DownloadIcon from '@material-ui/icons/Download';
+import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 
 const useStyles = makeStyles((theme) => ({
   dialogPaper: {
@@ -124,7 +124,7 @@ const BackupModal = ({ open, onClose, backupUrl }) => {
           color="primary"
           variant="contained"
           disabled={!backupUrl}
-          startIcon={<DownloadIcon />}
+          startIcon={<CloudDownloadIcon />}
           fullWidth
           className={classes.downloadButton}
         >
