@@ -31,7 +31,8 @@ import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 // import AccountCircle from "@material-ui/icons/AccountCircle";
 import CachedIcon from "@material-ui/icons/Cached";
 // import whatsappIcon from "../assets/nopicture.png";
-
+import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
+import BackupModal from "../components/BackupModal";
 import MainListItems from "./MainListItems";
 import NotificationsPopOver from "../components/NotificationsPopOver";
 import NotificationsVolume from "../components/NotificationsVolume";
@@ -56,6 +57,7 @@ import Brightness7Icon from "@material-ui/icons/Brightness7";
 import { getBackendUrl } from "../config";
 import useSettings from "../hooks/useSettings";
 import VersionControl from "../components/VersionControl";
+import api from "../services/api";
 
 // import { SocketContext } from "../context/Socket/SocketContext";
 
@@ -275,7 +277,9 @@ const LoggedInLayout = ({ children, themeToggle }) => {
   // const [dueDate, setDueDate] = useState("");
   //   const socketManager = useContext(SocketContext);
   const { user, socket } = useContext(AuthContext);
-
+  const [backupUrl, setBackupUrl] = useState(null);
+  const [backupModalOpen, setBackupModalOpen] = useState(false);
+  
   const theme = useTheme();
   const { colorMode } = useContext(ColorModeContext);
   const greaterThenSm = useMediaQuery(theme.breakpoints.up("sm"));
@@ -379,6 +383,16 @@ const LoggedInLayout = ({ children, themeToggle }) => {
     }
   };
 
+    // Função para abrir o modal de backup
+    const handleOpenBackupModal = () => {
+      setBackupModalOpen(true);
+    };
+  
+    // Função para fechar o modal de backup
+    const handleCloseBackupModal = () => {
+      setBackupModalOpen(false);
+    };
+
   const handleRefreshPage = () => {
     window.location.reload(false);
   };
@@ -387,6 +401,41 @@ const LoggedInLayout = ({ children, themeToggle }) => {
     const { innerWidth: width } = window;
     if (width <= 600) {
       setDrawerOpen(false);
+    }
+  };
+
+  // Função para executar o backup
+  const handleBackup = async () => {
+    try {
+      const backendUrl = getBackendUrl();
+      const response = await api.get(`${backendUrl}/api/backup`, {
+        responseType: "blob",
+      });
+  
+      // Criar URL para o blob
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      // Obter o nome do arquivo com a extensão correta
+      let fileName = "backup.zip"; // Nome padrão com extensão correta
+      
+      // Tentar extrair o nome do arquivo do cabeçalho, se disponível
+      const contentDisposition = response.headers["content-disposition"];
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename=(.+)$/);
+        if (fileNameMatch && fileNameMatch[1]) {
+          fileName = fileNameMatch[1].trim();
+          // Garantir que a extensão seja .zip
+          if (!fileName.toLowerCase().endsWith('.zip')) {
+            fileName += '.zip';
+          }
+        }
+      }
+  
+      setBackupUrl({ url, fileName });
+      handleOpenBackupModal();
+    } catch (error) {
+      console.log(error);
+      toastError("Erro ao gerar backup");
     }
   };
 
@@ -479,6 +528,16 @@ const LoggedInLayout = ({ children, themeToggle }) => {
           )}
           <VersionControl />
 
+          {user.profile === "admin" && user?.companyId === 1 && (
+            <IconButton
+              onClick={handleBackup}
+              aria-label={i18n.t("mainDrawer.appBar.backup") || "Backup"}
+              color="inherit"
+            >
+              <CloudDownloadIcon style={{ color: "white" }} />
+            </IconButton>
+          )}
+
           {/* DESABILITADO POIS TEM BUGS */}
           <UserLanguageSelector />
           {/* <SoftPhone
@@ -568,6 +627,13 @@ const LoggedInLayout = ({ children, themeToggle }) => {
           </div>
         </Toolbar>
       </AppBar>
+
+      <BackupModal
+        open={backupModalOpen}
+        onClose={handleCloseBackupModal}
+        backupUrl={backupUrl}
+      />
+
       <main className={classes.content}>
         <div className={classes.appBarSpacer} />
 
