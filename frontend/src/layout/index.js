@@ -57,6 +57,7 @@ import Brightness7Icon from "@material-ui/icons/Brightness7";
 import { getBackendUrl } from "../config";
 import useSettings from "../hooks/useSettings";
 import VersionControl from "../components/VersionControl";
+import api from "../services/api";
 
 // import { SocketContext } from "../context/Socket/SocketContext";
 
@@ -421,7 +422,7 @@ const LoggedInLayout = ({ children, themeToggle }) => {
       handleOpenBackupModal();
     } catch (error) {
       console.log(error);
-      toast.error("Erro ao gerar backup");
+      toastError("Erro ao gerar backup");
     }
   };
 
