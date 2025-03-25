@@ -4,7 +4,6 @@ import "express-async-errors";
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import helmet from "helmet";
 import compression from "compression";
 import * as Sentry from "@sentry/node";
 import { config as dotenvConfig } from "dotenv";
@@ -52,25 +51,6 @@ if (String(process.env.BULL_BOARD).toLocaleLowerCase() === 'true' && process.env
   BullBoard.setQueues(BullQueue.queues.map(queue => queue && queue.bull));
   app.use('/admin/queues', isBullAuth, BullBoard.UI);
 }
-
-// Middlewares
-// app.use(helmet({
-//   contentSecurityPolicy: {
-//     directives: {
-//       defaultSrc: ["'self'", "http://localhost:8080"],
-//       imgSrc: ["'self'", "data:", "http://localhost:8080"],
-//       scriptSrc: ["'self'", "http://localhost:8080"],
-//       styleSrc: ["'self'", "'unsafe-inline'", "http://localhost:8080"],
-//       connectSrc: ["'self'", "http://localhost:8080"]
-//     }
-//   },
-//   crossOriginResourcePolicy: false, // Permite recursos de diferentes origens
-//   crossOriginEmbedderPolicy: false, // Permite incorporação de diferentes origens
-//   crossOriginOpenerPolicy: false, // Permite abertura de diferentes origens
-//   // crossOriginResourcePolicy: {
-//   //   policy: "cross-origin" // Permite carregamento de recursos de diferentes origens
-//   // }
-// }));
 
 app.use(compression()); // Compressão HTTP
 app.use(bodyParser.json({ limit: '5mb' })); // Aumentar o limite de carga para 5 MB
