@@ -141,7 +141,8 @@ const Contacts = () => {
     const [selectedTags, setSelectedTags] = useState([]);
     const [deletingAllContact, setDeletingAllContact] = useState(null);
     const { setCurrentTicket } = useContext(TicketsContext);
-
+    const [deleteAllConfirmText, setDeleteAllConfirmText] = useState("");
+    const [deleteAllModalOpen, setDeleteAllModalOpen] = useState(false);
 
     const { getAll: getAllSettings } = useCompanySettings();
     const [hideNum, setHideNum] = useState(false);
