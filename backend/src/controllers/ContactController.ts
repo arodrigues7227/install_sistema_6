@@ -183,7 +183,6 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   const findContact = await Contact.findOne({
     where: {
       number: cleanedNumber,
-      paranoid: false,
       companyId
     }
   });
