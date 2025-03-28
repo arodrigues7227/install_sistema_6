@@ -52,11 +52,6 @@ import PopupState, { bindTrigger, bindMenu } from "material-ui-popup-state";
 import formatSerializedId from '../../utils/formatSerializedId';
 import { v4 as uuidv4 } from "uuid";
 
-import {
-    ArrowDropDown,
-    Backup,
-    ContactPhone,
-} from "@material-ui/icons";
 import { Menu, MenuItem } from "@material-ui/core";
 
 import ContactImportWpModal from "../../components/ContactImportWpModal";
