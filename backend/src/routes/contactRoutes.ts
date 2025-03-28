@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import isAuth from "../middleware/isAuth";
+import isAdmin from "../middleware/isAdmin";
 import uploadConfig from "../config/upload";
 
 import * as ContactController from "../controllers/ContactController";
@@ -17,13 +18,13 @@ contactRoutes.get("/contacts/list", isAuth, ContactController.list);
 contactRoutes.get("/contacts/:contactId", isAuth, ContactController.show);
 contactRoutes.post("/contacts", isAuth, ContactController.store);
 contactRoutes.put("/contacts/:contactId", isAuth, ContactController.update);
-contactRoutes.delete("/contacts/:contactId", isAuth, ContactController.remove);
+contactRoutes.delete("/contacts/:contactId", isAuth, isAdmin, ContactController.remove);
 contactRoutes.put("/contacts/toggleAcceptAudio/:contactId", isAuth, ContactController.toggleAcceptAudio);
 contactRoutes.get("/contacts", isAuth, ContactController.getContactVcard);
 contactRoutes.get("/contacts/profile/:number", isAuth, ContactController.getContactProfileURL);
 
 
-contactRoutes.delete("/contacts", isAuth, ContactController.removeAll);
+contactRoutes.delete("/contacts", isAuth, isAdmin, ContactController.removeAll);
 contactRoutes.put("/contacts/block/:contactId", isAuth, ContactController.blockUnblock);
 contactRoutes.post("/contacts/upload", isAuth, upload.array("file"), ContactController.upload);
 contactRoutes.get("/contactTags/:contactId", isAuth, ContactController.getContactTags);

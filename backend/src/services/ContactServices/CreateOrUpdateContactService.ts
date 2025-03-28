@@ -83,7 +83,7 @@ const CreateOrUpdateContactService = async ({
     let contact: Contact | null;
 
     contact = await Contact.findOne({
-      where: { number, companyId }
+      where: { number, companyId, paranoid: false }
     });
 
     let updateImage = true;

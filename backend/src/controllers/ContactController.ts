@@ -183,6 +183,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   const findContact = await Contact.findOne({
     where: {
       number: cleanedNumber,
+      paranoid: false,
       companyId
     }
   });
@@ -288,17 +289,24 @@ export const removeAll = async (
   const { companyId } = req.user;
 
   try {
+
+    if (req.user.profile !== 'admin') {
+      return res.status(403).json({ 
+        error: "Acesso negado: você não tem permissão para esta ação." 
+      });
+    }
+
     logger.info(`Deleting all contacts. Company: ${companyId}`);
 
     await DeleteAllContactService(companyId);
-
+  
     logger.info(`All contacts deleted for company ${companyId}`);
-
+  
     const io = getIO();
-    io.emit(`company-${companyId}-contact`, {
-      action: "delete-all"
+      io.emit(`company-${companyId}-contact`, {
+        action: "delete-all"
     });
-
+  
     return res.status(200).json({ message: "All contacts deleted successfully" });
   } catch (err) {
     logger.error(`Error deleting all contacts: ${err.message}`);

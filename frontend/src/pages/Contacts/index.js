@@ -20,7 +20,8 @@ import Button from "@material-ui/core/Button";
 import Avatar from "@material-ui/core/Avatar";
 import { Facebook, Instagram, WhatsApp } from "@material-ui/icons";
 import SearchIcon from "@material-ui/icons/Search";
-
+import { ArrowDropDown, Backup, ContactPhone, CloudDownload } from "@material-ui/icons";
+import { CSVLink } from "react-csv";
 import TextField from "@material-ui/core/TextField";
 import InputAdornment from "@material-ui/core/InputAdornment";
 
@@ -318,15 +319,23 @@ const Contacts = () => {
         }
     };
 
-    const handledeleteAllContact = async () => {
-        try {
-          await api.delete("/contacts");
-          history.go(0);
-          toast.success(i18n.t("contacts.toasts.deletedAll"));
-        } catch (err) {
-          toastError(err);
-        }
+const handledeleteAllContact = async () => {
+    try {
+      if (deleteAllConfirmText.toLowerCase() !== "deletar todos") {
+        toast.error("Por favor, digite 'deletar todos' para confirmar");
+        return;
+      }
+      
+      await api.delete("/contacts");
+      toast.success("Todos os contatos foram excluídos com sucesso");
+      dispatch({ type: "RESET" });
+      setPageNumber(1);
+    } catch (err) {
+      toastError(err);
     }
+    setDeleteAllConfirmText("");
+    setDeleteAllModalOpen(false);
+  };
 
     const handleimportChats = async () => {
         try {
@@ -437,6 +446,29 @@ const Contacts = () => {
             >
                 {i18n.t("contacts.confirmationModal.wantImport")}
             </ConfirmationModal>
+            <ConfirmationModal
+  title="Confirmar exclusão de TODOS os contatos"
+  open={deleteAllModalOpen}
+  onClose={() => {
+    setDeleteAllModalOpen(false);
+    setDeleteAllConfirmText("");
+  }}
+  onConfirm={handledeleteAllContact}
+  disableConfirm={deleteAllConfirmText.toLowerCase() !== "deletar todos"}
+>
+  <div>
+    <p>Esta ação irá excluir TODOS os contatos permanentemente e não pode ser desfeita.</p>
+    <p>Para confirmar, digite <strong>"deletar todos"</strong> abaixo:</p>
+    <TextField
+      fullWidth
+      value={deleteAllConfirmText}
+      onChange={(e) => setDeleteAllConfirmText(e.target.value)}
+      variant="outlined"
+      margin="dense"
+    />
+  </div>
+</ConfirmationModal>
+
             <MainHeader>
                 <Title>{i18n.t("contacts.title")} ({contacts.length})</Title>
                 <MainHeaderButtonsWrapper>
@@ -456,81 +488,118 @@ const Contacts = () => {
                             ),
                         }}
                     />
-                    <PopupState variant="popover" popupId="demo-popup-menu">
-                        {(popupState) => (
-                            <React.Fragment>
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    {...bindTrigger(popupState)}
-                                >
-                                    Importar / Exportar
-                                    <ArrowDropDown />
-                                </Button>
-                                <Menu {...bindMenu(popupState)}>
-                                    <MenuItem
-                                        onClick={() => {
-                                            setConfirmOpen(true);
-                                            setImportContacts(true);
-                                            popupState.close();
-                                        }}
-                                    >
-                                        <ContactPhone
-                                            fontSize="small"
-                                            color="primary"
-                                            style={{
-                                                marginRight: 10,
-                                            }}
-                                        />
-                                        {i18n.t("contacts.menu.importYourPhone")}
-                                    </MenuItem>
-                                    <MenuItem
-                                        onClick={() => { setImportContactModalOpen(true) }}
+<PopupState variant="popover" popupId="demo-popup-menu">
+  {(popupState) => (
+    <React.Fragment>
+      <Button
+        variant="contained"
+        color="primary"
+        {...bindTrigger(popupState)}
+      >
+        Importar / Exportar
+        <ArrowDropDown />
+      </Button>
+      <Menu {...bindMenu(popupState)}>
+        <MenuItem
+          onClick={() => {
+            setConfirmOpen(true);
+            setImportContacts(true);
+            popupState.close();
+          }}
+        >
+          <ContactPhone
+            fontSize="small"
+            color="primary"
+            style={{
+              marginRight: 10,
+            }}
+          />
+          {i18n.t("contacts.menu.importYourPhone")}
+        </MenuItem>
+        
+        <MenuItem
+          onClick={() => { 
+            setImportContactModalOpen(true);
+            popupState.close();
+          }}
+        >
+          <Backup
+            fontSize="small"
+            color="primary"
+            style={{
+              marginRight: 10,
+            }}
+          />
+          {i18n.t("contacts.menu.importToExcel")}
+        </MenuItem>
+        {user.profile === "admin" && (
+            <>
+                <MenuItem onClick={() => {
+                fileUploadRef.current.click();
+                popupState.close();
+                }}>
+                <Backup
+                    fontSize="small"
+                    color="primary"
+                    style={{
+                    marginRight: 10,
+                    }}
+                />
+                {i18n.t("contacts.menu.importExcelFile")}
+                </MenuItem>
 
-                                    >
-                                        <Backup
-                                            fontSize="small"
-                                            color="primary"
-                                            style={{
-                                                marginRight: 10,
-                                            }}
-                                        />
-                                        {i18n.t("contacts.menu.importToExcel")}
-
-                                    </MenuItem>
-                                    {/* {<MenuItem>
-                        
-                                       <CSVLink
-                                            className={classes.csvbtn}
-                                            separator=";"
-                                            filename={'contacts.csv'}
-                                            data={
-                                                contacts.map((contact) => ({
-                                                    number: hideNum && user.profile === "user" ? contact.isGroup ? contact.number : formatSerializedId(contact.number).slice(0,-6)+"**-**"+ contact.number.slice(-2): contact.isGroup ? contact.number : formatSerializedId(contact.number),
-                                                    firstName: contact.name.split(' ')[0],
-                                                    lastname: String(contact.name).replace(contact.name.split(' ')[0],''),
-                                                    tags: contact?.tags?.name
-                                                }))
-
-                                            }
-                                            
-                                            >
-                                        
-                                        <CloudDownload fontSize="small"
-                                            color="primary"
-                                            style={{
-                                                marginRight: 10,
-                                            
-                                                }}                                                
-                                        />        
-                                        Exportar Excel                                
-                                   </CSVLink>
-                                        
-                                    </MenuItem> } */}
-                                </Menu>
-                            </React.Fragment>
-                        )}
-                    </PopupState>
+                <MenuItem>
+                <CSVLink
+                    className={classes.csvbtn}
+                    separator=";"
+                    filename={'contacts.csv'}
+                    data={
+                    contacts.map((contact) => ({
+                        number: hideNum && user.profile === "user" ? 
+                        contact.isGroup ? 
+                            contact.number : 
+                            formatSerializedId(contact.number).slice(0,-6)+"**-**"+ contact.number.slice(-2) : 
+                        contact.isGroup ? 
+                            contact.number : 
+                            formatSerializedId(contact.number),
+                        firstName: contact.name.split(' ')[0],
+                        lastname: String(contact.name).replace(contact.name.split(' ')[0],''),
+                        tags: contact?.tags?.map(tag => tag.name).join(', ')
+                    }))
+                    }
+                >
+                    <CloudDownload 
+                    fontSize="small"
+                    color="primary"
+                    style={{
+                        marginRight: 10,
+                    }}                                                
+                    />        
+                    Exportar CSV                                
+                </CSVLink>
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                    setDeleteAllModalOpen(true);
+                    popupState.close();
+                    }}
+                    style={{ color: 'red' }}
+                >
+                    <DeleteOutlineIcon
+                    fontSize="small"
+                    style={{
+                        marginRight: 10,
+                        color: 'red'
+                    }}
+                    />
+                    Excluir Todos os Contatos
+                </MenuItem>
+          </>
+        )}
+      </Menu>
+    </React.Fragment>
+  )}
+</PopupState>
                     <Button
   variant="contained"
   style={{ backgroundColor: "#da4231", marginRight: 10 }}  

@@ -41,7 +41,7 @@ const CreateContactService = async ({
 }: Request): Promise<Contact> => {
 
   const numberExists = await Contact.findOne({
-    where: { number, companyId }
+    where: { number, companyId, paranoid: false }
   });
   if (numberExists) {
 

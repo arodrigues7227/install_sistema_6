@@ -12,7 +12,8 @@ import {
   HasMany,
   ForeignKey,
   BelongsTo,
-  BelongsToMany
+  BelongsToMany,
+  DeletedAt
 } from "sequelize-typescript";
 import ContactCustomField from "./ContactCustomField";
 import Ticket from "./Ticket";
@@ -25,7 +26,9 @@ import User from "./User";
 import Whatsapp from "./Whatsapp";
 import UsersContacts from "./UsersContacts";
 
-@Table
+@Table({
+  paranoid: true
+})
 class Contact extends Model<Contact> {
   @PrimaryKey
   @AutoIncrement
@@ -71,6 +74,10 @@ class Contact extends Model<Contact> {
 
   @CreatedAt
   createdAt: Date;
+
+  @DeletedAt
+  deletedAt: Date;
+
 
   @UpdatedAt
   updatedAt: Date;
