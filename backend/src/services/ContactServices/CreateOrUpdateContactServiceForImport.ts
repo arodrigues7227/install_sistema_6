@@ -31,7 +31,7 @@ const CreateOrUpdateContactServiceForImport = async ({
   const io = getIO();
   let contact: Contact | null;
 
-  contact = await Contact.findOne({ where: { number , companyId, paranoid: false } });
+  contact = await Contact.findOne({ where: { number , companyId } });
 
   if (contact) {
       await contact.update({ name , profilePicUrl });
