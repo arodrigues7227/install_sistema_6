@@ -40,7 +40,7 @@ const CreateTicketService = async ({
   const io = getIO();
 
   let whatsapp;
-  let defaultWhatsapp
+  let defaultWhatsapp;
 
   if (whatsappId !== "undefined" && whatsappId !== null && whatsappId !== "") {
     // console.log("GETTING WHATSAPP CREATE TICKETSERVICE", whatsappId)

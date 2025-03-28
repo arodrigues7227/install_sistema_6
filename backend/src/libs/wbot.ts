@@ -11,6 +11,7 @@ import makeWASocket, {
   WAVersion,
   isJidBroadcast,
   CacheStore,
+  BufferJSON,
   isJidGroup,
   isJidStatusBroadcast,
   jidNormalizedUser,
@@ -37,7 +38,7 @@ import NodeCache from 'node-cache';
 import { Store } from "./store";
 import Message from "../models/Message";
 
-const version: WAVersion = [2, 3000, 1020371015];
+const waVersion: WAVersion = [2, 3000, 1020371015];
 
 const maxRetriesQrCode = 3;
 
@@ -56,9 +57,35 @@ export var dataMessages: any = {};
 
 export type Session = WASocket & {
   id?: number;
-  store?: NodeCache;
-  cacheMessage?: (msg: proto.IWebMessageInfo) => void;
+  store?: Store;
 };
+
+export const msgDB = msg();
+
+export default function msg() {
+  return {
+    get: async (key: WAMessageKey, companyId: number) => {
+      const { id } = key;
+      logger.info(`Buscando mensagem no cache ${id}`)
+      if (!id) return;
+      let data = await Message.findOne({
+        where: {
+          id: id,
+          companyId
+        }
+      });
+      if (data) {
+        logger.info(`Mensagem encontrada no cache ${data.body}`)
+        try {
+          let msg = JSON.parse(data.dataJson);
+          return msg.message;
+        } catch (error) {
+          logger.error(error);
+        }
+      }
+    },
+  }
+}
 
 
 export const restartWbotId = (whatsappId: number) => {
@@ -154,38 +181,6 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
 
         const { id, name, companyId, allowGroup } = whatsappUpdate;
 
-        const store = new NodeCache({
-          stdTTL: 120,
-          checkperiod: 30,
-          useClones: false
-        });
-
-        async function getMessage(
-          key: WAMessageKey
-        ): Promise<WAMessageContent | undefined> {
-          if (!key.id) return null;
-
-          const message = store.get(key.id);
-
-          if (message) {
-            logger.debug({ message }, "cacheMessage: recovered from cache");
-            return message;
-          }
-
-          logger.debug(
-            { key },
-            "cacheMessage: not found in cache - fallback to database"
-          );
-
-          const msg = await Message.findOne({
-            where: { id: key.id, fromMe: true }
-          });
-
-          const data = JSON.parse(msg.dataJson);
-
-          return data.message || undefined;
-        }
-
         logger.info(`Starting session ${name}`);
         let retriesQrCode = 0;
         let retriesConnection = 0;
@@ -194,6 +189,14 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
         let wsocket: Session = null;
 
         const { state, saveCreds } = await useMultiFileAuthState(whatsapp);
+
+        if (whatsappUpdate.session) {
+          const result = await JSON.parse(
+            whatsappUpdate.session,
+            BufferJSON.reviver
+          );
+          state.creds = result.creds;
+        }
 
         const msgRetryCounterCache = new NodeCache();
         const userDevicesCache: CacheStore = new NodeCache();
@@ -229,7 +232,7 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
         };
 
         wsocket = makeWASocket({
-          version: version,
+          version: waVersion,
           logger: loggerBaileys,
           auth: {
             creds: state.creds,
@@ -244,7 +247,8 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
             process.env.BROWSER_NAME || "Chrome",
             process.env.BROWSER_VERSION || "10.0"
           ],
-          getMessage,
+          getMessage: async (key) => await msgDB.get(key, whatsapp.companyId),
+          cachedGroupMetadata: async jid => groupCache.get(jid),
           userDevicesCache,
           msgRetryCounterCache,
           markOnlineOnConnect: true,
@@ -255,14 +259,6 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
           connectTimeoutMs: 30_000,
           keepAliveIntervalMs: 15_000,      
         });
-
-        wsocket.cacheMessage = (msg: proto.IWebMessageInfo): void => {
-          if (!msg.key.fromMe) return;
-
-          logger.debug({ message: msg.message }, "cacheMessage: saved");
-
-          store.set(msg.key.id, msg.message);
-        };
 
         setTimeout(async () => {
           const wpp = await Whatsapp.findByPk(whatsapp.id);
