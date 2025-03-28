@@ -154,11 +154,11 @@ const Contacts = () => {
             const settingList = await getAllSettings(user.companyId);
 
             for (const [key, value] of Object.entries(settingList)) {
-                
+
                 if (key === "enableLGPD") setEnableLGPD(value === "enabled");
                 if (key === "lgpdHideNumber") setHideNum(value === "enabled");
-                
-              }
+
+            }
 
             // if (settingHideNumber.lgpdHideNumber === "enabled") {
             //     setHideNum(true);
@@ -315,23 +315,23 @@ const Contacts = () => {
         }
     };
 
-const handledeleteAllContact = async () => {
-    try {
-      if (deleteAllConfirmText.toLowerCase() !== "deletar todos") {
-        toast.error("Por favor, digite 'deletar todos' para confirmar");
-        return;
-      }
-      
-      await api.delete("/contacts");
-      toast.success("Todos os contatos foram excluídos com sucesso");
-      dispatch({ type: "RESET" });
-      setPageNumber(1);
-    } catch (err) {
-      toastError(err);
-    }
-    setDeleteAllConfirmText("");
-    setDeleteAllModalOpen(false);
-  };
+    const handledeleteAllContact = async () => {
+        try {
+            if (deleteAllConfirmText.toLowerCase() !== "deletar todos") {
+                toast.error("Por favor, digite 'deletar todos' para confirmar");
+                return;
+            }
+
+            await api.delete("/contacts");
+            toast.success("Todos os contatos foram excluídos com sucesso");
+            dispatch({ type: "RESET" });
+            setPageNumber(1);
+        } catch (err) {
+            toastError(err);
+        }
+        setDeleteAllConfirmText("");
+        setDeleteAllModalOpen(false);
+    };
 
     const handleimportChats = async () => {
         try {
@@ -390,50 +390,50 @@ const handledeleteAllContact = async () => {
                 aria-labelledby="form-dialog-title"
                 contactId={selectedContactId}
             ></ContactModal>
-<ConfirmationModal
-  title={
-    deletingContact
-      ? `${i18n.t("contacts.confirmationModal.deleteTitle")} ${deletingContact.name}?`
-      : blockingContact
-        ? `Bloquear Contato ${blockingContact.name}?`
-        : unBlockingContact
-          ? `Desbloquear Contato ${unBlockingContact.name}?`
-          : ImportContacts
-            ? `${i18n.t("contacts.confirmationModal.importTitlte")}`
-            : deletingAllContact
-              ? "Deseja realmente excluir todos os contatos?"
-              : `${i18n.t("contactListItems.confirmationModal.importTitlte")}`
-  }
-  open={confirmOpen}
-  onClose={setConfirmOpen}
-  onConfirm={(e) =>
-    deletingContact
-      ? handleDeleteContact(deletingContact.id)
-      : blockingContact
-        ? handleBlockContact(blockingContact.id)
-        : unBlockingContact
-          ? handleUnBlockContact(unBlockingContact.id)
-          : ImportContacts
-            ? handleimportContact()
-            : deletingAllContact
-              ? handledeleteAllContact()
-              : handleImportExcel()
-  }
->
-  {exportContact
-    ? `${i18n.t("contacts.confirmationModal.exportContact")}`
-    : deletingContact
-      ? `${i18n.t("contacts.confirmationModal.deleteMessage")}`
-      : blockingContact
-        ? `${i18n.t("contacts.confirmationModal.blockContact")}`
-        : unBlockingContact
-          ? `${i18n.t("contacts.confirmationModal.unblockContact")}`
-          : ImportContacts
-            ? `${i18n.t("contacts.confirmationModal.importMessage")}`
-            : deletingAllContact
-              ? "Esta ação não poderá ser revertida."
-              : `${i18n.t("contactListItems.confirmationModal.importMessage")}`}
-</ConfirmationModal>
+            <ConfirmationModal
+                title={
+                    deletingContact
+                        ? `${i18n.t("contacts.confirmationModal.deleteTitle")} ${deletingContact.name}?`
+                        : blockingContact
+                            ? `Bloquear Contato ${blockingContact.name}?`
+                            : unBlockingContact
+                                ? `Desbloquear Contato ${unBlockingContact.name}?`
+                                : ImportContacts
+                                    ? `${i18n.t("contacts.confirmationModal.importTitlte")}`
+                                    : deletingAllContact
+                                        ? "Deseja realmente excluir todos os contatos?"
+                                        : `${i18n.t("contactListItems.confirmationModal.importTitlte")}`
+                }
+                open={confirmOpen}
+                onClose={setConfirmOpen}
+                onConfirm={(e) =>
+                    deletingContact
+                        ? handleDeleteContact(deletingContact.id)
+                        : blockingContact
+                            ? handleBlockContact(blockingContact.id)
+                            : unBlockingContact
+                                ? handleUnBlockContact(unBlockingContact.id)
+                                : ImportContacts
+                                    ? handleimportContact()
+                                    : deletingAllContact
+                                        ? handledeleteAllContact()
+                                        : handleImportExcel()
+                }
+            >
+                {exportContact
+                    ? `${i18n.t("contacts.confirmationModal.exportContact")}`
+                    : deletingContact
+                        ? `${i18n.t("contacts.confirmationModal.deleteMessage")}`
+                        : blockingContact
+                            ? `${i18n.t("contacts.confirmationModal.blockContact")}`
+                            : unBlockingContact
+                                ? `${i18n.t("contacts.confirmationModal.unblockContact")}`
+                                : ImportContacts
+                                    ? `${i18n.t("contacts.confirmationModal.importMessage")}`
+                                    : deletingAllContact
+                                        ? "Esta ação não poderá ser revertida."
+                                        : `${i18n.t("contactListItems.confirmationModal.importMessage")}`}
+            </ConfirmationModal>
             <ConfirmationModal
                 title={i18n.t("contacts.confirmationModal.importChat")}
                 open={confirmChatsOpen}
@@ -443,27 +443,27 @@ const handledeleteAllContact = async () => {
                 {i18n.t("contacts.confirmationModal.wantImport")}
             </ConfirmationModal>
             <ConfirmationModal
-  title="Confirmar exclusão de TODOS os contatos"
-  open={deleteAllModalOpen}
-  onClose={() => {
-    setDeleteAllModalOpen(false);
-    setDeleteAllConfirmText("");
-  }}
-  onConfirm={handledeleteAllContact}
-  disableConfirm={deleteAllConfirmText.toLowerCase() !== "deletar todos"}
->
-  <div>
-    <p>Esta ação irá excluir TODOS os contatos permanentemente e não pode ser desfeita.</p>
-    <p>Para confirmar, digite <strong>"deletar todos"</strong> abaixo:</p>
-    <TextField
-      fullWidth
-      value={deleteAllConfirmText}
-      onChange={(e) => setDeleteAllConfirmText(e.target.value)}
-      variant="outlined"
-      margin="dense"
-    />
-  </div>
-</ConfirmationModal>
+                title="Confirmar exclusão de TODOS os contatos"
+                open={deleteAllModalOpen}
+                onClose={() => {
+                    setDeleteAllModalOpen(false);
+                    setDeleteAllConfirmText("");
+                }}
+                onConfirm={handledeleteAllContact}
+                disableConfirm={deleteAllConfirmText.toLowerCase() !== "deletar todos"}
+            >
+                <div>
+                    <p>Esta ação irá excluir TODOS os contatos permanentemente e não pode ser desfeita.</p>
+                    <p>Para confirmar, digite <strong>"deletar todos"</strong> abaixo:</p>
+                    <TextField
+                        fullWidth
+                        value={deleteAllConfirmText}
+                        onChange={(e) => setDeleteAllConfirmText(e.target.value)}
+                        variant="outlined"
+                        margin="dense"
+                    />
+                </div>
+            </ConfirmationModal>
 
             <MainHeader>
                 <Title>{i18n.t("contacts.title")} ({contacts.length})</Title>
@@ -484,129 +484,134 @@ const handledeleteAllContact = async () => {
                             ),
                         }}
                     />
-<PopupState variant="popover" popupId="demo-popup-menu">
-  {(popupState) => (
-    <React.Fragment>
-      <Button
-        variant="contained"
-        color="primary"
-        {...bindTrigger(popupState)}
-      >
-        Importar / Exportar
-        <ArrowDropDown />
-      </Button>
-      <Menu {...bindMenu(popupState)}>
-        <MenuItem
-          onClick={() => {
-            setConfirmOpen(true);
-            setImportContacts(true);
-            popupState.close();
-          }}
-        >
-          <ContactPhone
-            fontSize="small"
-            color="primary"
-            style={{
-              marginRight: 10,
-            }}
-          />
-          {i18n.t("contacts.menu.importYourPhone")}
-        </MenuItem>
-        
-        <MenuItem
-          onClick={() => { 
-            setImportContactModalOpen(true);
-            popupState.close();
-          }}
-        >
-          <Backup
-            fontSize="small"
-            color="primary"
-            style={{
-              marginRight: 10,
-            }}
-          />
-          {i18n.t("contacts.menu.importToExcel")}
-        </MenuItem>
-        {user.profile === "admin" && (
-            <>
-                <MenuItem onClick={() => {
-                fileUploadRef.current.click();
-                popupState.close();
-                }}>
-                <Backup
-                    fontSize="small"
-                    color="primary"
-                    style={{
-                    marginRight: 10,
-                    }}
-                />
-                {i18n.t("contacts.menu.importExcelFile")}
-                </MenuItem>
+                    <PopupState variant="popover" popupId="demo-popup-menu">
+                        {(popupState) => (
+                            <React.Fragment>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    {...bindTrigger(popupState)}
+                                >
+                                    Importar / Exportar
+                                    <ArrowDropDown />
+                                </Button>
+                                <Menu {...bindMenu(popupState)}>
+                                    <MenuItem
+                                        onClick={() => {
+                                            setConfirmOpen(true);
+                                            setImportContacts(true);
+                                            popupState.close();
+                                        }}
+                                    >
+                                        <ContactPhone
+                                            fontSize="small"
+                                            color="primary"
+                                            style={{
+                                                marginRight: 10,
+                                            }}
+                                        />
+                                        {i18n.t("contacts.menu.importYourPhone")}
+                                    </MenuItem>
 
-                <MenuItem>
-                <CSVLink
-                    className={classes.csvbtn}
-                    separator=";"
-                    filename={'contacts.csv'}
-                    data={
-                    contacts.map((contact) => ({
-                        number: hideNum && user.profile === "user" ? 
-                        contact.isGroup ? 
-                            contact.number : 
-                            formatSerializedId(contact.number).slice(0,-6)+"**-**"+ contact.number.slice(-2) : 
-                        contact.isGroup ? 
-                            contact.number : 
-                            formatSerializedId(contact.number),
-                        firstName: contact.name.split(' ')[0],
-                        lastname: String(contact.name).replace(contact.name.split(' ')[0],''),
-                        tags: contact?.tags?.map(tag => tag.name).join(', ')
-                    }))
-                    }
-                >
-                    <CloudDownload 
-                    fontSize="small"
-                    color="primary"
-                    style={{
-                        marginRight: 10,
-                    }}                                                
-                    />        
-                    Exportar CSV                                
-                </CSVLink>
-                </MenuItem>
-                <MenuItem
-                    onClick={() => {
-                    setDeleteAllModalOpen(true);
-                    popupState.close();
-                    }}
-                    style={{ color: 'red' }}
-                >
-                    <DeleteOutlineIcon
-                    fontSize="small"
-                    style={{
-                        marginRight: 10,
-                        color: 'red'
-                    }}
-                    />
-                    Excluir Todos os Contatos
-                </MenuItem>
-          </>
-        )}
-      </Menu>
-    </React.Fragment>
-  )}
-</PopupState>
-                    <Button
-  variant="contained"
-  style={{ backgroundColor: "#da4231", marginRight: 10 }}  
-  onClick={() => {
-    setConfirmOpen(true);
-    setDeletingAllContact(true);
-  }}
->
-  <DeleteOutlineIcon style={{ marginRight: 5 }} />
-  Excluir Todos
-</Button>
+                                    <MenuItem
+                                        onClick={() => {
+                                            setImportContactModalOpen(true);
+                                            popupState.close();
+                                        }}
+                                    >
+                                        <Backup
+                                            fontSize="small"
+                                            color="primary"
+                                            style={{
+                                                marginRight: 10,
+                                            }}
+                                        />
+                                        {i18n.t("contacts.menu.importToExcel")}
+                                    </MenuItem>
+                                    {user.profile === "admin" && (
+                                        <>
+                                            <MenuItem onClick={() => {
+                                                fileUploadRef.current.click();
+                                                popupState.close();
+                                            }}>
+                                                <Backup
+                                                    fontSize="small"
+                                                    color="primary"
+                                                    style={{
+                                                        marginRight: 10,
+                                                    }}
+                                                />
+                                                {i18n.t("contacts.menu.importExcelFile")}
+                                            </MenuItem>
+
+                                            <MenuItem>
+                                                <CSVLink
+                                                    className={classes.csvbtn}
+                                                    separator=";"
+                                                    filename={'contacts.csv'}
+                                                    data={
+                                                        contacts.map((contact) => ({
+                                                            number: hideNum && user.profile === "user" ?
+                                                                contact.isGroup ?
+                                                                    contact.number :
+                                                                    formatSerializedId(contact.number).slice(0, -6) + "**-**" + contact.number.slice(-2) :
+                                                                contact.isGroup ?
+                                                                    contact.number :
+                                                                    formatSerializedId(contact.number),
+                                                            firstName: contact.name.split(' ')[0],
+                                                            lastname: String(contact.name).replace(contact.name.split(' ')[0], ''),
+                                                            tags: contact?.tags?.map(tag => tag.name).join(', ')
+                                                        }))
+                                                    }
+                                                >
+                                                    <CloudDownload
+                                                        fontSize="small"
+                                                        color="primary"
+                                                        style={{
+                                                            marginRight: 10,
+                                                        }}
+                                                    />
+                                                    Exportar CSV
+                                                </CSVLink>
+                                            </MenuItem>
+                                            <MenuItem
+                                                onClick={() => {
+                                                    setDeleteAllModalOpen(true);
+                                                    popupState.close();
+                                                }}
+                                                style={{ color: 'red' }}
+                                            >
+                                                <DeleteOutlineIcon
+                                                    fontSize="small"
+                                                    style={{
+                                                        marginRight: 10,
+                                                        color: 'red'
+                                                    }}
+                                                />
+                                                Excluir Todos os Contatos
+                                            </MenuItem>
+                                        </>
+                                    )}
+                                </Menu>
+                            </React.Fragment>
+                        )}
+                    </PopupState>
+                    <Can
+    role={user.profile}
+    perform="contacts-page:deleteAllContacts"
+    yes={() => (
+        <Button
+            variant="contained"
+            style={{ backgroundColor: "#da4231", marginRight: 10 }}
+            onClick={() => {
+                setDeleteAllModalOpen(true);
+            }}
+        >
+            <DeleteOutlineIcon style={{ marginRight: 5 }} />
+            Excluir Todos
+        </Button>
+    )}
+/>
                     <Button
                         variant="contained"
                         color="primary"
@@ -683,7 +688,7 @@ const handledeleteAllContact = async () => {
                                                 ? contact.number :
                                                 formatSerializedId(contact?.number) === null ? contact.number.slice(0, -6) + "**-**" + contact?.number.slice(-2) :
                                                     formatSerializedId(contact?.number)?.slice(0, -6) + "**-**" + contact?.number?.slice(-2) :
-                                                    contact.isGroup ? contact.number : formatSerializedId(contact?.number)
+                                            contact.isGroup ? contact.number : formatSerializedId(contact?.number)
                                         )}
                                     </TableCell>
                                     <TableCell align="center">

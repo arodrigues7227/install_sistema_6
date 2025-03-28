@@ -12,6 +12,7 @@ const rules = {
 			"user-modal:editQueues",
 			"ticket-options:deleteTicket",
 			"contacts-page:deleteContact",
+			"contacts-page:deleteAllContacts",
 			"connections-page:actionButtons",
 			"connections-page:addConnection",
 			"connections-page:editOrDeleteConnection",
