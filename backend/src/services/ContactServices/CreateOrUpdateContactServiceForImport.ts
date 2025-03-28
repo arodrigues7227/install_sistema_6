@@ -1,5 +1,7 @@
 import { getIO } from "../../libs/socket";
 import Contact from "../../models/Contact";
+import sequelize from "../../database";
+import logger from "../../utils/logger";
 
 interface ExtraInfo {
   name: string;
@@ -24,43 +26,86 @@ const CreateOrUpdateContactServiceForImport = async ({
   isGroup,
   email = "",
   commandBot = "",
-  extraInfo = [], companyId
+  extraInfo = [], 
+  companyId
 }: Request): Promise<Contact> => {
-  const number = isGroup ? rawNumber : rawNumber.replace(/[^0-9]/g, "");
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const number = isGroup ? rawNumber : rawNumber.replace(/[^0-9]/g, "");
+    const io = getIO();
 
-  const io = getIO();
-  let contact: Contact | null;
+    // Busca o contato, incluindo os excluídos logicamente
+    let contact = await Contact.findOne({ 
+      where: { number, companyId },
+      paranoid: false,
+      transaction
+    });
 
-  contact = await Contact.findOne({ where: { number , companyId } });
+    if (contact) {
+      // Se o contato estiver excluído logicamente, restaura
+      if (contact.deletedAt) {
+        await contact.restore({ transaction });
+        logger.info(`Restaurando contato excluído durante importação: ${number}`);
+      }
 
-  if (contact) {
-      await contact.update({ name , profilePicUrl });
+      // Atualiza os dados
+      await contact.update({ name, profilePicUrl }, { transaction });
+
+      await transaction.commit();
 
       io.of(String(companyId))
-  .emit(`company-${companyId}-contact`, {
-      action: "update",
-      contact
-    });
-  } else {
-    contact = await Contact.create({
-      name,
-      companyId,
-      number,
-      profilePicUrl,
-      email,
-      commandBot,
-      isGroup,
-      extraInfo
-    });
+        .emit(`company-${companyId}-contact`, {
+          action: "update",
+          contact
+        });
+    } else {
+      // Cria um novo contato
+      contact = await Contact.create({
+        name,
+        companyId,
+        number,
+        profilePicUrl,
+        email,
+        commandBot,
+        isGroup,
+        extraInfo
+      }, { transaction });
 
-    io.of(String(companyId))
-  .emit(`company-${companyId}-contact`, {
-      action: "create",
-      contact
-    });
+      await transaction.commit();
+
+      io.of(String(companyId))
+        .emit(`company-${companyId}-contact`, {
+          action: "create",
+          contact
+        });
+    }
+
+    return contact;
+  } catch (error) {
+    await transaction.rollback();
+    
+    // Se ocorrer erro de duplicidade, tenta recuperar o contato
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      logger.warn(`Erro de duplicidade ao importar contato: ${rawNumber}`);
+      
+      const existingContact = await Contact.findOne({
+        where: { number: isGroup ? rawNumber : rawNumber.replace(/[^0-9]/g, ""), companyId },
+        paranoid: false
+      });
+      
+      if (existingContact) {
+        if (existingContact.deletedAt) {
+          await existingContact.restore();
+          logger.info(`Restaurado contato que estava excluído logicamente: ${rawNumber}`);
+        }
+        return existingContact;
+      }
+    }
+    
+    logger.error(`Erro ao importar contato ${rawNumber}:`, error);
+    throw error;
   }
-
-  return contact;
 };
 
 export default CreateOrUpdateContactServiceForImport;

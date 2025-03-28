@@ -4,7 +4,7 @@ import Contact from "../../models/Contact";
 import ContactCustomField from "../../models/ContactCustomField";
 import logger from "../../utils/logger";
 import ContactWallet from "../../models/ContactWallet";
-import sequelize from "../../database"; // Importe a instância do Sequelize
+import sequelize from "../../database";
 
 interface ExtraInfo extends ContactCustomField {
   name: string;
@@ -45,9 +45,10 @@ const CreateContactService = async ({
   const transaction = await sequelize.transaction();
 
   try {
-    // Verifica se o contato já existe
+    // Verifica se o contato já existe, incluindo os marcados como excluídos logicamente
     const existingContact = await Contact.findOne({
       where: { number, companyId },
+      paranoid: false, // Busca inclusive os excluídos logicamente
       transaction,
       include: [
         "extraInfo",
@@ -59,6 +60,12 @@ const CreateContactService = async ({
     });
 
     if (existingContact) {
+      // Se o contato estiver excluído logicamente, restaura-o
+      if (existingContact.deletedAt) {
+        await existingContact.restore({ transaction });
+        logger.info(`Restaurando contato previamente excluído: ${number}`);
+      }
+
       // Atualiza o contato existente
       await existingContact.update(
         {
@@ -108,7 +115,7 @@ const CreateContactService = async ({
       }
 
       await transaction.commit();
-      return existingContact.reload({ transaction });
+      return existingContact.reload();
     }
 
     // Cria novo contato
@@ -163,13 +170,24 @@ const CreateContactService = async ({
     
     // Tratamento específico para erro de constraint única
     if (error.name === 'SequelizeUniqueConstraintError') {
-      const duplicateContact = await Contact.findOne({
-        where: { number, companyId }
-      });
-      
-      if (duplicateContact) {
-        logger.warn(`Contato duplicado encontrado após falha: ${number}`);
-        return duplicateContact;
+      // Se ocorrer erro de duplicidade, tenta recuperar o contato novamente
+      try {
+        logger.warn(`Contato duplicado encontrado: ${number}. Tentando recuperar...`);
+        const duplicateContact = await Contact.findOne({
+          where: { number, companyId },
+          paranoid: false // Busca inclusive excluídos logicamente
+        });
+        
+        if (duplicateContact) {
+          // Se estiver excluído, restaura
+          if (duplicateContact.deletedAt) {
+            await duplicateContact.restore();
+            logger.info(`Restaurado contato que estava excluído logicamente: ${number}`);
+          }
+          return duplicateContact;
+        }
+      } catch (restoreError) {
+        logger.error(`Erro ao tentar recuperar contato duplicado: ${restoreError}`);
       }
       
       throw new AppError("ERR_DUPLICATED_CONTACT");

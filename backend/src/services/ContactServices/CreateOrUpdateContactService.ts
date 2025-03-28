@@ -8,6 +8,7 @@ import logger from "../../utils/logger";
 import { isNil } from "lodash";
 import Whatsapp from "../../models/Whatsapp";
 import * as Sentry from "@sentry/node";
+import sequelize from "../../database";
 
 const axios = require('axios');
 
@@ -38,7 +39,6 @@ const downloadProfileImage = async ({
   const publicFolder = path.resolve(__dirname, "..", "..", "..", "public");
   let filename;
 
-
   const folder = path.resolve(publicFolder, `company${companyId}`, "contacts");
 
   if (!fs.existsSync(folder)) {
@@ -47,20 +47,18 @@ const downloadProfileImage = async ({
   }
 
   try {
-
     const response = await axios.get(profilePicUrl, {
       responseType: 'arraybuffer'
     });
 
     filename = `${new Date().getTime()}.jpeg`;
     fs.writeFileSync(join(folder, filename), response.data);
-
   } catch (error) {
-    console.error(error)
+    console.error(error);
   }
 
-  return filename
-}
+  return filename;
+};
 
 const CreateOrUpdateContactService = async ({
   name,
@@ -75,16 +73,24 @@ const CreateOrUpdateContactService = async ({
   whatsappId,
   wbot
 }: Request): Promise<Contact> => {
+  const transaction = await sequelize.transaction();
+  
   try {
-    let createContact = false;
-    const publicFolder = path.resolve(__dirname, "..", "..", "..", "public");
     const number = isGroup ? rawNumber : rawNumber.replace(/[^0-9-]/g, "");
     const io = getIO();
-    let contact: Contact | null;
-
-    contact = await Contact.findOne({
-      where: { number, companyId }
+    
+    // Verificar se existe um contato (inclusive os excluídos logicamente)
+    let contact = await Contact.findOne({
+      where: { number, companyId },
+      paranoid: false, // Buscar mesmo os marcados como excluídos
+      transaction
     });
+
+    if (contact && contact.deletedAt) {
+      // Se existe e está marcado como excluído, restaurar o registro
+      await contact.restore({ transaction });
+      logger.info(`Restaurando contato previamente excluído: ${number}`);
+    }
 
     let updateImage = true;
 
@@ -92,17 +98,21 @@ const CreateOrUpdateContactService = async ({
       contact.remoteJid = remoteJid;
       contact.profilePicUrl = profilePicUrl || null;
       contact.isGroup = isGroup;
+      
       if (isNil(contact.whatsappId)) {
         const whatsapp = await Whatsapp.findOne({
-          where: { id: whatsappId, companyId }
+          where: { id: whatsappId, companyId },
+          transaction
         });
 
-        console.log(104, "CreateUpdateContactService")
+        console.log(104, "CreateUpdateContactService");
 
         if (whatsapp) {
           contact.whatsappId = whatsappId;
         }
       }
+      
+      const publicFolder = path.resolve(__dirname, "..", "..", "..", "public");
       const folder = path.resolve(publicFolder, `company${companyId}`, "contacts");
 
       let fileName, oldPath = "";
@@ -110,6 +120,7 @@ const CreateOrUpdateContactService = async ({
         oldPath = path.resolve(contact.urlPicture.replace(/\\/g, '/'));
         fileName = path.join(folder, oldPath.split('\\').pop());
       }
+      
       if (!fs.existsSync(fileName) || contact.profilePicUrl === "") {
         if (wbot && ['whatsapp'].includes(channel)) {
           try {
@@ -127,18 +138,22 @@ const CreateOrUpdateContactService = async ({
         contact.name = name;
       }
 
-      await contact.save(); // Ensure save() is called to trigger updatedAt
-      await contact.reload();
-
+      await contact.save({ transaction });
+      await contact.reload({ transaction });
+      
     } else if (wbot && ['whatsapp'].includes(channel)) {
-      const settings = await CompaniesSettings.findOne({ where: { companyId } });
-      const { acceptAudioMessageContact } = settings;
+      const settings = await CompaniesSettings.findOne({ 
+        where: { companyId },
+        transaction
+      });
+      
+      const { acceptAudioMessageContact } = settings || {};
       let newRemoteJid = remoteJid;
 
       if (!remoteJid && remoteJid !== "") {
         newRemoteJid = isGroup ? `${rawNumber}@g.us` : `${rawNumber}@s.whatsapp.net`;
       }
-
+      
       try {
         profilePicUrl = await wbot.profilePictureUrl(remoteJid, "image");
       } catch (e) {
@@ -158,9 +173,8 @@ const CreateOrUpdateContactService = async ({
         profilePicUrl,
         urlPicture: "",
         whatsappId
-      });
+      }, { transaction });
 
-      createContact = true;
     } else if (['facebook', 'instagram'].includes(channel)) {
       contact = await Contact.create({
         name,
@@ -172,29 +186,24 @@ const CreateOrUpdateContactService = async ({
         profilePicUrl,
         urlPicture: "",
         whatsappId
-      });
+      }, { transaction });
     }
 
-
-
     if (updateImage) {
-
-
       let filename;
 
       filename = await downloadProfileImage({
         profilePicUrl,
         companyId,
         contact
-      })
-
+      });
 
       await contact.update({
         urlPicture: filename,
         pictureUpdated: true
-      });
+      }, { transaction });
 
-      await contact.reload();
+      await contact.reload({ transaction });
     } else {
       if (['facebook', 'instagram'].includes(channel)) {
         let filename;
@@ -203,36 +212,37 @@ const CreateOrUpdateContactService = async ({
           profilePicUrl,
           companyId,
           contact
-        })
-
+        });
 
         await contact.update({
           urlPicture: filename,
           pictureUpdated: true
-        });
+        }, { transaction });
 
-        await contact.reload();
+        await contact.reload({ transaction });
       }
     }
 
-    if (createContact) {
+    await transaction.commit();
+
+    // Emitir o evento apropriado
+    if (!contact.id) {
       io.of(String(companyId))
         .emit(`company-${companyId}-contact`, {
           action: "create",
           contact
         });
     } else {
-      
       io.of(String(companyId))
         .emit(`company-${companyId}-contact`, {
           action: "update",
           contact
         });
-        
     }
 
     return contact;
   } catch (err) {
+    await transaction.rollback();
     logger.error("Error to find or create a contact:", err);
     throw err;
   }

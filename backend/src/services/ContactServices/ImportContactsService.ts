@@ -5,7 +5,7 @@ import ContactListItem from "../../models/ContactListItem";
 import CheckContactNumber from "../WbotServices/CheckNumber";
 import logger from "../../utils/logger";
 import Contact from "../../models/Contact";
-// import CheckContactNumber from "../WbotServices/CheckNumber";
+import sequelize from "../../database";
 
 export async function ImportContactsService(
   companyId: number,
@@ -46,36 +46,46 @@ export async function ImportContactsService(
     return { name, number, email, companyId };
   });
 
-
   const contactList: Contact[] = [];
+  const transaction = await sequelize.transaction();
 
-  for (const contact of contacts) {
-    const [newContact, created] = await Contact.findOrCreate({
-      where: {
-        number: `${contact.number}`,
-        companyId: contact.companyId
-      },
-      defaults: contact
-    });
-    if (created) {
-      contactList.push(newContact);
+  try {
+    for (const contact of contacts) {
+      try {
+        // Busca o contato, incluindo os excluídos logicamente
+        const existingContact = await Contact.findOne({
+          where: {
+            number: `${contact.number}`,
+            companyId: contact.companyId
+          },
+          paranoid: false,
+          transaction
+        });
+
+        if (existingContact) {
+          // Se estiver excluído, restaura
+          if (existingContact.deletedAt) {
+            await existingContact.restore({ transaction });
+            logger.info(`Restaurando contato excluído na importação: ${contact.number}`);
+            contactList.push(existingContact);
+          }
+          // Se já existe e não está excluído, não faz nada
+        } else {
+          // Cria um novo contato
+          const newContact = await Contact.create(contact, { transaction });
+          contactList.push(newContact);
+        }
+      } catch (error) {
+        logger.error(`Erro ao processar contato na importação: ${contact.number}`, error);
+      }
     }
+
+    await transaction.commit();
+    return contactList;
+  } catch (error) {
+    await transaction.rollback();
+    logger.error("Erro na importação de contatos:", error);
+    throw error;
   }
-
-  // Verifica se existe os contatos
-  // if (contactList) {
-  //   for (let newContact of contactList) {
-  //     try {
-  //       const response = await CheckContactNumber(newContact.number, companyId);
-  //       const number = response;
-  //       newContact.number = number;
-  //       console.log('number', number)
-  //       await newContact.save();
-  //     } catch (e) {
-  //       logger.error(`Número de contato inválido: ${newContact.number}`);
-  //     }
-  //   }
-  // }
-
-  return contactList;
 }
+
