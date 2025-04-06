@@ -56,6 +56,9 @@ class Plan extends Model<Plan> {
   @Column
   useExternalApi: boolean;   
 
+  @Column
+  onlyApiMessage: boolean;
+
   @CreatedAt
   createdAt: Date;
 

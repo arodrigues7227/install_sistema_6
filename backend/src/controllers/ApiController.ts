@@ -25,6 +25,8 @@ import { isNil } from "lodash";
 import { verifyMediaMessage, verifyMessage } from "../services/WbotServices/wbotMessageListener";
 import ShowQueueService from "../services/QueueService/ShowQueueService";
 import path from "path";
+import Company from "../models/Company";
+import Plan from "../models/Plan";
 import Contact from "../models/Contact";
 import FindOrCreateATicketTrakingService from "../services/TicketServices/FindOrCreateATicketTrakingService";
 import { Mutex } from "async-mutex";
@@ -250,7 +252,16 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   const whatsapp = await Whatsapp.findOne({ where: { token } });
   const companyId = whatsapp.companyId;
 
+    // Verificar se o plano da empresa é apenas para envio de mensagens
+    const company = await Company.findByPk(companyId, {
+      include: [{ model: Plan, as: 'plan' }]
+    });
+
   newContact.number = newContact.number.replace(" ", "");
+
+   // Se o plano for onlyApiMessage, forçamos noRegister como true
+   const useNoRegister = company?.plan?.onlyApiMessage === true || noRegister;
+  
 
   const schema = Yup.object().shape({
     number: Yup.string()
@@ -285,7 +296,7 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
     bodyMessage = body.trim();
   }
 
-  if (noRegister) {
+  if (noRegister || useNoRegister) {
     if (medias) {
       try {
         // console.log(medias)

@@ -21,6 +21,7 @@ interface PlanData {
   recurrence?: string;
   useOpenAi?: boolean;
   useIntegrations?: boolean;
+  onlyApiMessage?: boolean;
   isPublic?: boolean;
 }
 

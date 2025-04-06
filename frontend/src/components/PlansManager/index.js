@@ -83,6 +83,7 @@ export function PlanManagerForm(props) {
         useKanban: true,
         useOpenAi: true,
         useIntegrations: true,
+        onlyApiMessage: false,
         isPublic: true
     });
 
@@ -367,6 +368,25 @@ export function PlanManagerForm(props) {
                                 </Field>
                             </FormControl>
                         </Grid>
+
+                        {/* APENAS API */}
+                        <Grid xs={12} sm={8} md={4} item>
+                            <FormControl margin="dense" variant="outlined" fullWidth>
+                                <InputLabel htmlFor="onlyApiMessage-selection">Apenas API de Mensagens</InputLabel>
+                                <Field
+                                    as={Select}
+                                    id="onlyApiMessage-selection"
+                                    label="Apenas API de Mensagens"
+                                    labelId="onlyApiMessage-selection-label"
+                                    name="onlyApiMessage"
+                                    margin="dense"
+                                >
+                                    <MenuItem value={true}>{i18n.t("plans.form.enabled")}</MenuItem>
+                                    <MenuItem value={false}>{i18n.t("plans.form.disabled")}</MenuItem>
+                                </Field>
+                            </FormControl>
+                        </Grid>
+
                     </Grid>
                     <Grid spacing={2} justifyContent="flex-end" container>
 
@@ -405,6 +425,10 @@ export function PlansManagerGrid(props) {
     const renderFacebook = (row) => {
         return row.useFacebook === false ? `${i18n.t("plans.form.no")}` : `${i18n.t("plans.form.yes")}`;
     };
+
+    const renderOnlyApiMessage = (row) => {
+        return row.onlyApiMessage === false ? `${i18n.t("plans.form.no")}` : `${i18n.t("plans.form.yes")}`;
+      };
 
     const renderInstagram = (row) => {
         return row.useInstagram === false ? `${i18n.t("plans.form.no")}` : `${i18n.t("plans.form.yes")}`;
@@ -465,6 +489,7 @@ export function PlansManagerGrid(props) {
                         <TableCell align="center">Kanban</TableCell>
                         <TableCell align="center">Talk.Ai</TableCell>
                         <TableCell align="center">Integrações</TableCell>
+                        <TableCell align="center">Apenas API</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -477,7 +502,7 @@ export function PlansManagerGrid(props) {
                             </TableCell>
                             <TableCell align="left">{row.name || '-'}</TableCell>
                             <TableCell align="center">{row.users || '-'}</TableCell>
-                            <TableCell align="center">{row.isPublic ? "Sim": "Não" || '-'}</TableCell>
+                            <TableCell align="center">{row.isPublic ? "Sim" : "Não" || '-'}</TableCell>
                             <TableCell align="center">{row.connections || '-'}</TableCell>
                             <TableCell align="center">{row.queues || '-'}</TableCell>
                             <TableCell align="center">{i18n.t("plans.form.money")} {row.amount ? row.amount.toLocaleString('pt-br', { minimumFractionDigits: 2 }) : '00.00'}</TableCell>
@@ -491,6 +516,7 @@ export function PlansManagerGrid(props) {
                             <TableCell align="center">{renderKanban(row)}</TableCell>
                             <TableCell align="center">{renderOpenAi(row)}</TableCell>
                             <TableCell align="center">{renderIntegrations(row)}</TableCell>
+                            <TableCell align="center">{renderOnlyApiMessage(row)}</TableCell>
                         </TableRow>
                     ))}
                 </TableBody>

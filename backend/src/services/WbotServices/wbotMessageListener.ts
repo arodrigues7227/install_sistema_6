@@ -27,6 +27,8 @@ import {
   generateWAMessageFromContent
 } from "@whiskeysockets/baileys";
 import Baileys from "../../models/Baileys";
+import Company from "../../models/Company";
+import Plan from "../../models/Plan";
 import Contact from "../../models/Contact";
 import Ticket from "../../models/Ticket";
 import Message from "../../models/Message";
@@ -3655,7 +3657,47 @@ const filterMessages = (msg: WAMessage): boolean => {
 };
 
 const wbotMessageListener = (wbot: Session, companyId: number): void => {
+  // Primeiro vamos verificar se o WhatsApp está relacionado a uma empresa com plano onlyApiMessage
+  let isOnlyApiMessagePlan = false;
+  
+  // Esta verificação deve ser feita logo no início para ser utilizada em todas as escutas de eventos
+  const checkOnlyApiMessagePlan = async () => {
+    try {
+      const whatsapp = await Whatsapp.findByPk(wbot.id, {
+        include: [
+          {
+            model: Company,
+            as: 'company',
+            include: [{ model: Plan, as: 'plan' }]
+          }
+        ]
+      });
+      
+      isOnlyApiMessagePlan = whatsapp?.company?.plan?.onlyApiMessage || false;
+      
+      logger.info(`WhatsApp ${wbot.id} - Plano onlyApiMessage: ${isOnlyApiMessagePlan}`);
+      
+      return isOnlyApiMessagePlan;
+    } catch (error) {
+      logger.error(`Erro ao verificar plano onlyApiMessage para WhatsApp ${wbot.id}: ${error.message}`);
+      Sentry.captureException(error);
+      return false;
+    }
+  };
+  
+  // Executamos a verificação inicial
+  checkOnlyApiMessagePlan();
+  
   wbot.ev.on("messages.upsert", async (messageUpsert: ImessageUpsert) => {
+    // Verificamos novamente o plano para garantir que estamos com info atualizada
+    const skipProcessing = await checkOnlyApiMessagePlan();
+    
+    // Se for plano onlyApiMessage, não processamos mensagens recebidas
+    if (skipProcessing) {
+      logger.info(`WhatsApp ${wbot.id} - Ignorando processamento de mensagem recebida (plano onlyApiMessage)`);
+      return;
+    }
+    
     const messages = messageUpsert.messages
       .filter(filterMessages)
       .map(msg => msg);
@@ -3725,7 +3767,16 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
 
   });
 
-  wbot.ev.on("messages.update", (messageUpdate: WAMessageUpdate[]) => {
+  wbot.ev.on("messages.update", async (messageUpdate: WAMessageUpdate[]) => {
+    // Verificamos novamente o plano para garantir que estamos com info atualizada
+    const skipProcessing = await checkOnlyApiMessagePlan();
+    
+    // Se for plano onlyApiMessage, não processamos atualizações de mensagens
+    if (skipProcessing) {
+      logger.info(`WhatsApp ${wbot.id} - Ignorando processamento de atualização de mensagem (plano onlyApiMessage)`);
+      return;
+    }
+    
     if (messageUpdate.length === 0) return;
     messageUpdate.forEach(async (message: WAMessageUpdate) => {
 
@@ -3757,6 +3808,7 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
   });
 
   wbot.ev.on("contacts.upsert", async (contacts: any) => {
+    // Para contatos, podemos manter a atualização mesmo em planos onlyApiMessage
     try {
       const baileysData = await Baileys.findOne({
         where: { whatsappId: wbot.id }
@@ -3856,6 +3908,7 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
   });
 
   wbot.ev.on("contacts.update", async (contacts: any) => {
+    // Para contatos, podemos manter a atualização mesmo em planos onlyApiMessage
     try {
       const whatsapp = await Whatsapp.findByPk(wbot.id);
 
@@ -3920,6 +3973,7 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
   })
 
   wbot.ev.on("contacts.update", async (contacts: any) => {
+    // Para contatos, podemos manter a atualização mesmo em planos onlyApiMessage
     try {
       const whatsapp = await Whatsapp.findByPk(wbot.id);
   
@@ -3984,14 +4038,18 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
   })
 
   wbot.ev.on("groups.update", (groupUpdate: GroupMetadata[]) => {
+    // Verificamos o plano para decidir se processamos ou não
+    if (isOnlyApiMessagePlan) {
+      logger.info(`WhatsApp ${wbot.id} - Ignorando processamento de atualização de grupo (plano onlyApiMessage)`);
+      return;
+    }
+    
     if (!groupUpdate[0]?.id) return
     if (groupUpdate.length === 0) return;
     groupUpdate.forEach(async (group: GroupMetadata) => {
 
       const number = group.id.replace(/[^0-9-]/g, "");
       const nameGroup = group.subject || number;
-
-
 
       let profilePicUrl: string = "";
 
@@ -4012,6 +4070,12 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
   })
 
   wbot.ev.on("presence.update", async ({ id: remoteJid, presences }) => {
+    // Verificamos o plano para decidir se processamos ou não
+    if (isOnlyApiMessagePlan) {
+      logger.info(`WhatsApp ${wbot.id} - Ignorando processamento de presença (plano onlyApiMessage)`);
+      return;
+    }
+    
     try {
       logger.debug(
         { remoteJid, presences },
@@ -4066,8 +4130,6 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
       );
     }
   });
-
-
 };
 
 export { wbotMessageListener, handleMessage, isValidMsg, getTypeMessage, handleMsgAck };

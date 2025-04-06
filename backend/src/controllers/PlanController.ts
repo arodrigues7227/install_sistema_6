@@ -46,6 +46,7 @@ type StorePlanData = {
   useKanban?: boolean;
   useOpenAi?: boolean;
   useIntegrations?: boolean;
+  onlyApiMessage?: boolean;
   isPublic?: boolean;
 };
 
@@ -66,6 +67,7 @@ type UpdatePlanData = {
   useKanban?: boolean;
   useOpenAi?: boolean;
   useIntegrations?: boolean;
+  onlyApiMessage?: boolean;
   isPublic?: boolean;
 };
 
@@ -175,21 +177,22 @@ export const update = async (
   }
 
   const { id,
-    //   name,
-    //   users,
-    //   connections,
-    //   queues,
-    //   amount,
-    //   useWhatsapp,
-    //   useFacebook,
-    //   useInstagram,
-    //   useCampaigns,
-    //   useSchedules,
-    //   useInternalChat,
-    //   useExternalApi,
-    //   useKanban,
-    //   useOpenAi,
-    //   useIntegrations
+       name,
+       users,
+       connections,
+       queues,
+       amount,
+       useWhatsapp,
+       useFacebook,
+       useInstagram,
+       useCampaigns,
+       useSchedules,
+       useInternalChat,
+       useExternalApi,
+       useKanban,
+       useOpenAi,
+       useIntegrations,
+       onlyApiMessage
   } = planData;
   const authHeader = req.headers.authorization;
   const [, token] = authHeader.split(" ");
