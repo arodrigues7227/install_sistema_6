@@ -32,6 +32,7 @@ import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import CachedIcon from "@material-ui/icons/Cached";
 // import whatsappIcon from "../assets/nopicture.png";
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
+import WhatsAppIcon from "@material-ui/icons/WhatsApp";
 import BackupModal from "../components/BackupModal";
 import MainListItems from "./MainListItems";
 import NotificationsPopOver from "../components/NotificationsPopOver";
@@ -58,6 +59,7 @@ import { getBackendUrl } from "../config";
 import useSettings from "../hooks/useSettings";
 import VersionControl from "../components/VersionControl";
 import api from "../services/api";
+import { Link } from "react-router-dom";
 
 // import { SocketContext } from "../context/Socket/SocketContext";
 
@@ -136,6 +138,9 @@ const useStyles = makeStyles((theme) => ({
     flexGrow: 1,
     fontSize: 14,
     color: "white",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   },
   drawerPaper: {
     position: "relative",
@@ -225,6 +230,14 @@ const useStyles = makeStyles((theme) => ({
     alignItems: "center",
     justifyContent: "center",
   },
+  ticketIcon: {
+    color: "white",
+  },
+  desktopIcon: {
+    [theme.breakpoints.down("sm")]: {
+      display: "none",
+    },
+  },
 }));
 
 const StyledBadge = withStyles((theme) => ({
@@ -283,6 +296,7 @@ const LoggedInLayout = ({ children, themeToggle }) => {
   const theme = useTheme();
   const { colorMode } = useContext(ColorModeContext);
   const greaterThenSm = useMediaQuery(theme.breakpoints.up("sm"));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [volume, setVolume] = useState(localStorage.getItem("volume") || 1);
 
@@ -493,32 +507,44 @@ const LoggedInLayout = ({ children, themeToggle }) => {
             <MenuIcon />
           </IconButton>
 
-          <Typography
-            component="h2"
-            variant="h6"
-            color="inherit"
-            noWrap
-            className={classes.title}
-          >
-            {/* {greaterThenSm && user?.profile === "admin" && getDateAndDifDays(user?.company?.dueDate).difData < 7 ? ( */}
-            {greaterThenSm &&
-              user?.profile === "admin" &&
-              user?.company?.dueDate ? (
-              <>
-                {i18n.t("mainDrawer.appBar.user.message")} <b>{user.name}</b>,{" "}
-                {i18n.t("mainDrawer.appBar.user.messageEnd")}{" "}
-                <b>{user?.company?.name}</b>! (
-                {i18n.t("mainDrawer.appBar.user.active")}{" "}
-                {dateToClient(user?.company?.dueDate)})
-              </>
-            ) : (
-              <>
-                {i18n.t("mainDrawer.appBar.user.message")} <b>{user.name}</b>,{" "}
-                {i18n.t("mainDrawer.appBar.user.messageEnd")}{" "}
-                <b>{user?.company?.name}</b>!
-              </>
-            )}
-          </Typography>
+          {/* Só exibe o título em dispositivos não móveis */}
+          {greaterThenSm && (
+            <Typography
+              component="h2"
+              variant="h6"
+              color="inherit"
+              noWrap
+              className={classes.title}
+            >
+              {user?.profile === "admin" && user?.company?.dueDate ? (
+                <>
+                  {i18n.t("mainDrawer.appBar.user.message")} <b>{user.name}</b>,{" "}
+                  {i18n.t("mainDrawer.appBar.user.messageEnd")}{" "}
+                  <b>{user?.company?.name}</b>! (
+                  {i18n.t("mainDrawer.appBar.user.active")}{" "}
+                  {dateToClient(user?.company?.dueDate)})
+                </>
+              ) : (
+                <>
+                  {i18n.t("mainDrawer.appBar.user.message")} <b>{user.name}</b>,{" "}
+                  {i18n.t("mainDrawer.appBar.user.messageEnd")}{" "}
+                  <b>{user?.company?.name}</b>!
+                </>
+              )}
+            </Typography>
+          )}
+
+          {/* Botão que leva para tela de atendimento (mobile) */}
+          {isMobile && (
+            <IconButton
+              component={Link}
+              to="/tickets"
+              aria-label={i18n.t("mainDrawer.listItems.tickets")}
+              color="inherit"
+            >
+              <WhatsAppIcon className={classes.ticketIcon} />
+            </IconButton>
+          )}
 
           {userToken === "enabled" && user?.companyId === 1 && (
             <Chip
@@ -526,57 +552,57 @@ const LoggedInLayout = ({ children, themeToggle }) => {
               label={i18n.t("mainDrawer.appBar.user.token")}
             />
           )}
-          <VersionControl />
+          
+          {/* Version control só visível em desktop */}
+          {greaterThenSm && <VersionControl />}
 
-          {user.profile === "admin" && user?.companyId === 1 && (
+          {user.profile === "admin" && user?.companyId === 1 && !isMobile && (
             <IconButton
               onClick={handleBackup}
               aria-label={i18n.t("mainDrawer.appBar.backup") || "Backup"}
               color="inherit"
+              className={classes.desktopIcon}
             >
               <CloudDownloadIcon style={{ color: "white" }} />
             </IconButton>
           )}
 
-          {/* DESABILITADO POIS TEM BUGS */}
-          <UserLanguageSelector />
-          {/* <SoftPhone
-            callVolume={33} //Set Default callVolume
-            ringVolume={44} //Set Default ringVolume
-            connectOnStart={false} //Auto connect to sip
-            notifications={false} //Show Browser Notification of an incoming call
-            config={config} //Voip config
-            setConnectOnStartToLocalStorage={setConnectOnStartToLocalStorage} // Callback function
-            setNotifications={setNotifications} // Callback function
-            setCallVolume={setCallVolume} // Callback function
-            setRingVolume={setRingVolume} // Callback function
-            timelocale={'UTC-3'} //Set time local for call history
-          /> */}
-          <IconButton edge="start" onClick={colorMode.toggleColorMode}>
-            {theme.mode === "dark" ? (
-              <Brightness7Icon style={{ color: "white" }} />
-            ) : (
-              <Brightness4Icon style={{ color: "white" }} />
-            )}
-          </IconButton>
+          {/* Seletor de idioma (apenas ícone) */}
+          <UserLanguageSelector iconOnly={true} />
 
-          <NotificationsVolume setVolume={setVolume} volume={volume} />
+          {/* Botões apenas para desktop */}
+          {!isMobile && (
+            <IconButton edge="start" onClick={colorMode.toggleColorMode}>
+              {theme.mode === "dark" ? (
+                <Brightness7Icon style={{ color: "white" }} />
+              ) : (
+                <Brightness4Icon style={{ color: "white" }} />
+              )}
+            </IconButton>
+          )}
 
-          <IconButton
-            onClick={handleRefreshPage}
-            aria-label={i18n.t("mainDrawer.appBar.refresh")}
-            color="inherit"
-          >
-            <CachedIcon style={{ color: "white" }} />
-          </IconButton>
+          {!isMobile && (
+            <NotificationsVolume setVolume={setVolume} volume={volume} />
+          )}
 
-          {/* <DarkMode themeToggle={themeToggle} /> */}
+          {!isMobile && (
+            <IconButton
+              onClick={handleRefreshPage}
+              aria-label={i18n.t("mainDrawer.appBar.refresh")}
+              color="inherit"
+              className={classes.desktopIcon}
+            >
+              <CachedIcon style={{ color: "white" }} />
+            </IconButton>
+          )}
 
+          {/* Notificações (visível em mobile e desktop) */}
           {user.id && <NotificationsPopOver volume={volume} />}
 
-          <AnnouncementsPopover />
-
-          <ChatPopover />
+          {/* Componentes visíveis apenas em desktop */}
+          {!isMobile && <AnnouncementsPopover />}
+          
+          {!isMobile && <ChatPopover />}
 
           <div>
             <StyledBadge
