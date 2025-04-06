@@ -1,6 +1,5 @@
 import AppError from "../../errors/AppError";
 import Plan from "../../models/Plan";
-import ShowPlanService from "./ShowPlanService";
 
 interface PlanData {
   name: string;

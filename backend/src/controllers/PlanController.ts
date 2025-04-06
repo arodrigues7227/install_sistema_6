@@ -75,6 +75,10 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   const { searchParam, pageNumber, listPublic } = req.query as IndexQuery;
 
   const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    throw new AppError("Cabeçalho de autorização não encontrado", 401);
+  }
+
   const [, token] = authHeader.split(" ");
   const decoded = verify(token, authConfig.secret);
   const { id: requestUserId, profile, companyId } = decoded as TokenPayload;
@@ -114,6 +118,23 @@ export const list = async (req: Request, res: Response): Promise<Response> => {
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const newPlan: StorePlanData = req.body;
+  
+  // Verificar se o cabeçalho de autorização existe
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    throw new AppError("Cabeçalho de autorização não encontrado", 401);
+  }
+  
+  // Validar token e verificar permissões
+  const [, token] = authHeader.split(" ");
+  const decoded = verify(token, authConfig.secret);
+  const { id: requestUserId } = decoded as TokenPayload;
+  const requestUser = await User.findByPk(requestUserId);
+  
+  // Verificar se o usuário é super admin
+  if (!requestUser.super) {
+    throw new AppError("Você não possui permissão para criar planos", 403);
+  }
 
   const schema = Yup.object().shape({
     name: Yup.string().required()
@@ -127,13 +148,6 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
 
   const plan = await CreatePlanService(newPlan);
 
-  // const io = getIO();
-  // io.of(companyId.toString())
-  // .emit("plan", {
-  //   action: "create",
-  //   plan
-  // });
-
   return res.status(200).json(plan);
 };
 
@@ -141,6 +155,9 @@ export const show = async (req: Request, res: Response): Promise<Response> => {
   const { id } = req.params;
 
   const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    throw new AppError("Cabeçalho de autorização não encontrado", 401);
+  }
   const [, token] = authHeader.split(" ");
   const decoded = verify(token, authConfig.secret);
   const { id: requestUserId, profile, companyId } = decoded as TokenPayload;
@@ -176,25 +193,10 @@ export const update = async (
     throw new AppError(err.message);
   }
 
-  const { id,
-       name,
-       users,
-       connections,
-       queues,
-       amount,
-       useWhatsapp,
-       useFacebook,
-       useInstagram,
-       useCampaigns,
-       useSchedules,
-       useInternalChat,
-       useExternalApi,
-       useKanban,
-       useOpenAi,
-       useIntegrations,
-       onlyApiMessage
-  } = planData;
   const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    throw new AppError("Cabeçalho de autorização não encontrado", 401);
+  }
   const [, token] = authHeader.split(" ");
   const decoded = verify(token, authConfig.secret);
   const { id: requestUserId, profile, companyId } = decoded as TokenPayload;
@@ -204,26 +206,10 @@ export const update = async (
 
   if (requestUser.super === true) {
     const plan = await UpdatePlanService(planData
-      // id,
-      // name,
-      // users,
-      // connections,
-      // queues,
-      // amount,
-      // useWhatsapp,
-      // useFacebook,
-      // useInstagram,
-      // useCampaigns,
-      // useSchedules,
-      // useInternalChat,
-      // useExternalApi,
-      // useKanban,
-      // useOpenAi,
-      // useIntegrations
     );
 
     return res.status(200).json(plan);
-  } else if (PlanCompany.toString() !== id) {
+  } else if (PlanCompany.toString() !== planData.id) {
     return res.status(400).json({ error: "Você não possui permissão para acessar este recurso!" });
   }
 
@@ -243,6 +229,9 @@ export const remove = async (
   const { id } = req.params;
 
   const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    throw new AppError("Cabeçalho de autorização não encontrado", 401);
+  }
   const [, token] = authHeader.split(" ");
   const decoded = verify(token, authConfig.secret);
   const { id: requestUserId, profile, companyId } = decoded as TokenPayload;

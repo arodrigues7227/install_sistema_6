@@ -607,7 +607,6 @@ export default function PlansManager() {
 
     const handleCancel = () => {
         setRecord({
-            id: undefined,
             name: '',
             users: 0,
             connections: 0,
@@ -623,6 +622,7 @@ export default function PlansManager() {
             useKanban: true,
             useOpenAi: true,
             useIntegrations: true,
+            onlyApiMessage: false,
             isPublic: true
         })
     }
@@ -639,9 +639,9 @@ export default function PlansManager() {
         let useKanban = data.useKanban === false ? false : true
         let useOpenAi = data.useOpenAi === false ? false : true
         let useIntegrations = data.useIntegrations === false ? false : true
+        let onlyApiMessage = data.onlyApiMessage === false ? false : true
 
         setRecord({
-            id: data.id,
             name: data.name || '',
             users: data.users || 0,
             connections: data.connections || 0,
@@ -657,6 +657,7 @@ export default function PlansManager() {
             useKanban,
             useOpenAi,
             useIntegrations,
+            onlyApiMessage,
             isPublic: data.isPublic
         })
     }
