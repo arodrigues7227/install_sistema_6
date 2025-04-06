@@ -577,7 +577,8 @@ export default function PlansManager() {
             if (data.id !== undefined) {
                 await update(data)
             } else {
-                await save(data)
+                const { id, ...newPlanData } = data;
+                await save(newPlanData);
             }
             await loadPlans()
             handleCancel()
