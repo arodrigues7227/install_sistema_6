@@ -416,10 +416,128 @@ const MainListItems = ({ collapsed, drawerClose }) => {
     }
   };
 
+  if (isOnlyApiPlan) {
+    return (
+      <div onClick={drawerClose}>
+        {/* Contatos é permitido para plano apenas API */}
+        <ListItemLink
+          to="/contacts"
+          primary={i18n.t("mainDrawer.listItems.contacts")}
+          icon={<ContactPhoneOutlinedIcon />}
+          tooltip={collapsed}
+        />
+
+        <Can
+          role={
+            user.profile === "user" && user.allowConnections === "enabled"
+              ? "admin"
+              : user.profile
+          }
+          perform="dashboard:view"
+          yes={() => (
+            <>
+              <Divider />
+              <ListSubheader inset>
+                {i18n.t("mainDrawer.listItems.administration")}
+              </ListSubheader>
+
+              {/* Usuários é permitido para plano apenas API */}
+              <Can
+                role={user.profile}
+                perform="dashboard:view"
+                yes={() => (
+                  <ListItemLink
+                    to="/users"
+                    primary={i18n.t("mainDrawer.listItems.users")}
+                    icon={<PeopleAltOutlinedIcon />}
+                    tooltip={collapsed}
+                  />
+                )}
+              />
+
+              {/* Conexões é permitido para plano apenas API */}
+              <Can
+                role={
+                  user.profile === "user" && user.allowConnections === "enabled"
+                    ? "admin"
+                    : user.profile
+                }
+                perform={"drawer-admin-items:view"}
+                yes={() => (
+                  <ListItemLink
+                    to="/connections"
+                    primary={i18n.t("mainDrawer.listItems.connections")}
+                    icon={<SyncAltIcon />}
+                    showBadge={connectionWarning}
+                    tooltip={collapsed}
+                  />
+                )}
+              />
+
+              {/* Financeiro é permitido para plano apenas API */}
+              <Can
+                role={user.profile}
+                perform="dashboard:view"
+                yes={() => (
+                  <ListItemLink
+                    to="/financeiro"
+                    primary={i18n.t("mainDrawer.listItems.financeiro")}
+                    icon={<LocalAtmIcon />}
+                    tooltip={collapsed}
+                  />
+                )}
+              />
+
+              {/* Configurações é permitido para plano apenas API */}
+              <Can
+                role={user.profile}
+                perform="dashboard:view"
+                yes={() => (
+                  <ListItemLink
+                    to="/settings"
+                    primary={i18n.t("mainDrawer.listItems.settings")}
+                    icon={<SettingsOutlinedIcon />}
+                    tooltip={collapsed}
+                  />
+                )}
+              />
+
+              {/* Empresas - apenas para super admin */}
+              {user.super && (
+                <ListItemLink
+                  to="/companies"
+                  primary={i18n.t("mainDrawer.listItems.companies")}
+                  icon={<BusinessIcon />}
+                  tooltip={collapsed}
+                />
+              )}
+            </>
+          )}
+        />
+
+        {!collapsed && (
+          <React.Fragment>
+            <Divider />
+            <Typography
+              style={{
+                fontSize: "12px",
+                padding: "10px",
+                textAlign: "center",
+                fontWeight: "bold",
+              }}
+            >
+              {`${version}`}
+            </Typography>
+          </React.Fragment>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div onClick={drawerClose}>
       {/* Somente mostrar o Dashboard se não for plano apenas API */}
-      {!isOnlyApiPlan && (
+
         <Can
           role={
             (user.profile === "user" && user.showDashboard === "enabled") ||
@@ -517,30 +635,29 @@ const MainListItems = ({ collapsed, drawerClose }) => {
             </>
           )}
         />
-      )}
-  
+     
       {/* Não mostrar Tickets para plano apenas API */}
-      {!isOnlyApiPlan && (
+
         <ListItemLink
           to="/tickets"
           primary={i18n.t("mainDrawer.listItems.tickets")}
           icon={<WhatsAppIcon />}
           tooltip={collapsed}
         />
-      )}
+    
   
       {/* Não mostrar Quick Messages para plano apenas API */}
-      {!isOnlyApiPlan && (
+
         <ListItemLink
           to="/quick-messages"
           primary={i18n.t("mainDrawer.listItems.quickMessages")}
           icon={<FlashOnIcon />}
           tooltip={collapsed}
         />
-      )}
+
   
       {/* Não mostrar Kanban para plano apenas API */}
-      {!isOnlyApiPlan && showKanban && (
+      {showKanban && (
         <>
           <ListItemLink
             to="/kanban"
@@ -560,7 +677,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
       />
   
       {/* Não mostrar Schedules para plano apenas API */}
-      {!isOnlyApiPlan && showSchedules && (
+      {showSchedules && (
         <>
           <ListItemLink
             to="/schedules"
@@ -572,17 +689,17 @@ const MainListItems = ({ collapsed, drawerClose }) => {
       )}
   
       {/* Não mostrar Tags para plano apenas API */}
-      {!isOnlyApiPlan && (
+ 
         <ListItemLink
           to="/tags"
           primary={i18n.t("mainDrawer.listItems.tags")}
           icon={<LocalOfferIcon />}
           tooltip={collapsed}
         />
-      )}
+
   
       {/* Não mostrar Internal Chat para plano apenas API */}
-      {!isOnlyApiPlan && showInternalChat && (
+      {showInternalChat && (
         <>
           <ListItemLink
             to="/chats"
@@ -598,7 +715,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
       )}
   
       {/* Não mostrar Campaigns para plano apenas API */}
-      {!isOnlyApiPlan && user?.showCampaign && showCampaigns && (
+      {user?.showCampaign && showCampaigns && (
         <>
           <Tooltip
             title={collapsed ? i18n.t("mainDrawer.listItems.campaigns") : ""}
@@ -666,7 +783,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
       )}
   
       {/* Não mostrar Helps para plano apenas API */}
-      {!isOnlyApiPlan && hasHelps && (
+      {hasHelps && (
         <ListItemLink
           to="/helps"
           primary={i18n.t("mainDrawer.listItems.helps")}
@@ -690,7 +807,6 @@ const MainListItems = ({ collapsed, drawerClose }) => {
             </ListSubheader>
   
             {/* Não mostrar Flowbuilder para plano apenas API */}
-            {!isOnlyApiPlan && (
               <Can
                 role={user.profile}
                 perform="dashboard:view"
@@ -764,10 +880,9 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                   </>
                 )}
               />
-            )}
   
             {/* Não mostrar Announcements para plano apenas API */}
-            {!isOnlyApiPlan && user.super && (
+            {user.super && (
               <ListItemLink
                 to="/announcements"
                 primary={i18n.t("mainDrawer.listItems.annoucements")}
@@ -809,7 +924,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
             />
   
             {/* Não mostrar Filas para plano apenas API */}
-            {!isOnlyApiPlan && (
+
               <Can
                 role={user.profile}
                 perform="dashboard:view"
@@ -822,10 +937,10 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                   />
                 )}
               />
-            )}
+
   
             {/* Não mostrar Prompts para plano apenas API */}
-            {!isOnlyApiPlan && showOpenAi && (
+            {showOpenAi && (
               <Can
                 role={user.profile}
                 perform="dashboard:view"
@@ -841,7 +956,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
             )}
   
             {/* Não mostrar Integrações para plano apenas API */}
-            {!isOnlyApiPlan && showIntegrations && (
+            {showIntegrations && (
               <Can
                 role={user.profile}
                 perform="dashboard:view"
@@ -876,7 +991,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
             />
   
             {/* Não mostrar todas as conexões para plano apenas API */}
-            {!isOnlyApiPlan && user.super && (
+            {user.super && (
               <ListItemLink
                 to="/allConnections"
                 primary={i18n.t("mainDrawer.listItems.allConnections")}
@@ -886,7 +1001,6 @@ const MainListItems = ({ collapsed, drawerClose }) => {
             )}
   
             {/* Não mostrar Arquivos para plano apenas API */}
-            {!isOnlyApiPlan && (
               <Can
                 role={user.profile}
                 perform="dashboard:view"
@@ -899,10 +1013,8 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                   />
                 )}
               />
-            )}
   
             {/* Não mostrar Financeiro para plano apenas API */}
-            {!isOnlyApiPlan && (
               <Can
                 role={user.profile}
                 perform="dashboard:view"
@@ -915,7 +1027,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                   />
                 )}
               />
-            )}
+
   
             {/* Configurações é permitido para plano apenas API */}
             <Can
