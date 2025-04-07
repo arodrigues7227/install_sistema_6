@@ -419,21 +419,22 @@ const MainListItems = ({ collapsed, drawerClose }) => {
   };
 
   // Se o plano for onlyApiMessage, exibir apenas os itens necessários
-  if (isOnlyApiMessage) {
+  if (isOnlyApiMessage === true) {
     return (
-      <div onClick={drawerClose}>    
+      <div onClick={drawerClose}>
+        {/* Contatos */}
         <ListItemLink
           to="/contacts"
           primary={i18n.t("mainDrawer.listItems.contacts")}
           icon={<ContactPhoneOutlinedIcon />}
           tooltip={collapsed}
         />
-    
+  
         <Divider />
         <ListSubheader inset>
           {i18n.t("mainDrawer.listItems.administration")}
         </ListSubheader>
-    
+  
         {/* Usuários */}
         <Can
           role={user.profile}
@@ -447,7 +448,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
             />
           )}
         />
-    
+  
         {/* Conexões */}
         <Can
           role={
@@ -466,7 +467,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
             />
           )}
         />
-    
+  
         {/* Configurações */}
         <Can
           role={user.profile}
@@ -480,7 +481,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
             />
           )}
         />
-    
+  
         {!collapsed && (
           <React.Fragment>
             <Divider />
