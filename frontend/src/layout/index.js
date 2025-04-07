@@ -24,6 +24,7 @@ import {
   Badge,
   withStyles,
   Chip,
+  Tooltip,
 } from "@material-ui/core";
 
 import MenuIcon from "@material-ui/icons/Menu";
@@ -33,6 +34,7 @@ import CachedIcon from "@material-ui/icons/Cached";
 // import whatsappIcon from "../assets/nopicture.png";
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import WhatsAppIcon from "@material-ui/icons/WhatsApp";
+import TranslateIcon from "@material-ui/icons/Translate";
 import BackupModal from "../components/BackupModal";
 import MainListItems from "./MainListItems";
 import NotificationsPopOver from "../components/NotificationsPopOver";
@@ -237,6 +239,12 @@ const useStyles = makeStyles((theme) => ({
     [theme.breakpoints.down("sm")]: {
       display: "none",
     },
+  },
+  mobileIconsContainer: {
+    display: 'flex',
+    marginLeft: 'auto', // Isso empurra os ícones para a direita
+    alignItems: 'center',
+    gap: theme.spacing(1), // Espaçamento entre os ícones
   },
 }));
 
@@ -534,16 +542,68 @@ const LoggedInLayout = ({ children, themeToggle }) => {
             </Typography>
           )}
 
-          {/* Botão que leva para tela de atendimento (mobile) */}
+          {/* Container para ícones em dispositivos móveis */}
           {isMobile && (
-            <IconButton
-              component={Link}
-              to="/tickets"
-              aria-label={i18n.t("mainDrawer.listItems.tickets")}
-              color="inherit"
-            >
-              <WhatsAppIcon className={classes.ticketIcon} />
-            </IconButton>
+            <div className={classes.mobileIconsContainer}>
+              {/* Botão que leva para tela de atendimento (mobile) */}
+              <Tooltip title={i18n.t("mainDrawer.listItems.tickets")}>
+                <IconButton
+                  component={Link}
+                  to="/tickets"
+                  aria-label={i18n.t("mainDrawer.listItems.tickets")}
+                  color="inherit"
+                >
+                  <WhatsAppIcon className={classes.ticketIcon} />
+                </IconButton>
+              </Tooltip>
+
+              {/* Seletor de tema escuro/claro */}
+              <Tooltip title={theme.mode === "dark" ? "Modo claro" : "Modo escuro"}>
+                <IconButton edge="start" onClick={colorMode.toggleColorMode}>
+                  {theme.mode === "dark" ? (
+                    <Brightness7Icon style={{ color: "white" }} />
+                  ) : (
+                    <Brightness4Icon style={{ color: "white" }} />
+                  )}
+                </IconButton>
+              </Tooltip>
+              
+              {/* Seletor de idioma com ícone melhor */}
+              <Tooltip title={i18n.t("mainDrawer.appBar.user.language") || "Idioma"}>
+                <IconButton>
+                  <TranslateIcon style={{ color: "white" }} />
+                </IconButton>
+              </Tooltip>
+              
+              {/* Adicione o controle de volume em mobile */}
+              <Tooltip title={i18n.t("mainDrawer.appBar.volume") || "Volume"}>
+                <div>
+                  <NotificationsVolume setVolume={setVolume} volume={volume} />
+                </div>
+              </Tooltip>
+                            
+              {/* Notificações */}
+              {user.id && <NotificationsPopOver volume={volume} />}
+              
+              {/* Perfil do usuário */}
+              <Tooltip title={i18n.t("mainDrawer.appBar.user.profile") || "Perfil"}>
+                <StyledBadge
+                  overlap="circular"
+                  anchorOrigin={{
+                    vertical: "bottom",
+                    horizontal: "right",
+                  }}
+                  variant="dot"
+                  onClick={handleMenu}
+                >
+                  <Avatar
+                    alt="Multi100"
+                    className={classes.avatar2}
+                    src={profileUrl}
+                  />
+                </StyledBadge>
+              </Tooltip>
+            </div>
           )}
 
           {userToken === "enabled" && user?.companyId === 1 && (
@@ -557,100 +617,114 @@ const LoggedInLayout = ({ children, themeToggle }) => {
           {greaterThenSm && <VersionControl />}
 
           {user.profile === "admin" && user?.companyId === 1 && !isMobile && (
-            <IconButton
-              onClick={handleBackup}
-              aria-label={i18n.t("mainDrawer.appBar.backup") || "Backup"}
-              color="inherit"
-              className={classes.desktopIcon}
-            >
-              <CloudDownloadIcon style={{ color: "white" }} />
-            </IconButton>
+            <Tooltip title={i18n.t("mainDrawer.appBar.backup") || "Backup"}>
+              <IconButton
+                onClick={handleBackup}
+                aria-label={i18n.t("mainDrawer.appBar.backup") || "Backup"}
+                color="inherit"
+                className={classes.desktopIcon}
+              >
+                <CloudDownloadIcon style={{ color: "white" }} />
+              </IconButton>
+            </Tooltip>
           )}
 
-          {/* Seletor de idioma (apenas ícone) */}
-          <UserLanguageSelector iconOnly={true} />
-
-          {/* Botões apenas para desktop */}
+          {/* Desktop: ícones e botões normais */}
           {!isMobile && (
-            <IconButton edge="start" onClick={colorMode.toggleColorMode}>
-              {theme.mode === "dark" ? (
-                <Brightness7Icon style={{ color: "white" }} />
-              ) : (
-                <Brightness4Icon style={{ color: "white" }} />
-              )}
-            </IconButton>
+            <>
+              {/* Seletor de idioma (apenas ícone) */}
+              <Tooltip title={i18n.t("mainDrawer.appBar.user.language") || "Idioma"}>
+                <div>
+                  <UserLanguageSelector iconOnly={true} />
+                </div>
+              </Tooltip>
+
+              <Tooltip title={theme.mode === "dark" ? "Modo claro" : "Modo escuro"}>
+                <IconButton edge="start" onClick={colorMode.toggleColorMode}>
+                  {theme.mode === "dark" ? (
+                    <Brightness7Icon style={{ color: "white" }} />
+                  ) : (
+                    <Brightness4Icon style={{ color: "white" }} />
+                  )}
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title={i18n.t("mainDrawer.appBar.volume") || "Volume"}>
+                <div>
+                  <NotificationsVolume setVolume={setVolume} volume={volume} />
+                </div>
+              </Tooltip>
+
+              <Tooltip title={i18n.t("mainDrawer.appBar.refresh")}>
+                <IconButton
+                  onClick={handleRefreshPage}
+                  aria-label={i18n.t("mainDrawer.appBar.refresh")}
+                  color="inherit"
+                  className={classes.desktopIcon}
+                >
+                  <CachedIcon style={{ color: "white" }} />
+                </IconButton>
+              </Tooltip>
+
+              {/* Notificações (visível em mobile e desktop) */}
+              {user.id && <NotificationsPopOver volume={volume} />}
+
+              {/* Componentes visíveis apenas em desktop */}
+              <AnnouncementsPopover />
+              
+              <ChatPopover />
+
+              <Tooltip title={i18n.t("mainDrawer.appBar.user.profile") || "Perfil"}>
+                <div>
+                  <StyledBadge
+                    overlap="circular"
+                    anchorOrigin={{
+                      vertical: "bottom",
+                      horizontal: "right",
+                    }}
+                    variant="dot"
+                    onClick={handleMenu}
+                  >
+                    <Avatar
+                      alt="Multi100"
+                      className={classes.avatar2}
+                      src={profileUrl}
+                    />
+                  </StyledBadge>
+                </div>
+              </Tooltip>
+            </>
           )}
 
-          {!isMobile && (
-            <NotificationsVolume setVolume={setVolume} volume={volume} />
-          )}
+          <UserModal
+            open={userModalOpen}
+            onClose={() => setUserModalOpen(false)}
+            onImageUpdate={(newProfileUrl) => setProfileUrl(newProfileUrl)}
+            userId={user?.id}
+          />
 
-          {!isMobile && (
-            <IconButton
-              onClick={handleRefreshPage}
-              aria-label={i18n.t("mainDrawer.appBar.refresh")}
-              color="inherit"
-              className={classes.desktopIcon}
-            >
-              <CachedIcon style={{ color: "white" }} />
-            </IconButton>
-          )}
-
-          {/* Notificações (visível em mobile e desktop) */}
-          {user.id && <NotificationsPopOver volume={volume} />}
-
-          {/* Componentes visíveis apenas em desktop */}
-          {!isMobile && <AnnouncementsPopover />}
-          
-          {!isMobile && <ChatPopover />}
-
-          <div>
-            <StyledBadge
-              overlap="circular"
-              anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "right",
-              }}
-              variant="dot"
-              onClick={handleMenu}
-            >
-              <Avatar
-                alt="Multi100"
-                className={classes.avatar2}
-                src={profileUrl}
-              />
-            </StyledBadge>
-
-            <UserModal
-              open={userModalOpen}
-              onClose={() => setUserModalOpen(false)}
-              onImageUpdate={(newProfileUrl) => setProfileUrl(newProfileUrl)}
-              userId={user?.id}
-            />
-
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorEl}
-              getContentAnchorEl={null}
-              anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "right",
-              }}
-              transformOrigin={{
-                vertical: "top",
-                horizontal: "right",
-              }}
-              open={menuOpen}
-              onClose={handleCloseMenu}
-            >
-              <MenuItem onClick={handleOpenUserModal}>
-                {i18n.t("mainDrawer.appBar.user.profile")}
-              </MenuItem>
-              <MenuItem onClick={handleClickLogout}>
-                {i18n.t("mainDrawer.appBar.user.logout")}
-              </MenuItem>
-            </Menu>
-          </div>
+          <Menu
+            id="menu-appbar"
+            anchorEl={anchorEl}
+            getContentAnchorEl={null}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "right",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
+            open={menuOpen}
+            onClose={handleCloseMenu}
+          >
+            <MenuItem onClick={handleOpenUserModal}>
+              {i18n.t("mainDrawer.appBar.user.profile")}
+            </MenuItem>
+            <MenuItem onClick={handleClickLogout}>
+              {i18n.t("mainDrawer.appBar.user.logout")}
+            </MenuItem>
+          </Menu>
         </Toolbar>
       </AppBar>
 

@@ -62,65 +62,11 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-// Esquema de validação customizado usando Yup
-const ScheduleSchema = Yup.object().shape({
-  schedules: Yup.array().of(
-    Yup.object().test('conditional-validation', null, function(schedule) {
-      const { weekdayEn, startTimeA, endTimeA, startTimeB, endTimeB } = schedule;
-      const isWeekend = weekdayEn === "saturday" || weekdayEn === "sunday";
-      
-      // Cria um objeto de erros
-      const errors = {};
-      
-      // Regex para validar formato de hora
-      const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
-      
-      // Validação para turno A (sempre obrigatório)
-      if (!startTimeA) {
-        errors.startTimeA = "Obrigatório";
-      } else if (!timeRegex.test(startTimeA)) {
-        errors.startTimeA = "Formato inválido";
-      }
-      
-      if (!endTimeA) {
-        errors.endTimeA ="Obrigatório";
-      } else if (!timeRegex.test(endTimeA)) {
-        errors.endTimeA = "Formato inválido";
-      }
-      
-      // Validação para turno B (obrigatório apenas em dias úteis)
-      if (!isWeekend) {
-        if (!startTimeB) {
-          errors.startTimeB ="Obrigatório";
-        } else if (!timeRegex.test(startTimeB)) {
-          errors.startTimeB = "Formato inválido";
-        }
-        
-        if (!endTimeB) {
-          errors.endTimeB ="Obrigatório";
-        } else if (!timeRegex.test(endTimeB)) {
-          errors.endTimeB = "Formato inválido";
-        }
-      } else {
-        // Para finais de semana, apenas validar o formato se o campo for preenchido
-        if (startTimeB && !timeRegex.test(startTimeB)) {
-          errors.startTimeB = "Formato inválido";
-        }
-        
-        if (endTimeB && !timeRegex.test(endTimeB)) {
-          errors.endTimeB = "Formato inválido";
-        }
-      }
-      
-      // Se houver erros, retorne o objeto de erros
-      if (Object.keys(errors).length > 0) {
-        return this.createError({ path: this.path, message: JSON.stringify(errors) });
-      }
-      
-      return true;
-    }),
-  ),
-});
+// Função para validar o formato de hora
+const isValidTimeFormat = (value) => {
+  if (!value) return false;
+  return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(value);
+};
 
 function SchedulesForm(props) {
   const { initialValues, onSubmit, loading, labelSaveButton } = props;
@@ -184,37 +130,108 @@ function SchedulesForm(props) {
         enableReinitialize
         className={classes.fullWidth}
         initialValues={{ schedules }}
-        validationSchema={ScheduleSchema}
+        validate={(values) => {
+          const errors = { schedules: [] };
+          let hasErrors = false;
+          
+          values.schedules.forEach((schedule, index) => {
+            const { weekdayEn, startTimeA, endTimeA, startTimeB, endTimeB } = schedule;
+            const weekend = isWeekend(weekdayEn);
+            const scheduleError = {};
+            
+            // Validar turno A (obrigatório para todos os dias)
+            if (!startTimeA) {
+              scheduleError.startTimeA = "Obrigatório";
+              hasErrors = true;
+            } else if (!isValidTimeFormat(startTimeA)) {
+              scheduleError.startTimeA = "Formato inválido";
+              hasErrors = true;
+            }
+            
+            if (!endTimeA) {
+              scheduleError.endTimeA = "Obrigatório";
+              hasErrors = true;
+            } else if (!isValidTimeFormat(endTimeA)) {
+              scheduleError.endTimeA = "Formato inválido";
+              hasErrors = true;
+            }
+            
+            // Validar turno B (obrigatório apenas para dias úteis)
+            if (!weekend) {
+              if (!startTimeB) {
+                scheduleError.startTimeB = "Obrigatório";
+                hasErrors = true;
+              } else if (!isValidTimeFormat(startTimeB)) {
+                scheduleError.startTimeB = "Formato inválido";
+                hasErrors = true;
+              }
+              
+              if (!endTimeB) {
+                scheduleError.endTimeB = "Obrigatório";
+                hasErrors = true;
+              } else if (!isValidTimeFormat(endTimeB)) {
+                scheduleError.endTimeB = "Formato inválido";
+                hasErrors = true;
+              }
+            } else {
+              // Para fins de semana, validar apenas se os campos forem preenchidos
+              if (startTimeB && !isValidTimeFormat(startTimeB)) {
+                scheduleError.startTimeB = "Formato inválido";
+                hasErrors = true;
+              }
+              
+              if (endTimeB && !isValidTimeFormat(endTimeB)) {
+                scheduleError.endTimeB = "Formato inválido";
+                hasErrors = true;
+              }
+            }
+            
+            errors.schedules[index] = Object.keys(scheduleError).length > 0 ? scheduleError : undefined;
+          });
+          
+          return hasErrors ? errors : {};
+        }}
         onSubmit={({ schedules }, { setSubmitting }) => {
           handleSubmit(schedules);
           setSubmitting(false);
         }}
       >
-        {({ values, errors, touched, isValid, dirty, isSubmitting, setFieldValue, setFieldTouched }) => {
+        {({ values, errors, touched, isValid, dirty, isSubmitting, setFieldValue, validateForm }) => {
           // Função para copiar horários da segunda-feira para os dias úteis
-          const copyMondayToWeekdays = () => {
+          const copyMondayToWeekdays = async () => {
             // Pega os horários da segunda-feira (índice 0)
             const mondaySchedule = values.schedules[0];
             
             // Aplica os mesmos horários para terça a sexta (índices 1 a 4)
             for (let i = 1; i <= 4; i++) {
-              setFieldValue(`schedules[${i}].startTimeA`, mondaySchedule.startTimeA);
-              setFieldValue(`schedules[${i}].endTimeA`, mondaySchedule.endTimeA);
-              setFieldValue(`schedules[${i}].startTimeB`, mondaySchedule.startTimeB);
-              setFieldValue(`schedules[${i}].endTimeB`, mondaySchedule.endTimeB);
-              
-              // Marca os campos como "touched" para validação
-              setFieldTouched(`schedules[${i}].startTimeA`, true, false);
-              setFieldTouched(`schedules[${i}].endTimeA`, true, false);
-              setFieldTouched(`schedules[${i}].startTimeB`, true, false);
-              setFieldTouched(`schedules[${i}].endTimeB`, true, false);
+              await setFieldValue(`schedules[${i}].startTimeA`, mondaySchedule.startTimeA);
+              await setFieldValue(`schedules[${i}].endTimeA`, mondaySchedule.endTimeA);
+              await setFieldValue(`schedules[${i}].startTimeB`, mondaySchedule.startTimeB);
+              await setFieldValue(`schedules[${i}].endTimeB`, mondaySchedule.endTimeB);
             }
+            
+            // Revalida o formulário depois que todos os campos foram atualizados
+            setTimeout(() => {
+              validateForm();
+            }, 100);
+            
+            // Mensagem de sucesso
+            setSnackbarMessage("Horários aplicados aos dias úteis com sucesso!");
+            setSnackbarSeverity("success");
+            setOpenSnackbar(true);
           };
           
           // Verifica se segunda-feira está completamente preenchida
           const isMondayComplete = () => {
             const monday = values.schedules[0];
-            return monday.startTimeA && monday.endTimeA && monday.startTimeB && monday.endTimeB;
+            return monday.startTimeA && 
+                   monday.endTimeA && 
+                   monday.startTimeB && 
+                   monday.endTimeB &&
+                   isValidTimeFormat(monday.startTimeA) && 
+                   isValidTimeFormat(monday.endTimeA) && 
+                   isValidTimeFormat(monday.startTimeB) && 
+                   isValidTimeFormat(monday.endTimeB);
           };
           
           return (
@@ -229,7 +246,7 @@ function SchedulesForm(props) {
                   disabled={!isMondayComplete()}
                   size="small"
                 >
-                  {i18n.t("queueModal.serviceHours.copyToWeekdays") || "Aplicar horário de segunda para dias úteis"}
+                  Aplicar horário de segunda para dias úteis
                 </Button>
               </Box>
               
@@ -241,15 +258,9 @@ function SchedulesForm(props) {
                       const { weekdayEn } = item;
                       const weekend = isWeekend(weekdayEn);
                       
-                      // Extrai erros para este índice específico
-                      let fieldErrors = {};
-                      if (errors.schedules && errors.schedules[index]) {
-                        try {
-                          fieldErrors = JSON.parse(errors.schedules[index]);
-                        } catch (e) {
-                          fieldErrors = {};
-                        }
-                      }
+                      // Acessa os erros específicos para este índice
+                      const scheduleErrors = errors.schedules && errors.schedules[index] ? errors.schedules[index] : {};
+                      const scheduleTouched = touched.schedules && touched.schedules[index] ? touched.schedules[index] : {};
                       
                       return (
                         <Grid key={index} xs={12} md={4} item>
@@ -262,7 +273,7 @@ function SchedulesForm(props) {
                                 label={i18n.t("queueModal.serviceHours.startTimeA")}
                                 name={`schedules[${index}].startTimeA`}
                               >
-                                {({ field, meta }) => (
+                                {({ field }) => (
                                   <div>
                                     <NumberFormat
                                       {...field}
@@ -273,12 +284,11 @@ function SchedulesForm(props) {
                                       placeholder="00:00"
                                       className={classes.fullWidth}
                                       label={i18n.t("queueModal.serviceHours.startTimeA") || "Início manhã"}
-                                      error={Boolean(fieldErrors.startTimeA)}
-                                      helperText={fieldErrors.startTimeA || ""}
+                                      error={Boolean(scheduleErrors.startTimeA && scheduleTouched.startTimeA)}
+                                      helperText={(scheduleErrors.startTimeA && scheduleTouched.startTimeA) ? scheduleErrors.startTimeA : ""}
                                       onValueChange={(values) => {
                                         const { formattedValue } = values;
-                                        setFieldValue(`schedules[${index}].startTimeA`, formattedValue);
-                                        setFieldTouched(`schedules[${index}].startTimeA`, true, false);
+                                        setFieldValue(`schedules[${index}].startTimeA`, formattedValue, true);
                                       }}
                                     />
                                   </div>
@@ -290,7 +300,7 @@ function SchedulesForm(props) {
                                 label={i18n.t("queueModal.serviceHours.endTimeA")}
                                 name={`schedules[${index}].endTimeA`}
                               >
-                                {({ field, meta }) => (
+                                {({ field }) => (
                                   <div>
                                     <NumberFormat
                                       {...field}
@@ -301,12 +311,11 @@ function SchedulesForm(props) {
                                       placeholder="00:00"
                                       className={classes.fullWidth}
                                       label={i18n.t("queueModal.serviceHours.endTimeA") || "Fim manhã"}
-                                      error={Boolean(fieldErrors.endTimeA)}
-                                      helperText={fieldErrors.endTimeA || ""}
+                                      error={Boolean(scheduleErrors.endTimeA && scheduleTouched.endTimeA)}
+                                      helperText={(scheduleErrors.endTimeA && scheduleTouched.endTimeA) ? scheduleErrors.endTimeA : ""}
                                       onValueChange={(values) => {
                                         const { formattedValue } = values;
-                                        setFieldValue(`schedules[${index}].endTimeA`, formattedValue);
-                                        setFieldTouched(`schedules[${index}].endTimeA`, true, false);
+                                        setFieldValue(`schedules[${index}].endTimeA`, formattedValue, true);
                                       }}
                                     />
                                   </div>
@@ -318,7 +327,7 @@ function SchedulesForm(props) {
                                 label={i18n.t("queueModal.serviceHours.startTimeB")}
                                 name={`schedules[${index}].startTimeB`}
                               >
-                                {({ field, meta }) => (
+                                {({ field }) => (
                                   <div>
                                     <NumberFormat
                                       {...field}
@@ -329,12 +338,11 @@ function SchedulesForm(props) {
                                       placeholder="00:00"
                                       className={`${classes.fullWidth} ${weekend ? classes.optionalField : ''}`}
                                       label={i18n.t("queueModal.serviceHours.startTimeB") || "Início tarde"}
-                                      error={Boolean(fieldErrors.startTimeB)}
-                                      helperText={fieldErrors.startTimeB || ""}
+                                      error={Boolean(scheduleErrors.startTimeB && scheduleTouched.startTimeB)}
+                                      helperText={(scheduleErrors.startTimeB && scheduleTouched.startTimeB) ? scheduleErrors.startTimeB : ""}
                                       onValueChange={(values) => {
                                         const { formattedValue } = values;
-                                        setFieldValue(`schedules[${index}].startTimeB`, formattedValue);
-                                        setFieldTouched(`schedules[${index}].startTimeB`, true, false);
+                                        setFieldValue(`schedules[${index}].startTimeB`, formattedValue, true);
                                       }}
                                     />
                                   </div>
@@ -346,7 +354,7 @@ function SchedulesForm(props) {
                                 label={i18n.t("queueModal.serviceHours.endTimeB")}
                                 name={`schedules[${index}].endTimeB`}
                               >
-                                {({ field, meta }) => (
+                                {({ field }) => (
                                   <div>
                                     <NumberFormat
                                       {...field}
@@ -357,12 +365,11 @@ function SchedulesForm(props) {
                                       placeholder="00:00"
                                       className={`${classes.fullWidth} ${weekend ? classes.optionalField : ''}`}
                                       label={i18n.t("queueModal.serviceHours.endTimeB") || "Fim tarde"}
-                                      error={Boolean(fieldErrors.endTimeB)}
-                                      helperText={fieldErrors.endTimeB || ""}
+                                      error={Boolean(scheduleErrors.endTimeB && scheduleTouched.endTimeB)}
+                                      helperText={(scheduleErrors.endTimeB && scheduleTouched.endTimeB) ? scheduleErrors.endTimeB : ""}
                                       onValueChange={(values) => {
                                         const { formattedValue } = values;
-                                        setFieldValue(`schedules[${index}].endTimeB`, formattedValue);
-                                        setFieldTouched(`schedules[${index}].endTimeB`, true, false);
+                                        setFieldValue(`schedules[${index}].endTimeB`, formattedValue, true);
                                       }}
                                     />
                                   </div>
