@@ -326,7 +326,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
       setShowInternalChat(planConfigs.plan.useInternalChat);
       setShowExternalApi(planConfigs.plan.useExternalApi);
       // Verificação para plano onlyApiMessage
-      setIsOnlyApiMessage(planConfigs.plan.onlyApiMessage);
+      setIsOnlyApiMessage(!!planConfigs.plan.onlyApiMessage);
     }
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -419,7 +419,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
   };
 
   // Se o plano for onlyApiMessage, exibir apenas os itens necessários
-  if (isOnlyApiMessage === true) {
+  if (isOnlyApiMessage) {
     return (
       <div onClick={drawerClose}>
         {/* Contatos */}

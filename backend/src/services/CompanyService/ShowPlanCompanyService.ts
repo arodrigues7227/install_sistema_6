@@ -25,7 +25,7 @@ const ShowPlanCompanyService = async (id: string | number): Promise<Company> => 
                     "useExternalApi",
                     "useKanban",
                     "useOpenAi",
-                    "nlyApiMessage",
+                    "onlyApiMessage",
                     "useIntegrations",
                 ]
             },
