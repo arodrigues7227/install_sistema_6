@@ -250,6 +250,8 @@ const MainListItems = ({ collapsed, drawerClose }) => {
   const [showSchedules, setShowSchedules] = useState(false);
   const [showInternalChat, setShowInternalChat] = useState(false);
   const [showExternalApi, setShowExternalApi] = useState(false);
+  // Estado para verificar se é plano onlyApiMessage
+  const [isOnlyApiMessage, setIsOnlyApiMessage] = useState(false);
 
   const [invisible, setInvisible] = useState(true);
   const [pageNumber, setPageNumber] = useState(1);
@@ -261,7 +263,6 @@ const MainListItems = ({ collapsed, drawerClose }) => {
   const [flowHover, setFlowHover] = useState(false);
   const { list } = useHelps(); // INSERIR
   const [hasHelps, setHasHelps] = useState(false);
-  const [isOnlyApiPlan, setIsOnlyApiPlan] = useState(false);
 
   useEffect(() => {
     // INSERIR ESSE EFFECT INTEIRO
@@ -324,7 +325,8 @@ const MainListItems = ({ collapsed, drawerClose }) => {
       setShowSchedules(planConfigs.plan.useSchedules);
       setShowInternalChat(planConfigs.plan.useInternalChat);
       setShowExternalApi(planConfigs.plan.useExternalApi);
-      setIsOnlyApiPlan(planConfigs.plan.onlyApiMessage);
+      // Verificação para plano onlyApiMessage
+      setIsOnlyApiMessage(planConfigs.plan.onlyApiMessage);
     }
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -416,74 +418,69 @@ const MainListItems = ({ collapsed, drawerClose }) => {
     }
   };
 
-  if (isOnlyApiPlan) {
+  // Se o plano for onlyApiMessage, exibir apenas os itens necessários
+  if (isOnlyApiMessage) {
     return (
-      <div onClick={drawerClose}>
-        {/* Contatos é permitido para plano apenas API */}
+      <div onClick={drawerClose}>    
+        <ListItemLink
+          to="/contacts"
+          primary={i18n.t("mainDrawer.listItems.contacts")}
+          icon={<ContactPhoneOutlinedIcon />}
+          tooltip={collapsed}
+        />
+    
+        <Divider />
+        <ListSubheader inset>
+          {i18n.t("mainDrawer.listItems.administration")}
+        </ListSubheader>
+    
+        {/* Usuários */}
+        <Can
+          role={user.profile}
+          perform="dashboard:view"
+          yes={() => (
+            <ListItemLink
+              to="/users"
+              primary={i18n.t("mainDrawer.listItems.users")}
+              icon={<PeopleAltOutlinedIcon />}
+              tooltip={collapsed}
+            />
+          )}
+        />
+    
+        {/* Conexões */}
         <Can
           role={
             user.profile === "user" && user.allowConnections === "enabled"
               ? "admin"
               : user.profile
           }
-          perform="dashboard:view"
+          perform={"drawer-admin-items:view"}
           yes={() => (
-            <>
-              <Divider />
-              <ListSubheader inset>
-                {i18n.t("mainDrawer.listItems.administration")}
-              </ListSubheader>
-
-              {/* Usuários é permitido para plano apenas API */}
-              <Can
-                role={user.profile}
-                perform="dashboard:view"
-                yes={() => (
-                  <ListItemLink
-                    to="/users"
-                    primary={i18n.t("mainDrawer.listItems.users")}
-                    icon={<PeopleAltOutlinedIcon />}
-                    tooltip={collapsed}
-                  />
-                )}
-              />
-
-              {/* Conexões é permitido para plano apenas API */}
-              <Can
-                role={
-                  user.profile === "user" && user.allowConnections === "enabled"
-                    ? "admin"
-                    : user.profile
-                }
-                perform={"drawer-admin-items:view"}
-                yes={() => (
-                  <ListItemLink
-                    to="/connections"
-                    primary={i18n.t("mainDrawer.listItems.connections")}
-                    icon={<SyncAltIcon />}
-                    showBadge={connectionWarning}
-                    tooltip={collapsed}
-                  />
-                )}
-              />
-
-              {/* Configurações é permitido para plano apenas API */}
-              <Can
-                role={user.profile}
-                perform="dashboard:view"
-                yes={() => (
-                  <ListItemLink
-                    to="/settings"
-                    primary={i18n.t("mainDrawer.listItems.settings")}
-                    icon={<SettingsOutlinedIcon />}
-                    tooltip={collapsed}
-                  />
-                )}
-              />
-            </>
+            <ListItemLink
+              to="/connections"
+              primary={i18n.t("mainDrawer.listItems.connections")}
+              icon={<SyncAltIcon />}
+              showBadge={connectionWarning}
+              tooltip={collapsed}
+            />
           )}
         />
-
+    
+        {/* Configurações */}
+        <Can
+          role={user.profile}
+          perform="dashboard:view"
+          yes={() => (
+            <ListItemLink
+              to="/settings"
+              primary={i18n.t("mainDrawer.listItems.settings")}
+              icon={<SettingsOutlinedIcon />}
+              tooltip={collapsed}
+            />
+          )}
+        />
+    
         {!collapsed && (
           <React.Fragment>
             <Divider />
@@ -504,128 +501,118 @@ const MainListItems = ({ collapsed, drawerClose }) => {
   }
 
   return (
-    <div onClick={drawerClose}>
-      {/* Somente mostrar o Dashboard se não for plano apenas API */}
-
-        <Can
-          role={
-            (user.profile === "user" && user.showDashboard === "enabled") ||
-            user.allowRealTime === "enabled"
-              ? "admin"
-              : user.profile
-          }
-          perform={"drawer-admin-items:view"}
-          yes={() => (
-            <>
-              <Tooltip
-                title={collapsed ? i18n.t("mainDrawer.listItems.management") : ""}
-                placement="right"
+    <div onClick={drawerClose} style={console.log('user', user, 'showCampaign', showCampaigns)}>
+      <Can
+        role={
+          (user.profile === "user" && user.showDashboard === "enabled") ||
+          user.allowRealTime === "enabled"
+            ? "admin"
+            : user.profile
+        }
+        perform={"drawer-admin-items:view"}
+        yes={() => (
+          <>
+            <Tooltip
+              title={collapsed ? i18n.t("mainDrawer.listItems.management") : ""}
+              placement="right"
+            >
+              <ListItem
+                dense
+                button
+                onClick={() => setOpenDashboardSubmenu((prev) => !prev)}
+                onMouseEnter={() => setManagementHover(true)}
+                onMouseLeave={() => setManagementHover(false)}
               >
-                <ListItem
-                  dense
-                  button
-                  onClick={() => setOpenDashboardSubmenu((prev) => !prev)}
-                  onMouseEnter={() => setManagementHover(true)}
-                  onMouseLeave={() => setManagementHover(false)}
-                >
-                  <ListItemIcon>
-                    <Avatar
-                      className={`${classes.iconHoverActive} ${
-                        isManagementActive || managementHover ? "active" : ""
-                      }`}
-                    >
-                      <Dashboard />
-                    </Avatar>
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={
-                      <Typography className={classes.listItemText}>
-                        {i18n.t("mainDrawer.listItems.management")}
-                      </Typography>
-                    }
-                  />
-                  {openDashboardSubmenu ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                </ListItem>
-              </Tooltip>
-              <Collapse
-                in={openDashboardSubmenu}
-                timeout="auto"
-                unmountOnExit
-                style={{
-                  backgroundColor:
-                    theme.mode === "light"
-                      ? "rgba(120,120,120,0.1)"
-                      : "rgba(120,120,120,0.5)",
-                }}
-              >
-                <Can
-                  role={
-                    user.profile === "user" && user.showDashboard === "enabled"
-                      ? "admin"
-                      : user.profile
+                <ListItemIcon>
+                  <Avatar
+                    className={`${classes.iconHoverActive} ${
+                      isManagementActive || managementHover ? "active" : ""
+                    }`}
+                  >
+                    <Dashboard />
+                  </Avatar>
+                </ListItemIcon>
+                <ListItemText
+                  primary={
+                    <Typography className={classes.listItemText}>
+                      {i18n.t("mainDrawer.listItems.management")}
+                    </Typography>
                   }
-                  perform={"drawer-admin-items:view"}
-                  yes={() => (
-                    <>
-                      <ListItemLink
-                        small
-                        to="/"
-                        primary="Dashboard"
-                        icon={<DashboardOutlinedIcon />}
-                        tooltip={collapsed}
-                      />
-                      <ListItemLink
-                        small
-                        to="/reports"
-                        primary={i18n.t("mainDrawer.listItems.reports")}
-                        icon={<Description />}
-                        tooltip={collapsed}
-                      />
-                    </>
-                  )}
                 />
-                <Can
-                  role={
-                    user.profile === "user" && user.allowRealTime === "enabled"
-                      ? "admin"
-                      : user.profile
-                  }
-                  perform={"drawer-admin-items:view"}
-                  yes={() => (
+                {openDashboardSubmenu ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              </ListItem>
+            </Tooltip>
+            <Collapse
+              in={openDashboardSubmenu}
+              timeout="auto"
+              unmountOnExit
+              style={{
+                backgroundColor:
+                  theme.mode === "light"
+                    ? "rgba(120,120,120,0.1)"
+                    : "rgba(120,120,120,0.5)",
+              }}
+            >
+              <Can
+                role={
+                  user.profile === "user" && user.showDashboard === "enabled"
+                    ? "admin"
+                    : user.profile
+                }
+                perform={"drawer-admin-items:view"}
+                yes={() => (
+                  <>
                     <ListItemLink
-                      to="/moments"
-                      primary={i18n.t("mainDrawer.listItems.chatsTempoReal")}
-                      icon={<GridOn />}
+                      small
+                      to="/"
+                      primary="Dashboard"
+                      icon={<DashboardOutlinedIcon />}
                       tooltip={collapsed}
                     />
-                  )}
-                />
-              </Collapse>
-            </>
-          )}
-        />
-     
-      {/* Não mostrar Tickets para plano apenas API */}
+                    <ListItemLink
+                      small
+                      to="/reports"
+                      primary={i18n.t("mainDrawer.listItems.reports")}
+                      icon={<Description />}
+                      tooltip={collapsed}
+                    />
+                  </>
+                )}
+              />
+              <Can
+                role={
+                  user.profile === "user" && user.allowRealTime === "enabled"
+                    ? "admin"
+                    : user.profile
+                }
+                perform={"drawer-admin-items:view"}
+                yes={() => (
+                  <ListItemLink
+                    to="/moments"
+                    primary={i18n.t("mainDrawer.listItems.chatsTempoReal")}
+                    icon={<GridOn />}
+                    tooltip={collapsed}
+                  />
+                )}
+              />
+            </Collapse>
+          </>
+        )}
+      />
+      <ListItemLink
+        to="/tickets"
+        primary={i18n.t("mainDrawer.listItems.tickets")}
+        icon={<WhatsAppIcon />}
+        tooltip={collapsed}
+      />
 
-        <ListItemLink
-          to="/tickets"
-          primary={i18n.t("mainDrawer.listItems.tickets")}
-          icon={<WhatsAppIcon />}
-          tooltip={collapsed}
-        />
-    
-  
-      {/* Não mostrar Quick Messages para plano apenas API */}
+      <ListItemLink
+        to="/quick-messages"
+        primary={i18n.t("mainDrawer.listItems.quickMessages")}
+        icon={<FlashOnIcon />}
+        tooltip={collapsed}
+      />
 
-        <ListItemLink
-          to="/quick-messages"
-          primary={i18n.t("mainDrawer.listItems.quickMessages")}
-          icon={<FlashOnIcon />}
-          tooltip={collapsed}
-        />
-
-  
-      {/* Não mostrar Kanban para plano apenas API */}
       {showKanban && (
         <>
           <ListItemLink
@@ -636,16 +623,14 @@ const MainListItems = ({ collapsed, drawerClose }) => {
           />
         </>
       )}
-  
-      {/* Contatos é permitido para plano apenas API */}
+
       <ListItemLink
         to="/contacts"
         primary={i18n.t("mainDrawer.listItems.contacts")}
         icon={<ContactPhoneOutlinedIcon />}
         tooltip={collapsed}
       />
-  
-      {/* Não mostrar Schedules para plano apenas API */}
+
       {showSchedules && (
         <>
           <ListItemLink
@@ -656,18 +641,14 @@ const MainListItems = ({ collapsed, drawerClose }) => {
           />
         </>
       )}
-  
-      {/* Não mostrar Tags para plano apenas API */}
- 
-        <ListItemLink
-          to="/tags"
-          primary={i18n.t("mainDrawer.listItems.tags")}
-          icon={<LocalOfferIcon />}
-          tooltip={collapsed}
-        />
 
-  
-      {/* Não mostrar Internal Chat para plano apenas API */}
+      <ListItemLink
+        to="/tags"
+        primary={i18n.t("mainDrawer.listItems.tags")}
+        icon={<LocalOfferIcon />}
+        tooltip={collapsed}
+      />
+
       {showInternalChat && (
         <>
           <ListItemLink
@@ -682,8 +663,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
           />
         </>
       )}
-  
-      {/* Não mostrar Campaigns para plano apenas API */}
+
       {user?.showCampaign && showCampaigns && (
         <>
           <Tooltip
@@ -750,8 +730,12 @@ const MainListItems = ({ collapsed, drawerClose }) => {
           </Collapse>
         </>
       )}
-  
-      {/* Não mostrar Helps para plano apenas API */}
+
+      {/* <ListItemLink
+        to="/todolist"
+        primary={i18n.t("ToDoList")}
+        icon={<EventAvailableIcon />}
+      /> */}
       {hasHelps && (
         <ListItemLink
           to="/helps"
@@ -760,7 +744,6 @@ const MainListItems = ({ collapsed, drawerClose }) => {
           tooltip={collapsed}
         />
       )}
-  
       <Can
         role={
           user.profile === "user" && user.allowConnections === "enabled"
@@ -774,83 +757,82 @@ const MainListItems = ({ collapsed, drawerClose }) => {
             <ListSubheader inset>
               {i18n.t("mainDrawer.listItems.administration")}
             </ListSubheader>
-  
-            {/* Não mostrar Flowbuilder para plano apenas API */}
-              <Can
-                role={user.profile}
-                perform="dashboard:view"
-                yes={() => (
-                  <>
-                    <Tooltip
-                      title={
-                        collapsed ? i18n.t("mainDrawer.listItems.campaigns") : ""
-                      }
-                      placement="right"
+
+            {/* FLOWBUILDER */}
+            <Can
+              role={user.profile}
+              perform="dashboard:view"
+              yes={() => (
+                <>
+                  <Tooltip
+                    title={
+                      collapsed ? i18n.t("mainDrawer.listItems.campaigns") : ""
+                    }
+                    placement="right"
+                  >
+                    <ListItem
+                      dense
+                      button
+                      onClick={() => setOpenFlowSubmenu((prev) => !prev)}
+                      onMouseEnter={() => setFlowHover(true)}
+                      onMouseLeave={() => setFlowHover(false)}
                     >
-                      <ListItem
-                        dense
-                        button
-                        onClick={() => setOpenFlowSubmenu((prev) => !prev)}
-                        onMouseEnter={() => setFlowHover(true)}
-                        onMouseLeave={() => setFlowHover(false)}
-                      >
-                        <ListItemIcon>
-                          <Avatar
-                            className={`${classes.iconHoverActive} ${
-                              isFlowbuilderRouteActive || flowHover
-                                ? "active"
-                                : ""
-                            }`}
-                          >
-                            <Webhook />
-                          </Avatar>
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={
-                            <Typography className={classes.listItemText}>
-                              {i18n.t("Flowbuilder")}
-                            </Typography>
-                          }
-                        />
-                        {openFlowSubmenu ? (
-                          <ExpandLessIcon />
-                        ) : (
-                          <ExpandMoreIcon />
-                        )}
-                      </ListItem>
-                    </Tooltip>
-  
-                    <Collapse
-                      in={openFlowSubmenu}
-                      timeout="auto"
-                      unmountOnExit
-                      style={{
-                        backgroundColor:
-                          theme.mode === "light"
-                            ? "rgba(120,120,120,0.1)"
-                            : "rgba(120,120,120,0.5)",
-                      }}
-                    >
-                      <List dense component="div" disablePadding>
-                        <ListItemLink
-                          to="/phrase-lists"
-                          primary={"Fluxo de Campanha"}
-                          icon={<EventAvailableIcon />}
-                          tooltip={collapsed}
-                        />
-  
-                        <ListItemLink
-                          to="/flowbuilders"
-                          primary={"Fluxo de conversa"}
-                          icon={<ShapeLine />}
-                        />
-                      </List>
-                    </Collapse>
-                  </>
-                )}
-              />
-  
-            {/* Não mostrar Announcements para plano apenas API */}
+                      <ListItemIcon>
+                        <Avatar
+                          className={`${classes.iconHoverActive} ${
+                            isFlowbuilderRouteActive || flowHover
+                              ? "active"
+                              : ""
+                          }`}
+                        >
+                          <Webhook />
+                        </Avatar>
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={
+                          <Typography className={classes.listItemText}>
+                            {i18n.t("Flowbuilder")}
+                          </Typography>
+                        }
+                      />
+                      {openFlowSubmenu ? (
+                        <ExpandLessIcon />
+                      ) : (
+                        <ExpandMoreIcon />
+                      )}
+                    </ListItem>
+                  </Tooltip>
+
+                  <Collapse
+                    in={openFlowSubmenu}
+                    timeout="auto"
+                    unmountOnExit
+                    style={{
+                      backgroundColor:
+                        theme.mode === "light"
+                          ? "rgba(120,120,120,0.1)"
+                          : "rgba(120,120,120,0.5)",
+                    }}
+                  >
+                    <List dense component="div" disablePadding>
+                      <ListItemLink
+                        to="/phrase-lists"
+                        primary={"Fluxo de Campanha"}
+                        icon={<EventAvailableIcon />}
+                        tooltip={collapsed}
+                      />
+
+                      <ListItemLink
+                        to="/flowbuilders"
+                        primary={"Fluxo de conversa"}
+                        icon={<ShapeLine />}
+                      />
+                    </List>
+                  </Collapse>
+                </>
+              )}
+            />
+
             {user.super && (
               <ListItemLink
                 to="/announcements"
@@ -859,8 +841,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                 tooltip={collapsed}
               />
             )}
-  
-            {/* API de Mensagens é permitida para plano apenas API */}
+
             {showExternalApi && (
               <>
                 <Can
@@ -877,8 +858,6 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                 />
               </>
             )}
-  
-            {/* Usuários é permitido para plano apenas API */}
             <Can
               role={user.profile}
               perform="dashboard:view"
@@ -891,24 +870,19 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                 />
               )}
             />
-  
-            {/* Não mostrar Filas para plano apenas API */}
+            <Can
+              role={user.profile}
+              perform="dashboard:view"
+              yes={() => (
+                <ListItemLink
+                  to="/queues"
+                  primary={i18n.t("mainDrawer.listItems.queues")}
+                  icon={<AccountTreeOutlinedIcon />}
+                  tooltip={collapsed}
+                />
+              )}
+            />
 
-              <Can
-                role={user.profile}
-                perform="dashboard:view"
-                yes={() => (
-                  <ListItemLink
-                    to="/queues"
-                    primary={i18n.t("mainDrawer.listItems.queues")}
-                    icon={<AccountTreeOutlinedIcon />}
-                    tooltip={collapsed}
-                  />
-                )}
-              />
-
-  
-            {/* Não mostrar Prompts para plano apenas API */}
             {showOpenAi && (
               <Can
                 role={user.profile}
@@ -923,8 +897,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                 )}
               />
             )}
-  
-            {/* Não mostrar Integrações para plano apenas API */}
+
             {showIntegrations && (
               <Can
                 role={user.profile}
@@ -939,8 +912,6 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                 )}
               />
             )}
-  
-            {/* Conexões é permitido para plano apenas API */}
             <Can
               role={
                 user.profile === "user" && user.allowConnections === "enabled"
@@ -958,8 +929,6 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                 />
               )}
             />
-  
-            {/* Não mostrar todas as conexões para plano apenas API */}
             {user.super && (
               <ListItemLink
                 to="/allConnections"
@@ -968,37 +937,30 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                 tooltip={collapsed}
               />
             )}
-  
-            {/* Não mostrar Arquivos para plano apenas API */}
-              <Can
-                role={user.profile}
-                perform="dashboard:view"
-                yes={() => (
-                  <ListItemLink
-                    to="/files"
-                    primary={i18n.t("mainDrawer.listItems.files")}
-                    icon={<AttachFile />}
-                    tooltip={collapsed}
-                  />
-                )}
-              />
-  
-            {/* Não mostrar Financeiro para plano apenas API */}
-              <Can
-                role={user.profile}
-                perform="dashboard:view"
-                yes={() => (
-                  <ListItemLink
-                    to="/financeiro"
-                    primary={i18n.t("mainDrawer.listItems.financeiro")}
-                    icon={<LocalAtmIcon />}
-                    tooltip={collapsed}
-                  />
-                )}
-              />
-
-  
-            {/* Configurações é permitido para plano apenas API */}
+            <Can
+              role={user.profile}
+              perform="dashboard:view"
+              yes={() => (
+                <ListItemLink
+                  to="/files"
+                  primary={i18n.t("mainDrawer.listItems.files")}
+                  icon={<AttachFile />}
+                  tooltip={collapsed}
+                />
+              )}
+            />
+            <Can
+              role={user.profile}
+              perform="dashboard:view"
+              yes={() => (
+                <ListItemLink
+                  to="/financeiro"
+                  primary={i18n.t("mainDrawer.listItems.financeiro")}
+                  icon={<LocalAtmIcon />}
+                  tooltip={collapsed}
+                />
+              )}
+            />
             <Can
               role={user.profile}
               perform="dashboard:view"
@@ -1011,8 +973,12 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                 />
               )}
             />
-  
-            {/* Empresas - apenas para super admin */}
+            {/* {user.super && (
+              <ListSubheader inset>
+                {i18n.t("mainDrawer.listItems.administration")}
+              </ListSubheader>
+            )} */}
+
             {user.super && (
               <ListItemLink
                 to="/companies"
@@ -1024,10 +990,15 @@ const MainListItems = ({ collapsed, drawerClose }) => {
           </>
         )}
       />
-  
       {!collapsed && (
         <React.Fragment>
           <Divider />
+          {/* 
+              // IMAGEM NO MENU
+              <Hidden only={['sm', 'xs']}>
+                <img style={{ width: "100%", padding: "10px" }} src={logo} alt="image" />            
+              </Hidden> 
+              */}
           <Typography
             style={{
               fontSize: "12px",
