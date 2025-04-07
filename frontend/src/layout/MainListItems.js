@@ -420,13 +420,6 @@ const MainListItems = ({ collapsed, drawerClose }) => {
     return (
       <div onClick={drawerClose}>
         {/* Contatos é permitido para plano apenas API */}
-        <ListItemLink
-          to="/contacts"
-          primary={i18n.t("mainDrawer.listItems.contacts")}
-          icon={<ContactPhoneOutlinedIcon />}
-          tooltip={collapsed}
-        />
-
         <Can
           role={
             user.profile === "user" && user.allowConnections === "enabled"
@@ -474,20 +467,6 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                 )}
               />
 
-              {/* Financeiro é permitido para plano apenas API */}
-              <Can
-                role={user.profile}
-                perform="dashboard:view"
-                yes={() => (
-                  <ListItemLink
-                    to="/financeiro"
-                    primary={i18n.t("mainDrawer.listItems.financeiro")}
-                    icon={<LocalAtmIcon />}
-                    tooltip={collapsed}
-                  />
-                )}
-              />
-
               {/* Configurações é permitido para plano apenas API */}
               <Can
                 role={user.profile}
@@ -501,16 +480,6 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                   />
                 )}
               />
-
-              {/* Empresas - apenas para super admin */}
-              {user.super && (
-                <ListItemLink
-                  to="/companies"
-                  primary={i18n.t("mainDrawer.listItems.companies")}
-                  icon={<BusinessIcon />}
-                  tooltip={collapsed}
-                />
-              )}
             </>
           )}
         />
