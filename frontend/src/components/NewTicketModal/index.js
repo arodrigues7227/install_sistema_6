@@ -147,7 +147,7 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
     try {
       const queueId = selectedQueue !== "" ? selectedQueue : null;
       const whatsappId = selectedWhatsapp !== "" ? selectedWhatsapp : null;
-      
+
       // Envio da requisição para criar o ticket
       const response = await api.post("/tickets", {
         contactId: contactId,
@@ -156,12 +156,12 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
         userId: user.id,
         status: "open",
       });
-      
+
       const data = response.data;
-      
+
       // Verificação detalhada da resposta
       console.log("Resposta da API:", data);
-      
+
       // Se a resposta contém a flag de erro e o tipo TICKET_ALREADY_EXISTS
       if (data && data.error === true && data.type === "TICKET_ALREADY_EXISTS") {
         console.log("Ticket já existe, exibindo modal:", data.ticket);
@@ -176,7 +176,7 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
     } catch (err) {
       console.error("Erro ao criar ticket:", err);
       console.error("Resposta de erro:", err.response?.data);
-      
+
       // Verificar se é um erro 400 com a flag de erro
       if (err.response?.data?.error === true && err.response?.data?.type === "TICKET_ALREADY_EXISTS") {
         console.log("Ticket já existe (capturado do erro):", err.response.data.ticket);
@@ -185,7 +185,7 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
         setLoading(false);
         return;
       }
-      
+
       toastError(err);
     }
     setLoading(false);
@@ -254,7 +254,7 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
             getOptionLabel={renderOptionLabel}
             renderOption={renderOption}
             filterOptions={createAddContactOption}
-            onChange={(e, newValue) => {                     
+            onChange={(e, newValue) => {
               setChannelFilter(newValue ? newValue.channel : "whatsapp");
               handleSelectOption(e, newValue)
             }}
@@ -432,29 +432,48 @@ const NewTicketModal = ({ modalOpen, onClose, initialContact }) => {
         fullWidth
       >
         <DialogTitle>
-          Ticket em Atendimento
+          Ticket em {existingTicket?.status === "pending" ? "Espera" : "Atendimento"}
         </DialogTitle>
         <DialogContent style={{ padding: '16px' }}>
           <Typography paragraph>
-            Este contato já possui um ticket em atendimento com:
+            Este contato já possui um ticket {existingTicket?.status === "pending" ? "em espera" : "em atendimento"}:
           </Typography>
-          <Typography paragraph>
-            <span style={{ fontWeight: 'bold' }}>Atendente: </span>
-            {existingTicket?.user?.name || "Não atribuído"}
-          </Typography>
-          <Typography paragraph>
-            <span style={{ fontWeight: 'bold' }}>Fila: </span>
-            {existingTicket?.queue?.name || "Não atribuído"}
-          </Typography>
+
+          {existingTicket?.status === "pending" ? (
+            <Typography paragraph>
+              <span style={{ fontWeight: 'bold' }}>Status: </span>
+              Aguardando atribuição a um atendente
+            </Typography>
+          ) : (
+            <>
+              <Typography paragraph>
+                <span style={{ fontWeight: 'bold' }}>Atendente: </span>
+                {existingTicket?.user?.name || "Não atribuído"}
+              </Typography>
+              <Typography paragraph>
+                <span style={{ fontWeight: 'bold' }}>Fila: </span>
+                {existingTicket?.queue?.name || "Não atribuída"}
+              </Typography>
+            </>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button 
+          <Button
             onClick={handleCloseAlert}
             color="secondary"
             variant="outlined"
           >
             Fechar
           </Button>
+          {existingTicket?.id && (
+            <Button
+              onClick={() => navigateToTicket(existingTicket.id)}
+              color="primary"
+              variant="contained"
+            >
+              Ver Ticket
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </>
