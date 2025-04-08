@@ -53,15 +53,16 @@ const allowedOrigins = [process.env.FRONTEND_URL];
 //   // }
 // }));
 
-app.use(compression()); // Compressão HTTP
-app.use(bodyParser.json({ limit: '5mb' })); // Aumentar o limite de carga para 5 MB
-app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));
+
 app.use(
   cors({
     credentials: true,
     origin: allowedOrigins
   })
 );
+app.use(compression()); // Compressão HTTP
+app.use(bodyParser.json({ limit: '5mb' })); // Aumentar o limite de carga para 5 MB
+app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));
 app.use(cookieParser());
 app.use(express.json());
 app.use(Sentry.Handlers.requestHandler());
