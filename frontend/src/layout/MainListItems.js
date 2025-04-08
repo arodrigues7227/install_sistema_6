@@ -142,18 +142,16 @@ function ListItemLink(props) {
                   className={classes.badge}
                 >
                   <Avatar
-                    className={`${classes.iconHoverActive} ${
-                      isActive ? "active" : ""
-                    }`}
+                    className={`${classes.iconHoverActive} ${isActive ? "active" : ""
+                      }`}
                   >
                     {icon}
                   </Avatar>
                 </Badge>
               ) : (
                 <Avatar
-                  className={`${classes.iconHoverActive} ${
-                    isActive ? "active" : ""
-                  }`}
+                  className={`${classes.iconHoverActive} ${isActive ? "active" : ""
+                    }`}
                 >
                   {icon}
                 </Avatar>
@@ -424,17 +422,17 @@ const MainListItems = ({ collapsed, drawerClose }) => {
       <div onClick={drawerClose}>
         {/* Contatos */}
         <ListItemLink
-          to="/contacts"
-          primary={i18n.t("mainDrawer.listItems.contacts")}
-          icon={<ContactPhoneOutlinedIcon />}
+          to="/messages-api"
+          primary={i18n.t("mainDrawer.listItems.messagesAPI")}
+          icon={<CodeRoundedIcon />}
           tooltip={collapsed}
         />
-  
+
         <Divider />
         <ListSubheader inset>
           {i18n.t("mainDrawer.listItems.administration")}
         </ListSubheader>
-  
+
         {/* Usuários */}
         <Can
           role={user.profile}
@@ -448,7 +446,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
             />
           )}
         />
-  
+
         {/* Conexões */}
         <Can
           role={
@@ -467,7 +465,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
             />
           )}
         />
-  
+
         {/* Configurações */}
         <Can
           role={user.profile}
@@ -481,7 +479,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
             />
           )}
         />
-  
+
         {!collapsed && (
           <React.Fragment>
             <Divider />
@@ -506,7 +504,7 @@ const MainListItems = ({ collapsed, drawerClose }) => {
       <Can
         role={
           (user.profile === "user" && user.showDashboard === "enabled") ||
-          user.allowRealTime === "enabled"
+            user.allowRealTime === "enabled"
             ? "admin"
             : user.profile
         }
@@ -526,9 +524,8 @@ const MainListItems = ({ collapsed, drawerClose }) => {
               >
                 <ListItemIcon>
                   <Avatar
-                    className={`${classes.iconHoverActive} ${
-                      isManagementActive || managementHover ? "active" : ""
-                    }`}
+                    className={`${classes.iconHoverActive} ${isManagementActive || managementHover ? "active" : ""
+                      }`}
                   >
                     <Dashboard />
                   </Avatar>
@@ -680,9 +677,8 @@ const MainListItems = ({ collapsed, drawerClose }) => {
             >
               <ListItemIcon>
                 <Avatar
-                  className={`${classes.iconHoverActive} ${
-                    isCampaignRouteActive || campaignHover ? "active" : ""
-                  }`}
+                  className={`${classes.iconHoverActive} ${isCampaignRouteActive || campaignHover ? "active" : ""
+                    }`}
                 >
                   <EventAvailableIcon />
                 </Avatar>
@@ -780,11 +776,10 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                     >
                       <ListItemIcon>
                         <Avatar
-                          className={`${classes.iconHoverActive} ${
-                            isFlowbuilderRouteActive || flowHover
+                          className={`${classes.iconHoverActive} ${isFlowbuilderRouteActive || flowHover
                               ? "active"
                               : ""
-                          }`}
+                            }`}
                         >
                           <Webhook />
                         </Avatar>

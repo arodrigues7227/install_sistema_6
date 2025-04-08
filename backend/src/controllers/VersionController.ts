@@ -2,9 +2,8 @@ import { Request, Response } from "express";
 import Version from "../models/Versions";
 
 export const index = async (req: Request, res: Response): Promise<Response> => {
-    const version = await Version.findByPk(1);
     return res.status(200).json({
-        version: version.versionFrontend
+        version: "v6.8.0"
     });
 };
 

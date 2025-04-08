@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "version": "2.2.2v-29",
+  "version": "6.8.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -68,7 +68,6 @@
     "pg": "^8.14.1",
     "pino": "^7.11.0",
     "pino-pretty": "^10.3.1",
-    "puppeteer": "^19.11.1",
     "puppeteer-core": "^22.15.0",
     "qrcode-terminal": "^0.12.0",
     "reflect-metadata": "^0.1.14",
