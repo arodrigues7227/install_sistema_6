@@ -21,6 +21,7 @@ import UpdateWhatsAppServiceAdmin from "../services/WhatsappService/UpdateWhatsA
 import ListAllWhatsAppsService from "../services/WhatsappService/ListAllWhatsAppService";
 import ListFilterWhatsAppsService from "../services/WhatsappService/ListFilterWhatsAppsService";
 import User from "../models/User";
+import ShowQueueService from "../services/QueueService/ShowQueueService";
 
 interface WhatsappData {
   name: string;
@@ -136,6 +137,30 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   console.log(req.body)
   console.log("==================================================")
 
+  // Definir valor padrão para timeSendQueue se não estiver definido
+  const finalTimeSendQueue = timeSendQueue !== undefined ? timeSendQueue : 1;
+
+  // Validar timeSendQueue (agora sempre terá valor)
+  if (isNaN(finalTimeSendQueue) || finalTimeSendQueue <= 0) {
+    return res.status(400).json({
+      error: "O tempo para atribuir o ticket a uma fila deve ser maior que 0"
+    });
+  }
+
+  try {
+    // Verificar se a fila existe na empresa
+    await ShowQueueService(sendIdQueue, companyId);
+  } catch (err) {
+    if (err instanceof AppError && err.message === "ERR_QUEUE_NOT_FOUND") {
+      return res.status(400).json({
+        error: "O id da fila informada está errado ou não existe."
+      });
+    }
+    throw err;
+  }
+
+
+
   const { whatsapp, oldDefaultWhatsapp } = await CreateWhatsAppService({
     name,
     status,
@@ -150,7 +175,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     timeUseBotQueues,
     expiresTicket,
     allowGroup,
-    timeSendQueue,
+    timeSendQueue: finalTimeSendQueue,
     sendIdQueue,
     timeInactiveMessage,
     inactiveMessage,
