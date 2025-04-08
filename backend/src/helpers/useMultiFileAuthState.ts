@@ -1,11 +1,11 @@
-import { proto } from "@whiskeysockets/baileys";
+import { proto } from "baileys";
 import {
   AuthenticationCreds,
   AuthenticationState,
   SignalDataTypeMap
-} from "@whiskeysockets/baileys";
-import { initAuthCreds } from "@whiskeysockets/baileys";
-import { BufferJSON } from "@whiskeysockets/baileys";
+} from "baileys";
+import { initAuthCreds } from "baileys";
+import { BufferJSON } from "baileys";
 import cacheLayer from "../libs/cache";
 import Whatsapp from "../models/Whatsapp";
 

@@ -25,7 +25,7 @@ import {
   AnyMessageContent,
   generateWAMessageContent,
   generateWAMessageFromContent
-} from "@whiskeysockets/baileys";
+} from "baileys";
 import Baileys from "../../models/Baileys";
 import Company from "../../models/Company";
 import Plan from "../../models/Plan";
