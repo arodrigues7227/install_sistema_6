@@ -1,6 +1,5 @@
 import AppError from "../../errors/AppError";
 import Plan from "../../models/Plan";
-import ShowPlanService from "./ShowPlanService";
 
 interface PlanData {
   name: string;
@@ -19,6 +18,7 @@ interface PlanData {
   useKanban?: boolean;
   useOpenAi?: boolean;
   useIntegrations?: boolean;
+  onlyApiMessage?: boolean;
   isPublic?: boolean;
 }
 

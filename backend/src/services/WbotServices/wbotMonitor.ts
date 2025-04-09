@@ -5,7 +5,7 @@ import {
   isJidBroadcast,
   isJidStatusBroadcast,
   isJidUser,
-} from "@whiskeysockets/baileys";
+} from "baileys";
 import * as Sentry from "@sentry/node";
 import fs from "fs";
 

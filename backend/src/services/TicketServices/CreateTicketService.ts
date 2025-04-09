@@ -60,11 +60,16 @@ const CreateTicketService = async ({
   const checkTicket = await CheckContactOpenTickets(contactId, companyId, defaultWhatsapp.id);
 
   if (checkTicket.ticketExists) {
-    // Se o ticket existe e pertence a outro usuário
     if (checkTicket.ticket.userId !== userId) {
+      const ticketWithRelations = await Ticket.findByPk(checkTicket.ticket.id, {
+        include: [
+          { model: User, as: "user" },
+          { model: Queue, as: "queue" }
+        ]
+      });
       return {
         ticketExists: true,
-        ticket: checkTicket.ticket
+        ticket: ticketWithRelations
       };
     }
   }

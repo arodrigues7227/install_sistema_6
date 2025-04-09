@@ -16,20 +16,6 @@ import AppError from "./errors/AppError";
 import routes from "./routes";
 import logger from "./utils/logger";
 import { messageQueue, sendScheduledMessages } from "./queues";
-import BullQueue from "./libs/queue"
-import BullBoard from 'bull-board';
-import basicAuth from 'basic-auth';
-
-// Função de middleware para autenticação básica
-export const isBullAuth = (req, res, next) => {
-  const user = basicAuth(req);
-
-  if (!user || user.name !== process.env.BULL_USER || user.pass !== process.env.BULL_PASS) {
-    res.set('WWW-Authenticate', 'Basic realm="example"');
-    return res.status(401).send('Authentication required.');
-  }
-  next();
-};
 
 // Carregar variáveis de ambiente
 dotenvConfig();
@@ -47,11 +33,6 @@ app.set("queues", {
 
 const allowedOrigins = [process.env.FRONTEND_URL];
 
-// Configuração do BullBoard
-if (String(process.env.BULL_BOARD).toLocaleLowerCase() === 'true' && process.env.REDIS_URI_ACK !== '') {
-  BullBoard.setQueues(BullQueue.queues.map(queue => queue && queue.bull));
-  app.use('/admin/queues', isBullAuth, BullBoard.UI);
-}
 
 // Middlewares
 // app.use(helmet({
@@ -72,15 +53,16 @@ if (String(process.env.BULL_BOARD).toLocaleLowerCase() === 'true' && process.env
 //   // }
 // }));
 
-app.use(compression()); // Compressão HTTP
-app.use(bodyParser.json({ limit: '5mb' })); // Aumentar o limite de carga para 5 MB
-app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));
+
 app.use(
   cors({
     credentials: true,
     origin: allowedOrigins
   })
 );
+app.use(compression()); // Compressão HTTP
+app.use(bodyParser.json({ limit: '5mb' })); // Aumentar o limite de carga para 5 MB
+app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));
 app.use(cookieParser());
 app.use(express.json());
 app.use(Sentry.Handlers.requestHandler());

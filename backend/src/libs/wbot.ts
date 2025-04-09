@@ -17,11 +17,11 @@ import makeWASocket, {
   jidNormalizedUser,
   makeCacheableSignalKeyStore,
   proto
-} from "@whiskeysockets/baileys";
+} from "baileys";
 import { FindOptions } from "sequelize/types";
 import Whatsapp from "../models/Whatsapp";
 import logger from "../utils/logger";
-import MAIN_LOGGER from "@whiskeysockets/baileys/lib/Utils/logger";
+import MAIN_LOGGER from "baileys/lib/Utils/logger";
 import cacheLayer from "./cache";
 import { useMultiFileAuthState } from '../helpers/useMultiFileAuthState';
 import { Boom } from "@hapi/boom";

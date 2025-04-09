@@ -286,14 +286,13 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
       type: "TICKET_ALREADY_EXISTS",
       ticket: {
         id: data.ticket.id,
-        user: {
-          id: data.ticket.user?.id,
-          name: data.ticket.user?.name || 'Não atribuído'
-        },
-        queue: {
-          id: data.ticket.queue?.id,
-          name: data.ticket.queue?.name || 'Não atribuído'
-        }
+        status: data.ticket.status,  // Adicionando o status para verificação no frontend
+        user: data.ticket.user 
+          ? { id: data.ticket.user.id, name: data.ticket.user.name }
+          : { id: null, name: 'Não atribuído' },
+        queue: data.ticket.queue
+          ? { id: data.ticket.queue.id, name: data.ticket.queue.name }
+          : { id: null, name: 'Não atribuída' }
       }
     });
   }
