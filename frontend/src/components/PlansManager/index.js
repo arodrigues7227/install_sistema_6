@@ -68,6 +68,7 @@ export function PlanManagerForm(props) {
     const classes = useStyles()
 
     const [record, setRecord] = useState({
+        id: undefined,
         name: '',
         users: 0,
         connections: 0,
@@ -85,7 +86,7 @@ export function PlanManagerForm(props) {
         useIntegrations: true,
         onlyApiMessage: false,
         isPublic: true
-    });
+    })
 
     useEffect(() => {
         setRecord(initialValue)
@@ -399,12 +400,18 @@ export function PlanManagerForm(props) {
                             </ButtonWithSpinner>
                         </Grid>
                         {record.id !== undefined ? (
-                            <Grid sm={3} md={2} item>
-                                <ButtonWithSpinner className={classes.fullWidth} loading={loading} onClick={() => onDelete(record)} variant="contained" color="secondary">
-                                    {i18n.t("plans.form.delete")}
-                                </ButtonWithSpinner>
-                            </Grid>
-                        ) : null}
+    <Grid sm={3} md={2} item>
+        <ButtonWithSpinner 
+            className={classes.fullWidth} 
+            loading={loading} 
+            onClick={() => onDelete(record)} 
+            variant="contained" 
+            color="secondary"
+        >
+            {i18n.t("plans.form.delete")}
+        </ButtonWithSpinner>
+    </Grid>
+) : null}
                         <Grid sm={3} md={2} item>
                             <ButtonWithSpinner className={classes.fullWidth} loading={loading} type="submit" variant="contained" color="primary">
                                 {i18n.t("plans.form.save")}
@@ -603,11 +610,20 @@ export default function PlansManager() {
     const handleDelete = async () => {
         setLoading(true)
         try {
+            // Verificar se o record.id existe
+            if (!record.id) {
+                toast.error('ID do plano não encontrado');
+                setLoading(false);
+                return;
+            }
+            
+            console.log('Deletando plano ID:', record.id); // Log para debug
             await remove(record.id)
             await loadPlans()
             handleCancel()
             toast.success('Operação realizada com sucesso!')
         } catch (e) {
+            console.error(e); // Adicionar log de erro para depuração
             toast.error('Não foi possível realizar a operação')
         }
         setLoading(false)
@@ -619,6 +635,7 @@ export default function PlansManager() {
 
     const handleCancel = () => {
         setRecord({
+            id: undefined, 
             name: '',
             users: 0,
             connections: 0,
@@ -652,19 +669,14 @@ export default function PlansManager() {
         let useOpenAi = data.useOpenAi === false ? false : true
         let useIntegrations = data.useIntegrations === false ? false : true
         let onlyApiMessage = data.onlyApiMessage === false ? false : true
-        
-        // Corrigir o tratamento de amount para evitar problemas com formato
-        const amount = typeof data.amount === 'number' 
-          ? data.amount 
-          : parseFloat(String(data.amount).replace(/\./g, '').replace(',', '.'));
     
         setRecord({
-            id: data.id, // Adicionar o ID explicitamente
+            id: data.id, // Garantir que o ID seja incluído aqui
             name: data.name || '',
             users: data.users || 0,
             connections: data.connections || 0,
             queues: data.queues || 0,
-            amount: amount, // Usar o valor numérico diretamente
+            amount: data.amount || 0,
             useWhatsapp,
             useFacebook,
             useInstagram,
