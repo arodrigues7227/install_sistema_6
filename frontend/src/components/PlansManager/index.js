@@ -96,17 +96,20 @@ export function PlanManagerForm(props) {
     }
 
     return (
-        <Formik
-            enableReinitialize
-            className={classes.fullWidth}
-            initialValues={record}
-            onSubmit={(values, { resetForm }) =>
-                setTimeout(() => {
-                    handleSubmit(values)
-                    resetForm()
-                }, 500)
-            }
-        >
+<Formik
+    enableReinitialize
+    className={classes.fullWidth}
+    initialValues={record}
+    onSubmit={(values, { resetForm }) =>
+        setTimeout(() => {
+            handleSubmit({
+                ...values,
+                id: record.id
+            });
+            resetForm();
+        }, 500)
+    }
+>
             {(values) => (
                 <Form className={classes.fullWidth}>
                     <Grid spacing={1} justifyContent="flex-start" container>
@@ -572,21 +575,29 @@ export default function PlansManager() {
 
     const handleSubmit = async (data) => {
         setLoading(true)
-        console.log(data)
         try {
+            // Formatar o valor de amount corretamente
+            const formattedData = {
+                ...data,
+                amount: typeof data.amount === 'string' 
+                    ? parseFloat(data.amount.replace(/\./g, '').replace(',', '.')) 
+                    : data.amount
+            };
+            
             if (data.id !== undefined) {
-                await update(data)
+                await update(formattedData);
             } else {
-                const { id, ...newPlanData } = data;
+                const { id, ...newPlanData } = formattedData;
                 await save(newPlanData);
             }
-            await loadPlans()
-            handleCancel()
-            toast.success('Operação realizada com sucesso!')
+            await loadPlans();
+            handleCancel();
+            toast.success('Operação realizada com sucesso!');
         } catch (e) {
-            toast.error('Não foi possível realizar a operação. Verifique se já existe uma plano com o mesmo nome ou se os campos foram preenchidos corretamente')
+            console.error(e);
+            toast.error('Não foi possível realizar a operação. Verifique se já existe um plano com o mesmo nome ou se os campos foram preenchidos corretamente');
         }
-        setLoading(false)
+        setLoading(false);
     }
 
     const handleDelete = async () => {
@@ -629,7 +640,7 @@ export default function PlansManager() {
     }
 
     const handleSelect = (data) => {
-
+        // Converter valores booleanos corretamente
         let useWhatsapp = data.useWhatsapp === false ? false : true
         let useFacebook = data.useFacebook === false ? false : true
         let useInstagram = data.useInstagram === false ? false : true
@@ -641,13 +652,19 @@ export default function PlansManager() {
         let useOpenAi = data.useOpenAi === false ? false : true
         let useIntegrations = data.useIntegrations === false ? false : true
         let onlyApiMessage = data.onlyApiMessage === false ? false : true
-
+        
+        // Corrigir o tratamento de amount para evitar problemas com formato
+        const amount = typeof data.amount === 'number' 
+          ? data.amount 
+          : parseFloat(String(data.amount).replace(/\./g, '').replace(',', '.'));
+    
         setRecord({
+            id: data.id, // Adicionar o ID explicitamente
             name: data.name || '',
             users: data.users || 0,
             connections: data.connections || 0,
             queues: data.queues || 0,
-            amount: data.amount?.toLocaleString('pt-br', { minimumFractionDigits: 2 }) || 0,
+            amount: amount, // Usar o valor numérico diretamente
             useWhatsapp,
             useFacebook,
             useInstagram,
