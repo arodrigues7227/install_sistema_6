@@ -68,6 +68,7 @@ export function PlanManagerForm(props) {
     const classes = useStyles()
 
     const [record, setRecord] = useState({
+        id: undefined,
         name: '',
         users: 0,
         connections: 0,
@@ -85,7 +86,7 @@ export function PlanManagerForm(props) {
         useIntegrations: true,
         onlyApiMessage: false,
         isPublic: true
-    });
+    })
 
     useEffect(() => {
         setRecord(initialValue)
@@ -96,17 +97,20 @@ export function PlanManagerForm(props) {
     }
 
     return (
-        <Formik
-            enableReinitialize
-            className={classes.fullWidth}
-            initialValues={record}
-            onSubmit={(values, { resetForm }) =>
-                setTimeout(() => {
-                    handleSubmit(values)
-                    resetForm()
-                }, 500)
-            }
-        >
+<Formik
+    enableReinitialize
+    className={classes.fullWidth}
+    initialValues={record}
+    onSubmit={(values, { resetForm }) =>
+        setTimeout(() => {
+            handleSubmit({
+                ...values,
+                id: record.id
+            });
+            resetForm();
+        }, 500)
+    }
+>
             {(values) => (
                 <Form className={classes.fullWidth}>
                     <Grid spacing={1} justifyContent="flex-start" container>
@@ -396,12 +400,18 @@ export function PlanManagerForm(props) {
                             </ButtonWithSpinner>
                         </Grid>
                         {record.id !== undefined ? (
-                            <Grid sm={3} md={2} item>
-                                <ButtonWithSpinner className={classes.fullWidth} loading={loading} onClick={() => onDelete(record)} variant="contained" color="secondary">
-                                    {i18n.t("plans.form.delete")}
-                                </ButtonWithSpinner>
-                            </Grid>
-                        ) : null}
+    <Grid sm={3} md={2} item>
+        <ButtonWithSpinner 
+            className={classes.fullWidth} 
+            loading={loading} 
+            onClick={() => onDelete(record)} 
+            variant="contained" 
+            color="secondary"
+        >
+            {i18n.t("plans.form.delete")}
+        </ButtonWithSpinner>
+    </Grid>
+) : null}
                         <Grid sm={3} md={2} item>
                             <ButtonWithSpinner className={classes.fullWidth} loading={loading} type="submit" variant="contained" color="primary">
                                 {i18n.t("plans.form.save")}
@@ -572,31 +582,48 @@ export default function PlansManager() {
 
     const handleSubmit = async (data) => {
         setLoading(true)
-        console.log(data)
         try {
+            // Formatar o valor de amount corretamente
+            const formattedData = {
+                ...data,
+                amount: typeof data.amount === 'string' 
+                    ? parseFloat(data.amount.replace(/\./g, '').replace(',', '.')) 
+                    : data.amount
+            };
+            
             if (data.id !== undefined) {
-                await update(data)
+                await update(formattedData);
             } else {
-                const { id, ...newPlanData } = data;
+                const { id, ...newPlanData } = formattedData;
                 await save(newPlanData);
             }
-            await loadPlans()
-            handleCancel()
-            toast.success('Operação realizada com sucesso!')
+            await loadPlans();
+            handleCancel();
+            toast.success('Operação realizada com sucesso!');
         } catch (e) {
-            toast.error('Não foi possível realizar a operação. Verifique se já existe uma plano com o mesmo nome ou se os campos foram preenchidos corretamente')
+            console.error(e);
+            toast.error('Não foi possível realizar a operação. Verifique se já existe um plano com o mesmo nome ou se os campos foram preenchidos corretamente');
         }
-        setLoading(false)
+        setLoading(false);
     }
 
     const handleDelete = async () => {
         setLoading(true)
         try {
+            // Verificar se o record.id existe
+            if (!record.id) {
+                toast.error('ID do plano não encontrado');
+                setLoading(false);
+                return;
+            }
+            
+            console.log('Deletando plano ID:', record.id); // Log para debug
             await remove(record.id)
             await loadPlans()
             handleCancel()
             toast.success('Operação realizada com sucesso!')
         } catch (e) {
+            console.error(e); // Adicionar log de erro para depuração
             toast.error('Não foi possível realizar a operação')
         }
         setLoading(false)
@@ -608,6 +635,7 @@ export default function PlansManager() {
 
     const handleCancel = () => {
         setRecord({
+            id: undefined, 
             name: '',
             users: 0,
             connections: 0,
@@ -629,7 +657,7 @@ export default function PlansManager() {
     }
 
     const handleSelect = (data) => {
-
+        // Converter valores booleanos corretamente
         let useWhatsapp = data.useWhatsapp === false ? false : true
         let useFacebook = data.useFacebook === false ? false : true
         let useInstagram = data.useInstagram === false ? false : true
@@ -641,13 +669,14 @@ export default function PlansManager() {
         let useOpenAi = data.useOpenAi === false ? false : true
         let useIntegrations = data.useIntegrations === false ? false : true
         let onlyApiMessage = data.onlyApiMessage === false ? false : true
-
+    
         setRecord({
+            id: data.id, // Garantir que o ID seja incluído aqui
             name: data.name || '',
             users: data.users || 0,
             connections: data.connections || 0,
             queues: data.queues || 0,
-            amount: data.amount?.toLocaleString('pt-br', { minimumFractionDigits: 2 }) || 0,
+            amount: data.amount || 0,
             useWhatsapp,
             useFacebook,
             useInstagram,

@@ -182,6 +182,10 @@ export const update = async (
   res: Response
 ): Promise<Response> => {
   const planData: UpdatePlanData = req.body;
+  const { id } = req.params; // Adicionar essa linha para obter o ID da URL
+
+  // Assegurar que o ID do parâmetro da URL seja incluído nos dados do plano
+  planData.id = id || planData.id;
 
   const schema = Yup.object().shape({
     name: Yup.string()
@@ -197,6 +201,7 @@ export const update = async (
   if (!authHeader) {
     throw new AppError("Cabeçalho de autorização não encontrado", 401);
   }
+  
   const [, token] = authHeader.split(" ");
   const decoded = verify(token, authConfig.secret);
   const { id: requestUserId, profile, companyId } = decoded as TokenPayload;
@@ -205,21 +210,15 @@ export const update = async (
   const PlanCompany = company.planId;
 
   if (requestUser.super === true) {
-    const plan = await UpdatePlanService(planData
-    );
-
+    const plan = await UpdatePlanService(planData);
     return res.status(200).json(plan);
   } else if (PlanCompany.toString() !== planData.id) {
     return res.status(400).json({ error: "Você não possui permissão para acessar este recurso!" });
+  } else {
+    // Adicionar esse bloco para tratar a edição de planos por usuários não-super
+    const plan = await UpdatePlanService(planData);
+    return res.status(200).json(plan);
   }
-
-  // const io = getIO();
-  // io.of(companyId.toString())
-  // .emit("plan", {
-  //   action: "update",
-  //   plan
-  // });
-
 };
 
 export const remove = async (
