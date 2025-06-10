@@ -1,4 +1,3 @@
-import * as Sentry from "@sentry/node";
 import fs from "fs/promises";
 import path from "path";
 import makeWASocket, {
@@ -38,7 +37,7 @@ import NodeCache from 'node-cache';
 import { Store } from "./store";
 import Message from "../models/Message";
 
-const waVersion: WAVersion = [2, 3000, 1020203617];
+const waVersion: WAVersion = [2, 3000, 1023333981];
 
 const maxRetriesQrCode = 3;
 
@@ -555,7 +554,6 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
         // store.bind(wsocket.ev);
       })();
     } catch (error) {
-      Sentry.captureException(error);
       console.log('error_init_wbot', error);
       reject(error);
     }
