@@ -258,6 +258,7 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
           keepAliveIntervalMs: 15_000,      
         });
 
+
         wsocket.ev.on("messaging-history.set", async ({ messages, chats, isLatest, contacts }) => {
           console.log("messages", messages.length)
           console.log("chats", chats.length)
@@ -273,12 +274,16 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
           const whatsappId = whatsapp.id;
           let filteredDateMessages = [];
           
+          // Obter os limites de data corretos do modelo Whatsapp
+          const dateOldLimit = whatsapp.importOldMessages ? new Date(whatsapp.importOldMessages).getTime() : 0;
+          const dateRecentLimit = whatsapp.importRecentMessages ? new Date(whatsapp.importRecentMessages).getTime() : new Date().getTime();
+          
           if (messages && messages.length > 0) {
             for await (const [, msg] of Object.entries(messages)) {
               const timestampMsg = Math.floor(msg.messageTimestamp["low"] * 1000);
               
               // Verificar se a mensagem é válida e está no período selecionado
-              if (isValidMsg(msg) && whatsapp.dateOldLimit < timestampMsg && whatsapp.dateRecentLimit > timestampMsg) {
+              if (isValidMsg(msg) && dateOldLimit < timestampMsg && dateRecentLimit > timestampMsg) {
                 
                 const remoteJid = msg.key?.remoteJid;
                 const isGroupMessage = remoteJid?.split("@")[1] === "g.us";
@@ -312,7 +317,7 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
         MENSAGEM DE GRUPO >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         Data e hora da mensagem: ${moment(timestampMsg).format("DD/MM/YYYY HH:mm:ss")}
         Grupo: ${remoteJid}
-        Remetente: ${msg.key?.participant || msg.key?.fromMe ? 'EU' : 'DESCONHECIDO'}
+        Remetente: ${msg.key?.participant || (msg.key?.fromMe ? 'EU' : 'DESCONHECIDO')}
         Tipo da mensagem: ${getTypeMessage(msg)}
         ID da mensagem: ${msg.key?.id}
         
@@ -357,7 +362,6 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
           }, 500);
 
         });
-
         wsocket.ev.on(
           "connection.update",
           async ({ connection, lastDisconnect, qr, receivedPendingNotifications }) => {
