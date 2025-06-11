@@ -403,7 +403,7 @@ export const update = async (
 export const closedTickets = async (req: Request, res: Response) => {
   const { whatsappId } = req.params
 
-  closeTicketsImported(whatsappId)
+  closeTicketsImported(Number(whatsappId))
 
   return res.status(200).json("whatsapp");
 
