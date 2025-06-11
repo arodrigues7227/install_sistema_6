@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import AppError from "../errors/AppError";
 import fs from "fs";
+import { promisify } from "util";
+import { exec } from 'child_process';
+import ffmpegPath from "@ffmpeg-installer/ffmpeg";
 
 import SetTicketMessagesAsRead from "../helpers/SetTicketMessagesAsRead";
 import { getIO } from "../libs/socket";
@@ -13,9 +16,6 @@ import authConfig from "../config/auth";
 import path from "path";
 import { isNil, isNull } from "lodash";
 import { Mutex } from "async-mutex";
-import { promisify } from "util";
-import { exec } from 'child_process';
-import ffmpegPath from "@ffmpeg-installer/ffmpeg";
 
 import ListMessagesService from "../services/MessageServices/ListMessagesService";
 import ShowTicketService from "../services/TicketServices/ShowTicketService";
@@ -81,7 +81,7 @@ const convertAudio = async (inputPath: string, outputPath: string, format: 'ogg'
 
   try {
     await execPromise(
-      `${ffmpegPath.path} -y -i ${inputPath} ${codecParams} -avoid_negative_ts make_zero ${outputPath}`
+      `${ffmpegPath.path} -y -i "${inputPath}" ${codecParams} -avoid_negative_ts make_zero "${outputPath}"`
     );
     console.log(`Conversão para ${format} finalizada com sucesso`);
   } catch (error) {
@@ -125,11 +125,53 @@ const processAudio = async (media: Express.Multer.File, companyId: number) => {
   }
 };
 
-function obterNomeEExtensaoDoArquivo(url: string) {
+// Função para processar áudio no forward
+const processAudioForForward = async (inputPath: string, companyId: number): Promise<{ oggPath: string; mp3Path: string; filename: string }> => {
+  const publicFolder = path.resolve("public");
+  const companyFolder = path.join(publicFolder, `company${companyId}`);
+  
+  // Garante que a pasta da empresa existe
+  if (!fs.existsSync(companyFolder)) {
+    await mkdirPromise(companyFolder, { recursive: true });
+  }
+
+  const timestamp = new Date().getTime();
+  const baseFileName = `forward_audio_${timestamp}`;
+  const oggPath = path.join(companyFolder, `${baseFileName}.ogg`);
+  const mp3Path = path.join(companyFolder, `${baseFileName}.mp3`);
+
+  try {
+    // Verifica se o arquivo de entrada existe
+    if (!fs.existsSync(inputPath)) {
+      throw new Error(`Arquivo de áudio não encontrado: ${inputPath}`);
+    }
+
+    // Converte para ambos os formatos
+    await Promise.all([
+      convertAudio(inputPath, oggPath, 'ogg'),
+      convertAudio(inputPath, mp3Path, 'mp3')
+    ]);
+
+    return {
+      oggPath,
+      mp3Path,
+      filename: `${baseFileName}.ogg`
+    };
+  } catch (error) {
+    console.error("Erro no processamento do áudio para forward:", error);
+    throw error;
+  }
+};
+
+function obterNomeEExtensaoDoArquivo(url: string): string {
   const urlObj = new URL(url);
   const pathname = urlObj.pathname;
-  const filename = pathname.split('/').pop();
+  const filename = pathname.split('/').pop() || '';
   const parts = filename.split('.');
+
+  if (parts.length < 2) {
+    return filename;
+  }
 
   const nomeDoArquivo = parts[0];
   const extensao = parts[1];
@@ -294,6 +336,7 @@ export const forwardMessage = async (
   if (!messageId || !contactId) {
     return res.status(200).send("MessageId or ContactId not found");
   }
+  
   const message = await ShowMessageService(messageId);
   const contact = await ShowContactService(contactId, companyId);
 
@@ -359,36 +402,114 @@ export const forwardMessage = async (
   });
 
   let body = message.body;
-  if (message.mediaType === 'conversation' || message.mediaType === 'extendedTextMessage') {
-    await SendWhatsAppMessage({ body, ticket: createTicket, quotedMsg, isForwarded: message.fromMe ? false : true });
-  } else if (message.mediaType === 'contactMessage') {
-    await SendWhatsAppContact({ body, ticket: createTicket });
-  } else {
-    console.log("message >>>", message);
+  
+  try {
+    if (message.mediaType === 'conversation' || message.mediaType === 'extendedTextMessage') {
+      await SendWhatsAppMessage({ 
+        body, 
+        ticket: createTicket, 
+        quotedMsg, 
+        isForwarded: message.fromMe ? false : true 
+      });
+    } else if (message.mediaType === 'contactMessage') {
+      await SendWhatsAppContact({ body, ticket: createTicket });
+    } else {
+      console.log("message >>>", message);
 
-    const mediaUrl = message.mediaUrl.replace(`:${process.env.PORT}`, '');
-    const fileName = obterNomeEExtensaoDoArquivo(mediaUrl);
+      const mediaUrl = message.mediaUrl.replace(`:${process.env.PORT}`, '');
+      const fileName = obterNomeEExtensaoDoArquivo(mediaUrl);
 
-    if (body === fileName) {
-      body = "";
+      if (body === fileName) {
+        body = "";
+      }
+
+      const publicFolder = path.join(__dirname, '..', '..', '..', 'backend', 'public');
+      const originalFilePath = path.join(publicFolder, `company${createTicket.companyId}`, fileName);
+
+      // Verifica se o arquivo original existe
+      if (!fs.existsSync(originalFilePath)) {
+        console.error(`Arquivo não encontrado: ${originalFilePath}`);
+        return res.status(404).send("Arquivo de mídia não encontrado");
+      }
+
+      let mediaSrc: Express.Multer.File;
+
+      // Tratamento especial para arquivos de áudio
+      if (message.mediaType === 'audio') {
+        try {
+          console.log(`Processando áudio para forward: ${originalFilePath}`);
+          
+          // Processa o áudio para garantir compatibilidade
+          const { oggPath, mp3Path, filename } = await processAudioForForward(
+            originalFilePath, 
+            createTicket.companyId
+          );
+
+          mediaSrc = {
+            fieldname: 'medias',
+            originalname: filename,
+            encoding: '7bit',
+            mimetype: 'audio/ogg',
+            filename: filename,
+            path: oggPath,
+            size: fs.statSync(oggPath).size,
+            buffer: Buffer.from([]),
+            stream: null,
+            destination: path.dirname(oggPath)
+          } as Express.Multer.File;
+
+          console.log(`Áudio processado com sucesso: ${oggPath}`);
+          
+          await SendWhatsAppMedia({ 
+            media: mediaSrc, 
+            ticket: createTicket, 
+            body, 
+            isForwarded: message.fromMe ? false : true 
+          });
+
+          // Limpa arquivos temporários gerados
+          setTimeout(() => {
+            try {
+              if (fs.existsSync(oggPath)) fs.unlinkSync(oggPath);
+              if (fs.existsSync(mp3Path)) fs.unlinkSync(mp3Path);
+            } catch (error) {
+              console.error("Erro ao limpar arquivos temporários:", error);
+            }
+          }, 5000);
+
+        } catch (audioError) {
+          console.error("Erro ao processar áudio para forward:", audioError);
+          return res.status(500).send("Erro ao processar arquivo de áudio");
+        }
+      } else {
+        // Para outros tipos de mídia, usa o arquivo original
+        mediaSrc = {
+          fieldname: 'medias',
+          originalname: fileName,
+          encoding: '7bit',
+          mimetype: message.mediaType,
+          filename: fileName,
+          path: originalFilePath,
+          size: fs.statSync(originalFilePath).size,
+          buffer: Buffer.from([]),
+          stream: null,
+          destination: path.dirname(originalFilePath)
+        } as Express.Multer.File;
+
+        await SendWhatsAppMedia({ 
+          media: mediaSrc, 
+          ticket: createTicket, 
+          body, 
+          isForwarded: message.fromMe ? false : true 
+        });
+      }
     }
 
-    const publicFolder = path.join(__dirname, '..', '..', '..', 'backend', 'public');
-    const filePath = path.join(publicFolder, `company${createTicket.companyId}`, fileName);
-
-    const mediaSrc = {
-      fieldname: 'medias',
-      originalname: fileName,
-      encoding: '7bit',
-      mimetype: message.mediaType,
-      filename: fileName,
-      path: filePath
-    } as Express.Multer.File;
-
-    await SendWhatsAppMedia({ media: mediaSrc, ticket: createTicket, body, isForwarded: message.fromMe ? false : true });
+    return res.send();
+  } catch (error) {
+    console.error("Erro no forward da mensagem:", error);
+    return res.status(500).json({ error: "Erro ao encaminhar mensagem" });
   }
-
-  return res.send();
 };
 
 export const remove = async (

@@ -258,105 +258,137 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
           keepAliveIntervalMs: 15_000,      
         });
 
-        wsocket.ev.on("messaging-history.set", async ({ messages, chats, isLatest, contacts }) => {
-          console.log("messages", messages.length)
-          console.log("chats", chats.length)
-          console.log("isLatest", isLatest)
-          console.log("contacts", contacts.length)
-        
-          const statusImportMessages = new Date().getTime();
-        
-          await whatsapp.update({
-            statusImportMessages
-          });
-          
-          const whatsappId = whatsapp.id;
-          let filteredDateMessages = [];
-          
-          if (messages && messages.length > 0) {
-            for await (const [, msg] of Object.entries(messages)) {
-              const timestampMsg = Math.floor(msg.messageTimestamp["low"] * 1000);
-              
-              // Verificar se a mensagem é válida e está no período selecionado
-              if (isValidMsg(msg) && whatsapp.dateOldLimit < timestampMsg && whatsapp.dateRecentLimit > timestampMsg) {
-                
-                const remoteJid = msg.key?.remoteJid;
-                const isGroupMessage = remoteJid?.split("@")[1] === "g.us";
-                const isStatusMessage = remoteJid?.includes("status@broadcast");
-                
-                // Pular mensagens de status
-                if (isStatusMessage) {
-                  continue;
-                }
-                
-                // Processar mensagens de conversas privadas (TODAS as mensagens da conversa)
-                if (!isGroupMessage) {
-                  addLogs({
-                    fileName: `preparingImportMessagesWppId${whatsapp.id}.txt`, 
-                    text: `Adicionando mensagem para processamento:
-        CONVERSA PRIVADA >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        Data e hora da mensagem: ${moment(timestampMsg).format("DD/MM/YYYY HH:mm:ss")}
-        Contato da conversa: ${remoteJid}
-        Remetente: ${msg.key?.fromMe ? 'EU' : 'CONTATO'}
-        Tipo da mensagem: ${getTypeMessage(msg)}
-        ID da mensagem: ${msg.key?.id}
-        
-        `});
-                  filteredDateMessages.push(msg);
-                } 
-                // Processar mensagens de grupos (se habilitado)
-                else if (whatsapp?.importOldMessagesGroups) {
-                  addLogs({
-                    fileName: `preparingImportMessagesWppId${whatsapp.id}.txt`, 
-                    text: `Adicionando mensagem para processamento:
-        MENSAGEM DE GRUPO >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        Data e hora da mensagem: ${moment(timestampMsg).format("DD/MM/YYYY HH:mm:ss")}
-        Grupo: ${remoteJid}
-        Remetente: ${msg.key?.participant || msg.key?.fromMe ? 'EU' : 'DESCONHECIDO'}
-        Tipo da mensagem: ${getTypeMessage(msg)}
-        ID da mensagem: ${msg.key?.id}
-        
-        `});
-                  filteredDateMessages.push(msg);
-                }
-              }
-            }
-          }
-        
-          // Adicionar mensagens ao array de dados
-          if (!dataMessages?.[whatsappId]) {
-            dataMessages[whatsappId] = [];
-          }
-          
-          // Usar concat para evitar duplicatas e manter ordem
-          dataMessages[whatsappId] = dataMessages[whatsappId].concat(filteredDateMessages);
-          
-          // Log estatísticas
-          addLogs({
-            fileName: `preparingImportMessagesWppId${whatsapp.id}.txt`, 
-            text: `ESTATÍSTICAS DE IMPORTAÇÃO:
-        Total de mensagens processadas: ${messages.length}
-        Mensagens válidas no período: ${filteredDateMessages.length}
-        Total acumulado para importação: ${dataMessages[whatsappId].length}
-        Período: ${moment(dateOldLimit).format("DD/MM/YYYY")} até ${moment(dateRecentLimit).format("DD/MM/YYYY")}
-        
-        `});
-        
-          setTimeout(async () => {
-            const wpp = await Whatsapp.findByPk(whatsappId);
-            io.of(String(companyId))
-              .emit(`importMessages-${wpp.companyId}`, {
-                action: "update",
-                status: { this: -1, all: -1 }
-              });
-            io.of(String(companyId))
-              .emit(`company-${companyId}-whatsappSession`, {
-                action: "update",
-                session: wpp
-              });
-          }, 500);
+        setTimeout(async () => {
+          const wpp = await Whatsapp.findByPk(whatsapp.id);
+          // console.log("Status:::::", wpp.status)
+          if (wpp?.importOldMessages && wpp.status === "CONNECTED") {
+            // console.log("Importando mensagens")
+            let dateOldLimit = new Date(wpp.importOldMessages).getTime();
+            let dateRecentLimit = new Date(wpp.importRecentMessages).getTime();
 
-        });
+            addLogs({
+              fileName: `preparingImportMessagesWppId${whatsapp.id}.txt`, forceNewFile: true,
+              text: `Aguardando conexão para iniciar a importação de mensagens:
+  Whatsapp nome: ${wpp.name}
+  Whatsapp Id: ${wpp.id}
+  Criação do arquivo de logs: ${moment().format("DD/MM/YYYY HH:mm:ss")}
+  Selecionado Data de inicio de importação: ${moment(dateOldLimit).format("DD/MM/YYYY HH:mm:ss")} 
+  Selecionado Data final da importação: ${moment(dateRecentLimit).format("DD/MM/YYYY HH:mm:ss")} 
+  `})
+
+            const statusImportMessages = new Date().getTime();
+
+            await wpp.update({
+              statusImportMessages
+            });
+            wsocket.ev.on("messaging-history.set", async ({ messages, chats, isLatest, contacts }) => {
+              console.log("messages", messages.length)
+              console.log("chats", chats.length)
+              console.log("isLatest", isLatest)
+              console.log("contacts", contacts.length)
+
+              const statusImportMessages = new Date().getTime();
+
+              await wpp.update({
+                statusImportMessages
+              });
+              const whatsappId = whatsapp.id;
+              // let filteredMessages = messageSet.messages
+              let filteredDateMessages = []
+              if (messages && messages.length > 0) {
+                for await (const [, msg] of Object.entries(messages)) {
+                  const timestampMsg = Math.floor(msg.messageTimestamp["low"] * 1000)
+                  if (isValidMsg(msg) && dateOldLimit < timestampMsg && dateRecentLimit > timestampMsg) {
+                    if (msg.key?.remoteJid.split("@")[1] != "g.us") {
+                      addLogs({
+                        fileName: `preparingImportMessagesWppId${whatsapp.id}.txt`, text: `Adicionando mensagem para pos processamento:
+  Não é Mensagem de GRUPO >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  Data e hora da mensagem: ${moment(timestampMsg).format("DD/MM/YYYY HH:mm:ss")}
+  Contato da Mensagem : ${msg.key?.remoteJid}
+  Tipo da mensagem : ${getTypeMessage(msg)}
+  
+  `})
+                      filteredDateMessages.push(msg)
+                    } else {
+                      if (wpp?.importOldMessagesGroups) {
+                        addLogs({
+                          fileName: `preparingImportMessagesWppId${whatsapp.id}.txt`, text: `Adicionando mensagem para pos processamento:
+  Mensagem de GRUPO >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  Data e hora da mensagem: ${moment(timestampMsg).format("DD/MM/YYYY HH:mm:ss")}
+  Contato da Mensagem : ${msg.key?.remoteJid}
+  Tipo da mensagem : ${getTypeMessage(msg)}
+  
+  `})
+                        filteredDateMessages.push(msg)
+                      }
+                    }
+                  }
+
+                };
+              }
+
+              if (!dataMessages?.[whatsappId]) {
+                dataMessages[whatsappId] = [];
+
+                dataMessages[whatsappId].unshift(...filteredDateMessages);
+              } else {
+                dataMessages[whatsappId].unshift(...filteredDateMessages);
+              }
+
+              setTimeout(async () => {
+                const wpp = await Whatsapp.findByPk(whatsappId);
+                io.of(String(companyId))
+                  .emit(`importMessages-${wpp.companyId}`, {
+                    action: "update",
+                    status: { this: -1, all: -1 }
+                  });
+                io.of(String(companyId))
+                  .emit(`company-${companyId}-whatsappSession`, {
+                    action: "update",
+                    session: wpp
+                  });
+                //console.log(JSON.stringify(wpp, null, 2));
+              }, 500);
+
+              setTimeout(async () => {
+
+
+                const wpp = await Whatsapp.findByPk(whatsappId);
+
+                if (wpp?.importOldMessages) {
+                  let isTimeStamp = !isNaN(
+                    new Date(Math.floor(parseInt(wpp?.statusImportMessages))).getTime()
+                  );
+
+                  if (isTimeStamp) {
+                    const ultimoStatus = new Date(
+                      Math.floor(parseInt(wpp?.statusImportMessages))
+                    ).getTime();
+                    const dataLimite = +add(ultimoStatus, { seconds: +45 }).getTime();
+
+                    if (dataLimite < new Date().getTime()) {
+                      //console.log("Pronto para come?ar")
+                      ImportWhatsAppMessageService(wpp.id)
+                      wpp.update({
+                        statusImportMessages: "Running"
+                      })
+
+                    } else {
+                      //console.log("Aguardando inicio")
+                    }
+                  }
+                }
+                io.of(String(companyId))
+                  .emit(`company-${companyId}-whatsappSession`, {
+                    action: "update",
+                    session: wpp
+                  });
+              }, 1000 * 45);
+
+            });
+          }
+
+        }, 2500);
 
         wsocket.ev.on(
           "connection.update",
