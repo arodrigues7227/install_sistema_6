@@ -230,6 +230,8 @@ function createJid(number: string) {
 //   return res.send({ status: "SUCCESS" });
 // };
 
+// ApiController.ts - Função index corrigida
+
 export const index = async (req: Request, res: Response): Promise<Response> => {
   const newContact: ContactData = req.body;
 
@@ -252,16 +254,15 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   const whatsapp = await Whatsapp.findOne({ where: { token } });
   const companyId = whatsapp.companyId;
 
-    // Verificar se o plano da empresa é apenas para envio de mensagens
-    const company = await Company.findByPk(companyId, {
-      include: [{ model: Plan, as: 'plan' }]
-    });
+  // Verificar se o plano da empresa é apenas para envio de mensagens
+  const company = await Company.findByPk(companyId, {
+    include: [{ model: Plan, as: 'plan' }]
+  });
 
   newContact.number = newContact.number.replace(" ", "");
 
-   // Se o plano for onlyApiMessage, forçamos noRegister como true
-   const useNoRegister = company?.plan?.onlyApiMessage === true || noRegister;
-  
+  // Se o plano for onlyApiMessage, forçamos noRegister como true
+  const useNoRegister = company?.plan?.onlyApiMessage === true || noRegister;
 
   const schema = Yup.object().shape({
     number: Yup.string()
@@ -277,14 +278,23 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
 
   const wbot = await getWbot(whatsapp.id);
 
+  // ✅ CORREÇÃO: Sanitizar userId e queueId - converter strings vazias e valores inválidos para null
+  const sanitizedUserId = (userId && userId.toString().trim() !== "" && !isNaN(Number(userId))) 
+    ? Number(userId) 
+    : null;
+    
+  const sanitizedQueueId = (queueId && queueId.toString().trim() !== "" && !isNaN(Number(queueId))) 
+    ? Number(queueId) 
+    : null;
+
   let user
-  if (userId?.toString() !== "" && !isNaN(userId)) {
-    user = await ShowUserService(userId, companyId);
+  if (sanitizedUserId !== null) {
+    user = await ShowUserService(sanitizedUserId, companyId);
   }
 
   let queue
-  if (queueId?.toString() !== "" && !isNaN(queueId)) {
-    queue = await ShowQueueService(queueId, companyId);
+  if (sanitizedQueueId !== null) {
+    queue = await ShowQueueService(sanitizedQueueId, companyId);
   }
 
   let bodyMessage;
@@ -329,7 +339,8 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
         })
     }
   } else {
-    const contactAndTicket = await createContact(whatsapp.id, companyId, newContact.number, userId, queueId, wbot);
+    // ✅ CORREÇÃO: Passar valores sanitizados para createContact
+    const contactAndTicket = await createContact(whatsapp.id, companyId, newContact.number, sanitizedUserId, sanitizedQueueId, wbot);
 
     let sentMessage
 
@@ -366,17 +377,18 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
           companyId,
         });
       }, 100);
-    } else if (userId?.toString() !== "" && !isNaN(userId)) {
+    } else if (sanitizedUserId !== null) {
       setTimeout(async () => {
         await UpdateTicketService({
           ticketId: contactAndTicket.id,
-          ticketData: { status: "open", amountUsedBotQueues: 0, lastMessage: body, userId, queueId },
+          ticketData: { status: "open", amountUsedBotQueues: 0, lastMessage: body, userId: sanitizedUserId, queueId: sanitizedQueueId },
           companyId,
         });
       }, 100);
     }
   }
 
+  // Resto do código de tracking de API usage permanece igual...
   setTimeout(async () => {
     const { dateToClient } = useDate();
 
@@ -394,8 +406,6 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
       if (medias) {
         await Promise.all(
           medias.map(async (media: Express.Multer.File) => {
-            // const type = path.extname(media.originalname.replace('/','-'))
-
             if (media.mimetype.includes("pdf")) {
               await exist.update({
                 usedPDF: exist.dataValues["usedPDF"] + 1,
@@ -421,7 +431,6 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
                 updatedAt: timestamp
               });
             }
-
           })
         )
       } else {
@@ -440,8 +449,6 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
       if (medias) {
         await Promise.all(
           medias.map(async (media: Express.Multer.File) => {
-            // const type = path.extname(media.originalname.replace('/','-'))
-
             if (media.mimetype.includes("pdf")) {
               await exist.update({
                 usedPDF: exist.dataValues["usedPDF"] + 1,
@@ -467,7 +474,6 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
                 updatedAt: timestamp
               });
             }
-
           })
         )
       } else {
@@ -478,7 +484,6 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
         });
       }
     }
-
   }, 100);
 
   return res.send({ status: "SUCCESS" });
