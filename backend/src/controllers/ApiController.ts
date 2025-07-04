@@ -232,9 +232,10 @@ function createJid(number: string) {
 
 // ApiController.ts - Função index corrigida
 
+// ApiController.ts - Correção APENAS na parte que está causando o erro
+
 export const index = async (req: Request, res: Response): Promise<Response> => {
   const newContact: ContactData = req.body;
-
   const { whatsappId }: WhatsappData = req.body;
   const { msdelay }: any = req.body;
   const {
@@ -307,9 +308,9 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   }
 
   if (noRegister || useNoRegister) {
-    if (medias) {
+    // ✅ CORREÇÃO PRINCIPAL: Verificar se tem medias de verdade
+    if (medias && medias.length > 0) {
       try {
-        // console.log(medias)
         await Promise.all(
           medias.map(async (media: Express.Multer.File) => {
             const publicFolder = path.resolve(__dirname, "..", "..", "public");
@@ -321,7 +322,6 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
               options);
 
             const fileExists = fs.existsSync(filePath);
-
             if (fileExists) {
               fs.unlinkSync(filePath);
             }
@@ -344,7 +344,8 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
 
     let sentMessage
 
-    if (medias) {
+    // ✅ CORREÇÃO PRINCIPAL: Verificar se tem medias de verdade
+    if (medias && medias.length > 0) {
       try {
         await Promise.all(
           medias.map(async (media: Express.Multer.File) => {
@@ -364,10 +365,13 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
         throw new AppError("Error sending API media: " + error.message);
       }
     } else {
+      // ✅ CORREÇÃO: Para mensagem de texto, usar SendWhatsAppMessageAPI + verifyMessage
       sentMessage = await SendWhatsAppMessageAPI({ body: `\u200e ${bodyMessage}`, whatsappId: whatsapp.id, contact: contactAndTicket.contact, quotedMsg, msdelay });
 
+      // ✅ USAR verifyMessage para texto, NÃO verifyMediaMessage
       await verifyMessage(sentMessage, contactAndTicket, contactAndTicket.contact)
     }
+    
     // @ts-ignore: Unreachable code error
     if (closeTicket) {
       setTimeout(async () => {
@@ -388,7 +392,7 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
     }
   }
 
-  // Resto do código de tracking de API usage permanece igual...
+  // Resto do código permanece igual...
   setTimeout(async () => {
     const { dateToClient } = useDate();
 
@@ -403,7 +407,7 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
     });
 
     if (exist) {
-      if (medias) {
+      if (medias && medias.length > 0) {
         await Promise.all(
           medias.map(async (media: Express.Multer.File) => {
             if (media.mimetype.includes("pdf")) {
@@ -446,7 +450,7 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
         dateUsed: hoje,
       });
 
-      if (medias) {
+      if (medias && medias.length > 0) {
         await Promise.all(
           medias.map(async (media: Express.Multer.File) => {
             if (media.mimetype.includes("pdf")) {
