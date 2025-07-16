@@ -28,15 +28,18 @@ const SendWhatsAppMessage = async ({
 }: Request): Promise<WAMessage> => {
   let options = {};
   const wbot = await GetTicketWbot(ticket);
-  const contactNumber = await Contact.findByPk(ticket.contactId)
+  const contactNumber = await Contact.findByPk(ticket.contactId);
 
+  if (!contactNumber) {
+    throw new AppError(`Contato não encontrado para o ticket ${ticket.id}`);
+  }
+  
   let number: string;
-
+  
   if (contactNumber.remoteJid && contactNumber.remoteJid !== "" && contactNumber.remoteJid.includes("@")) {
     number = contactNumber.remoteJid;
   } else {
-    number = `${contactNumber.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"
-      }`;
+    number = `${contactNumber.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`;
   }
 
   if (quotedMsg) {
