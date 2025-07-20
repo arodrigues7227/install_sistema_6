@@ -1019,6 +1019,7 @@ const messages = {
         },
         buttons: {
           add: "Nova Lista",
+          export: "Exportar",
         },
         dialog: {
           name: "Nome",
@@ -1035,6 +1036,8 @@ const messages = {
         },
         toasts: {
           deleted: "Registro excluído",
+          exported: "Lista exportada com sucesso",
+          exportedError: "Erro ao exportar lista",
         },
       },
       contactListItems: {
@@ -1044,6 +1047,7 @@ const messages = {
           add: "Novo",
           lists: "Listas",
           import: "Importar",
+          export: "Exportar",
         },
         dialog: {
           name: "Nome",

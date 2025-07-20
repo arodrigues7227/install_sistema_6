@@ -14,6 +14,7 @@ import TableRow from "@material-ui/core/TableRow";
 import IconButton from "@material-ui/core/IconButton";
 import SearchIcon from "@material-ui/icons/Search";
 import TextField from "@material-ui/core/TextField";
+import GetAppIcon from "@material-ui/icons/GetApp";
 import InputAdornment from "@material-ui/core/InputAdornment";
 
 import DeleteOutlineIcon from "@material-ui/icons/DeleteOutline";
@@ -200,6 +201,45 @@ const ContactLists = () => {
     history.push(`/contact-lists/${id}/contacts`);
   };
 
+  const handleExportContactList = async (contactListId, contactListName) => {
+    try {
+      const response = await api.get(`contact-lists/${contactListId}/export`, {
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      const contentDisposition = response.headers['content-disposition'];
+      let fileName = `contatos_${contactListName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().getTime()}.xlsx`;
+
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (fileNameMatch) {
+          fileName = fileNameMatch[1];
+        }
+      }
+
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success(i18n.t("contactLists.toasts.exported") || "Lista exportada com sucesso!");
+
+    } catch (err) {
+      console.error('Erro na exportação:', err);
+      toastError(err);
+    }
+  };
+
   return (
     <MainContainer>
       <ConfirmationModal
@@ -282,6 +322,15 @@ const ContactLists = () => {
                         <DownloadIcon />
                       </IconButton>
                     </a>
+
+                    <IconButton
+                      size="small"
+                      onClick={() => handleExportContactList(contactList.id, contactList.name)}
+                      title="Exportar Contatos"
+                      disabled={!contactList.contactsCount || contactList.contactsCount === 0}
+                    >
+                      <GetAppIcon />
+                    </IconButton>
 
                     <IconButton
                       size="small"

@@ -12,8 +12,12 @@ const upload = multer(uploadConfig);
 routes.get("/contact-lists/list", isAuth, ContactListController.findList);
 routes.get("/contact-lists", isAuth, ContactListController.index);
 routes.get("/contact-lists/:id", isAuth, ContactListController.show);
+
+// Rota para exportar contatos (NOVA)
+routes.get("/contact-lists/:id/export", isAuth, ContactListController.exportContacts);
+
 routes.post("/contact-lists", isAuth, ContactListController.store);
-routes.post("/contact-lists/:id/upload",isAuth,upload.array("file"),ContactListController.upload);
+routes.post("/contact-lists/:id/upload", isAuth, upload.array("file"), ContactListController.upload);
 routes.put("/contact-lists/:id", isAuth, ContactListController.update);
 routes.delete("/contact-lists/:id", isAuth, ContactListController.remove);
 

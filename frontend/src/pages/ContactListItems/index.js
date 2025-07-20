@@ -20,7 +20,7 @@ import Button from "@material-ui/core/Button";
 import SearchIcon from "@material-ui/icons/Search";
 import TextField from "@material-ui/core/TextField";
 import InputAdornment from "@material-ui/core/InputAdornment";
-
+import GetAppIcon from "@material-ui/icons/GetApp";
 import IconButton from "@material-ui/core/IconButton";
 import DeleteOutlineIcon from "@material-ui/icons/DeleteOutline";
 import EditIcon from "@material-ui/icons/Edit";
@@ -241,6 +241,48 @@ const ContactListItems = () => {
     history.push("/contact-lists");
   };
 
+  const handleExportContacts = async () => {
+    try {
+      const response = await api.get(`contact-lists/${contactListId}/export`, {
+        responseType: 'blob', // Importante para receber arquivo
+      });
+      
+      // Criar blob e URL para download
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Extrair nome do arquivo do header ou usar nome padrão
+      const contentDisposition = response.headers['content-disposition'];
+      let fileName = `contatos_${contactList.name || 'lista'}_${new Date().getTime()}.xlsx`;
+      
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (fileNameMatch) {
+          fileName = fileNameMatch[1];
+        }
+      }
+      
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Limpar
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success(i18n.t("contactListItems.toasts.exported") || "Contatos exportados com sucesso!");
+      
+    } catch (err) {
+      console.error('Erro na exportação:', err);
+      toastError(err);
+    }
+  };
+
   return (
     <MainContainer className={classes.mainContainer}>
       <ContactListItemModal
@@ -324,6 +366,16 @@ const ContactListItems = () => {
                         }}
                       >
                         {i18n.t("contactListItems.buttons.import")}
+                      </Button>
+                    </Grid>
+                    <Grid xs={4} sm={2} item>
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        color="primary"
+                        onClick={handleExportContacts}
+                      >
+                        {i18n.t("contactListItems.buttons.export")}
                       </Button>
                     </Grid>
                     <Grid xs={4} sm={2} item>

@@ -14,6 +14,9 @@ import ContactList from "../models/ContactList";
 
 import AppError from "../errors/AppError";
 import { ImportContacts } from "../services/ContactListService/ImportContacts";
+import { ExportContacts } from "../services/ContactListService/ExportContacts";
+import fs from "fs";
+import path from "path";
 
 type IndexQuery = {
   searchParam: string;
@@ -160,4 +163,59 @@ export const upload = async (req: Request, res: Response) => {
     });
 
   return res.status(200).json(response);
+};
+
+export const exportContacts = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
+  const { id } = req.params;
+  const { companyId } = req.user;
+
+  try {
+    // Gerar arquivo Excel
+    const filePath = await ExportContacts({
+      contactListId: +id,
+      companyId
+    });
+
+    // Verificar se o arquivo foi criado
+    if (!fs.existsSync(filePath)) {
+      throw new AppError("Erro ao gerar arquivo de exportação", 500);
+    }
+
+    // Obter nome do arquivo para o download
+    const fileName = path.basename(filePath);
+    
+    // Configurar headers para download
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    // Criar stream de leitura do arquivo
+    const fileStream = fs.createReadStream(filePath);
+
+    // Pipe do arquivo para a resposta
+    fileStream.pipe(res);
+
+    // Limpar arquivo temporário após o download
+    fileStream.on('end', () => {
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.error('Erro ao deletar arquivo temporário:', err);
+        }
+      });
+    });
+
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode || 500).json({
+        error: error.message
+      });
+    }
+    
+    console.error('Erro na exportação:', error);
+    return res.status(500).json({
+      error: "Erro interno do servidor ao exportar contatos"
+    });
+  }
 };
