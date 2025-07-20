@@ -16,6 +16,7 @@ import SearchIcon from "@material-ui/icons/Search";
 import TextField from "@material-ui/core/TextField";
 import GetAppIcon from "@material-ui/icons/GetApp";
 import InputAdornment from "@material-ui/core/InputAdornment";
+import Tooltip from "@material-ui/core/Tooltip";
 
 import DeleteOutlineIcon from "@material-ui/icons/DeleteOutline";
 import EditIcon from "@material-ui/icons/Edit";
@@ -35,7 +36,6 @@ import toastError from "../../errors/toastError";
 import { Grid } from "@material-ui/core";
 
 import planilhaExemplo from "../../assets/planilha.xlsx";
-// import { SocketContext } from "../../context/Socket/SocketContext";
 import { AuthContext } from "../../context/Auth/AuthContext";
 
 const reducer = (state, action) => {
@@ -89,6 +89,16 @@ const useStyles = makeStyles((theme) => ({
     overflowY: "scroll",
     ...theme.scrollbarStyles,
   },
+  actionButtons: {
+    display: "flex",
+    gap: theme.spacing(0.5),
+    justifyContent: "center",
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+  actionIcon: {
+    fontSize: "1.2rem",
+  },
 }));
 
 const ContactLists = () => {
@@ -104,9 +114,8 @@ const ContactLists = () => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [searchParam, setSearchParam] = useState("");
   const [contactLists, dispatch] = useReducer(reducer, []);
-  //   const socketManager = useContext(SocketContext);
+  const [exportingLists, setExportingLists] = useState({});
   const { user, socket } = useContext(AuthContext);
-
 
   useEffect(() => {
     dispatch({ type: "RESET" });
@@ -135,7 +144,6 @@ const ContactLists = () => {
 
   useEffect(() => {
     const companyId = user.companyId;
-    // const socket = socketManager.GetSocket();
 
     const onContactListEvent = (data) => {
       if (data.action === "update" || data.action === "create") {
@@ -202,6 +210,10 @@ const ContactLists = () => {
   };
 
   const handleExportContactList = async (contactListId, contactListName) => {
+    if (exportingLists[contactListId]) return;
+    
+    setExportingLists(prev => ({ ...prev, [contactListId]: true }));
+    
     try {
       const response = await api.get(`contact-lists/${contactListId}/export`, {
         responseType: 'blob',
@@ -237,6 +249,8 @@ const ContactLists = () => {
     } catch (err) {
       console.error('Erro na exportação:', err);
       toastError(err);
+    } finally {
+      setExportingLists(prev => ({ ...prev, [contactListId]: false }));
     }
   };
 
@@ -245,8 +259,7 @@ const ContactLists = () => {
       <ConfirmationModal
         title={
           deletingContactList &&
-          `${i18n.t("contactLists.confirmationModal.deleteTitle")} ${deletingContactList.name
-          }?`
+          `${i18n.t("contactLists.confirmationModal.deleteTitle")} ${deletingContactList.name}?`
         }
         open={confirmModalOpen}
         onClose={setConfirmModalOpen}
@@ -261,13 +274,13 @@ const ContactLists = () => {
         contactListId={selectedContactList && selectedContactList.id}
       />
       <MainHeader>
-        <Grid style={{ width: "99.6%" }} container>
-          <Grid xs={12} sm={8} item>
+        <Grid container spacing={2} style={{ width: "100%" }}>
+          <Grid item xs={12} sm={8}>
             <Title>{i18n.t("contactLists.title")}</Title>
           </Grid>
-          <Grid xs={12} sm={4} item>
-            <Grid spacing={2} container>
-              <Grid xs={7} sm={6} item>
+          <Grid item xs={12} sm={4}>
+            <Grid container spacing={2}>
+              <Grid item xs={7} sm={6}>
                 <TextField
                   fullWidth
                   placeholder={i18n.t("contacts.searchPlaceholder")}
@@ -283,7 +296,7 @@ const ContactLists = () => {
                   }}
                 />
               </Grid>
-              <Grid xs={5} sm={6} item>
+              <Grid item xs={5} sm={6}>
                 <Button
                   fullWidth
                   variant="contained"
@@ -311,55 +324,91 @@ const ContactLists = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            <>
-              {contactLists.map((contactList) => (
-                <TableRow key={contactList.id}>
-                  <TableCell align="center">{contactList.name}</TableCell>
-                  <TableCell align="center">{contactList.contactsCount || 0}</TableCell>
-                  <TableCell align="center">
-                    <a href={planilhaExemplo} download="planilha.xlsx">
-                      <IconButton size="small" title="Baixar Planilha Exemplo">
-                        <DownloadIcon />
+            {contactLists.map((contactList) => (
+              <TableRow key={contactList.id}>
+                <TableCell align="center">{contactList.name}</TableCell>
+                <TableCell align="center">{contactList.contactsCount || 0}</TableCell>
+                <TableCell align="center">
+                  <div className={classes.actionButtons}>
+                    {/* Botão de download da planilha exemplo */}
+                    <Tooltip title="Baixar Planilha Exemplo">
+                      <IconButton 
+                        size="small" 
+                        component="a"
+                        href={planilhaExemplo} 
+                        download="planilha.xlsx"
+                      >
+                        <DownloadIcon className={classes.actionIcon} />
                       </IconButton>
-                    </a>
+                    </Tooltip>
 
-                    <IconButton
-                      size="small"
-                      onClick={() => handleExportContactList(contactList.id, contactList.name)}
-                      title="Exportar Contatos"
-                      disabled={!contactList.contactsCount || contactList.contactsCount === 0}
+                    {/* Botão de exportar contatos - SEMPRE VISÍVEL */}
+                    <Tooltip 
+                      title={
+                        (!contactList.contactsCount || contactList.contactsCount === 0)
+                          ? "Não há contatos para exportar"
+                          : exportingLists[contactList.id] 
+                            ? "Exportando..." 
+                            : "Exportar Contatos"
+                      }
                     >
-                      <GetAppIcon />
-                    </IconButton>
+                      <span> {/* span necessário para tooltip funcionar com botão desabilitado */}
+                        <IconButton
+                          size="small"
+                          onClick={() => handleExportContactList(contactList.id, contactList.name)}
+                          disabled={
+                            exportingLists[contactList.id] || 
+                            !contactList.contactsCount || 
+                            contactList.contactsCount === 0
+                          }
+                          style={{ 
+                            color: (!contactList.contactsCount || contactList.contactsCount === 0) 
+                              ? '#ccc' 
+                              : '#1976d2' 
+                          }}
+                        >
+                          <GetAppIcon className={classes.actionIcon} />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
 
-                    <IconButton
-                      size="small"
-                      onClick={() => goToContacts(contactList.id)}
-                    >
-                      <PeopleIcon />
-                    </IconButton>
+                    {/* Botão de gerenciar contatos */}
+                    <Tooltip title="Gerenciar Contatos">
+                      <IconButton
+                        size="small"
+                        onClick={() => goToContacts(contactList.id)}
+                      >
+                        <PeopleIcon className={classes.actionIcon} />
+                      </IconButton>
+                    </Tooltip>
 
-                    <IconButton
-                      size="small"
-                      onClick={() => handleEditContactList(contactList)}
-                    >
-                      <EditIcon />
-                    </IconButton>
+                    {/* Botão de editar lista */}
+                    <Tooltip title="Editar Lista">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEditContactList(contactList)}
+                      >
+                        <EditIcon className={classes.actionIcon} />
+                      </IconButton>
+                    </Tooltip>
 
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        setConfirmModalOpen(true);
-                        setDeletingContactList(contactList);
-                      }}
-                    >
-                      <DeleteOutlineIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {loading && <TableRowSkeleton columns={3} />}
-            </>
+                    {/* Botão de deletar lista */}
+                    <Tooltip title="Deletar Lista">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          setConfirmModalOpen(true);
+                          setDeletingContactList(contactList);
+                        }}
+                      >
+                        <DeleteOutlineIcon className={classes.actionIcon} />
+                      </IconButton>
+                    </Tooltip>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {loading && <TableRowSkeleton columns={3} />}
           </TableBody>
         </Table>
       </Paper>
