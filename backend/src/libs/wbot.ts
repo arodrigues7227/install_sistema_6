@@ -37,7 +37,7 @@ import NodeCache from 'node-cache';
 import { Store } from "./store";
 import Message from "../models/Message";
 
-const waVersion: WAVersion = [2, 3000, 1023333981];
+const waVersion: WAVersion = [2, 3000, 1025052013];
 
 const maxRetriesQrCode = 3;
 
@@ -232,6 +232,7 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
 
         wsocket = makeWASocket({
           logger: loggerBaileys,
+          version: waVersion,
           auth: {
             creds: state.creds,
             /** caching makes the store faster to send/recv messages */
