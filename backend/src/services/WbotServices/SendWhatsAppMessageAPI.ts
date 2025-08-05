@@ -17,7 +17,7 @@ interface Request {
   msdelay?: number;
 }
 
-const SendWhatsAppMessage = async ({
+const SendWhatsAppMessageAPI = async ({
   body,
   whatsappId,
   contact,
@@ -69,4 +69,4 @@ const SendWhatsAppMessage = async ({
   }
 };
 
-export default SendWhatsAppMessage;
+export default SendWhatsAppMessageAPI;
