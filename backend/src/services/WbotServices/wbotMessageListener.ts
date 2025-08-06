@@ -3657,7 +3657,7 @@ const filterMessages = (msg: WAMessage): boolean => {
 };
 
   // Esta verificação deve ser feita logo no início para ser utilizada em todas as escutas de eventos
-  const checkOnlyApiMessagePlan = async (wbot: Session, companyId: number) => {
+  const checkOnlyApiMessagePlan = async (wbot: Session, companyId: number)    => {
     try {
       const whatsapp = await Whatsapp.findOne({
         where: {
@@ -3673,7 +3673,7 @@ const filterMessages = (msg: WAMessage): boolean => {
         ]
       }); 
       
-      const isOnlyApiMessagePlan = whatsapp?.company?.plan?.onlyApiMessage || false;
+      const isOnlyApiMessagePlan = whatsapp?.company?.plan?.onlyApiMessage;
       
       logger.info(`WhatsApp ${wbot.id} - Plano onlyApiMessage: ${isOnlyApiMessagePlan}`);
       
@@ -3703,7 +3703,6 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
 
     if (!messages) return;
 
-    // console.log("CIAAAAAAA WBOT " , companyId)
     messages.forEach(async (message: proto.IWebMessageInfo) => {
 
       if (message?.messageStubParameters?.length && message.messageStubParameters[0].includes('absent')) {

@@ -56,6 +56,7 @@ class Plan extends Model<Plan> {
   @Column
   useExternalApi: boolean;   
 
+  @Default("false")
   @Column
   onlyApiMessage: boolean;
 
