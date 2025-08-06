@@ -25,6 +25,12 @@ Sentry.init({ dsn: process.env.SENTRY_DSN });
 
 const app = express();
 
+// Adicione este middleware logo após a criação do app e antes de outros middlewares
+app.use((req: Request, res: Response, next: NextFunction) => {
+  logger.info(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 // Configuração de filas
 app.set("queues", {
   messageQueue,
