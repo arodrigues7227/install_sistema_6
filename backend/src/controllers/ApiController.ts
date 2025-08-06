@@ -262,9 +262,6 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
 
   newContact.number = newContact.number.replace(" ", "");
 
-  // Se o plano for onlyApiMessage, forçamos noRegister como true
-  const useNoRegister = company?.plan?.onlyApiMessage === true || noRegister;
-
   const schema = Yup.object().shape({
     number: Yup.string()
       .required()
@@ -307,7 +304,7 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
     bodyMessage = body.trim();
   }
 
-  if (noRegister || useNoRegister) {
+  if (noRegister) {
     // ✅ CORREÇÃO PRINCIPAL: Verificar se tem medias de verdade
     if (medias && medias.length > 0) {
       try {

@@ -1,38 +1,34 @@
 import { Request, Response, NextFunction } from "express";
-
 import AppError from "../errors/AppError";
 import Whatsapp from "../models/Whatsapp";
 
-const isAuthApi = async (
+const isApi = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   const authHeader = req.headers.authorization;
-  if (!authHeader) {
+  
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     throw new AppError("ERR_SESSION_EXPIRED", 401);
   }
 
-  const [, token] = authHeader.split(" ");
+  const token = authHeader.split(" ")[1];
+  
   try {
     const whatsapp = await Whatsapp.findOne({ where: { token } });
-
-    const getToken = whatsapp?.token;
-    if (!getToken) {
+    
+    if (!whatsapp || whatsapp.token !== token) {
       throw new AppError("ERR_SESSION_EXPIRED", 401);
     }
-
-    if (getToken !== token) {
-      throw new AppError("ERR_SESSION_EXPIRED", 401);
-    }
+        
+    return next();
   } catch (err) {
-    throw new AppError(
-      "Invalid token. We'll try to assign a new one on next request",
-      403
-    );
+    if (err instanceof AppError) {
+      throw err;
+    }
+    throw new AppError("ERR_INVALID_TOKEN", 403);
   }
-
-  return next();
 };
 
-export default isAuthApi;
+export default isApi;

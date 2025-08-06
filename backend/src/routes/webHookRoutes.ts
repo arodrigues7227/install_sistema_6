@@ -1,7 +1,7 @@
-import { Router } from "express";
+import express from "express";
 import * as WebHooksController from "../controllers/WebHookController";
-const webHooksRoutes = Router();
-
+const webHooksRoutes = express.Router();
 webHooksRoutes.get("/", WebHooksController.index);
 webHooksRoutes.post("/", WebHooksController.webHook);
 export default webHooksRoutes;
+//

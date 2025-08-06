@@ -3656,14 +3656,14 @@ const filterMessages = (msg: WAMessage): boolean => {
   return true;
 };
 
-const wbotMessageListener = (wbot: Session, companyId: number): void => {
-  // Primeiro vamos verificar se o WhatsApp está relacionado a uma empresa com plano onlyApiMessage
-  let isOnlyApiMessagePlan = false;
-  
   // Esta verificação deve ser feita logo no início para ser utilizada em todas as escutas de eventos
-  const checkOnlyApiMessagePlan = async () => {
+  const checkOnlyApiMessagePlan = async (wbot: Session, companyId: number)    => {
     try {
-      const whatsapp = await Whatsapp.findByPk(wbot.id, {
+      const whatsapp = await Whatsapp.findOne({
+        where: {
+          id: wbot.id,
+          companyId: companyId // Adicionando a condição companyId
+        },
         include: [
           {
             model: Company,
@@ -3671,9 +3671,9 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
             include: [{ model: Plan, as: 'plan' }]
           }
         ]
-      });
+      }); 
       
-      isOnlyApiMessagePlan = whatsapp?.company?.plan?.onlyApiMessage || false;
+      const isOnlyApiMessagePlan = whatsapp?.company?.plan?.onlyApiMessage;
       
       logger.info(`WhatsApp ${wbot.id} - Plano onlyApiMessage: ${isOnlyApiMessagePlan}`);
       
@@ -3684,16 +3684,15 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
       return false;
     }
   };
-  
-  // Executamos a verificação inicial
-  checkOnlyApiMessagePlan();
+
+  const wbotMessageListener = async (wbot: Session, companyId: number): Promise<void> => {
+  // Primeiro vamos verificar se o WhatsApp está relacionado a uma empresa com plano onlyApiMessage
+  const isOnlyApiMessagePlan = await checkOnlyApiMessagePlan(wbot, companyId);
   
   wbot.ev.on("messages.upsert", async (messageUpsert: ImessageUpsert) => {
-    // Verificamos novamente o plano para garantir que estamos com info atualizada
-    const skipProcessing = await checkOnlyApiMessagePlan();
-    
+    const currentPlanStatus = await checkOnlyApiMessagePlan(wbot, companyId);
     // Se for plano onlyApiMessage, não processamos mensagens recebidas
-    if (skipProcessing) {
+    if (currentPlanStatus) {
       logger.info(`WhatsApp ${wbot.id} - Ignorando processamento de mensagem recebida (plano onlyApiMessage)`);
       return;
     }
@@ -3704,7 +3703,6 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
 
     if (!messages) return;
 
-    // console.log("CIAAAAAAA WBOT " , companyId)
     messages.forEach(async (message: proto.IWebMessageInfo) => {
 
       if (message?.messageStubParameters?.length && message.messageStubParameters[0].includes('absent')) {
@@ -3768,11 +3766,9 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
   });
 
   wbot.ev.on("messages.update", async (messageUpdate: WAMessageUpdate[]) => {
-    // Verificamos novamente o plano para garantir que estamos com info atualizada
-    const skipProcessing = await checkOnlyApiMessagePlan();
-    
+    const currentPlanStatus = await checkOnlyApiMessagePlan(wbot, companyId);
     // Se for plano onlyApiMessage, não processamos atualizações de mensagens
-    if (skipProcessing) {
+    if (currentPlanStatus) {
       logger.info(`WhatsApp ${wbot.id} - Ignorando processamento de atualização de mensagem (plano onlyApiMessage)`);
       return;
     }
@@ -4037,9 +4033,11 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
     }
   })
 
-  wbot.ev.on("groups.update", (groupUpdate: GroupMetadata[]) => {
+  wbot.ev.on("groups.update", async (groupUpdate: GroupMetadata[]) => {
+    const currentPlanStatus = await checkOnlyApiMessagePlan(wbot, companyId);
+
     // Verificamos o plano para decidir se processamos ou não
-    if (isOnlyApiMessagePlan) {
+    if (currentPlanStatus) {
       logger.info(`WhatsApp ${wbot.id} - Ignorando processamento de atualização de grupo (plano onlyApiMessage)`);
       return;
     }
@@ -4070,8 +4068,9 @@ const wbotMessageListener = (wbot: Session, companyId: number): void => {
   })
 
   wbot.ev.on("presence.update", async ({ id: remoteJid, presences }) => {
+    const currentPlanStatus = await checkOnlyApiMessagePlan(wbot, companyId);
     // Verificamos o plano para decidir se processamos ou não
-    if (isOnlyApiMessagePlan) {
+    if (currentPlanStatus) {
       logger.info(`WhatsApp ${wbot.id} - Ignorando processamento de presença (plano onlyApiMessage)`);
       return;
     }
