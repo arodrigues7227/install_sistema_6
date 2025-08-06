@@ -3,16 +3,16 @@ import isAuth from "../middleware/isAuth";
 
 import * as ChatbotController from "../controllers/ChatbotController";
 
-const chatBotRoutes = Router();
+const routes = Router();
 
-chatBotRoutes.get("/chatbot", isAuth, ChatbotController.index);
+routes.get("/chatbot", isAuth, ChatbotController.index);
 
-chatBotRoutes.post("/chatbot", isAuth, ChatbotController.store);
+routes.post("/chatbot", isAuth, ChatbotController.store);
 
-chatBotRoutes.get("/chatbot/:chatbotId", isAuth, ChatbotController.show);
+routes.get("/chatbot/:chatbotId", isAuth, ChatbotController.show);
 
-chatBotRoutes.put("/chatbot/:chatbotId", isAuth, ChatbotController.update);
+routes.put("/chatbot/:chatbotId", isAuth, ChatbotController.update);
 
-chatBotRoutes.delete("/chatbot/:chatbotId", isAuth, ChatbotController.remove);
+routes.delete("/chatbot/:chatbotId", isAuth, ChatbotController.remove);
 
-export default chatBotRoutes;
+export default routes;

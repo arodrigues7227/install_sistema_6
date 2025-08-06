@@ -1,5 +1,5 @@
-import { Router } from "express";
-
+import express from "express";
+import apiRoutes from "./apiRoutes";
 import userRoutes from "./userRoutes";
 import authRoutes from "./authRoutes";
 import settingRoutes from "./settingRoutes";
@@ -28,16 +28,11 @@ import chatBotRoutes from "./chatBotRoutes";
 import webHookRoutes from "./webHookRoutes";
 import subScriptionRoutes from "./subScriptionRoutes";
 import invoiceRoutes from "./invoicesRoutes";
-import apiRoutes from "./apiRoutes";
 import versionRouter from "./versionRoutes";
 import filesRoutes from "./filesRoutes";
 import queueOptionRoutes from "./queueOptionRoutes";
 import ticketTagRoutes from "./ticketTagRoutes";
-import apiCompanyRoutes from "./api/apiCompanyRoutes";
-import apiContactRoutes from "./api/apiContactRoutes";
-import apiMessageRoutes from "./api/apiMessageRoutes";
 import companySettingsRoutes from "./companySettingsRoutes";
-
 import promptRoutes from "./promptRouter";
 import statisticsRoutes from "./statisticsRoutes";
 import scheduleMessageRoutes from "./ScheduledMessagesRoutes";
@@ -48,11 +43,10 @@ import flowCampaignRoutes from "./flowCampaignRoutes";
 import backupRoutes from "./backupRoutes";
 
 
-const routes = Router();
-
+const routes = express.Router();
+routes.use("/api/messages", apiRoutes);
 routes.use(userRoutes);
 routes.use("/auth", authRoutes);
-routes.use("/api/messages", apiRoutes);
 routes.use(settingRoutes);
 routes.use(contactRoutes);
 routes.use(ticketRoutes);
@@ -83,9 +77,6 @@ routes.use(filesRoutes);
 routes.use(queueOptionRoutes);
 routes.use(queueIntegrationRoutes);
 routes.use(ticketTagRoutes);
-routes.use("/api", apiCompanyRoutes);
-routes.use("/api", apiContactRoutes);
-routes.use("/api", apiMessageRoutes);
 
 routes.use(flowDefaultRoutes);
 routes.use(webHook)
