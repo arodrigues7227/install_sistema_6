@@ -25,7 +25,7 @@ import {
   Schedule as ScheduleIcon,
   Announcement as AnnouncementIcon,
   Save as SaveIcon,
-  TestTube as TestIcon
+  Telegram as TelegramIcon
 } from "@material-ui/icons";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import { i18n } from "../../translate/i18n";
@@ -346,7 +346,7 @@ const BirthdaySettings = () => {
                 <Button
                   variant="contained"
                   className={classes.testButton}
-                  startIcon={<TestIcon />}
+                  startIcon={<TelegramIcon />}
                   onClick={() => handleTestMessage("contact")}
                   size="small"
                   style={{ marginTop: 8 }}
