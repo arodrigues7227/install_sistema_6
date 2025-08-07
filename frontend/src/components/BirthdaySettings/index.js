@@ -25,7 +25,6 @@ import {
   Phone as PhoneIcon,
   Schedule as ScheduleIcon,
   Announcement as AnnouncementIcon,
-  ExpandMore as ExpandMoreIcon,
   Save as SaveIcon,
   TestTube as TestIcon
 } from "@material-ui/icons";
