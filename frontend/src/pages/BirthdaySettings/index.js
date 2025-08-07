@@ -2,7 +2,7 @@
 import React from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import { Paper } from "@material-ui/core";
-
+import { AuthContext } from "../../context/Auth/AuthContext";
 import MainContainer from "../../components/MainContainer";
 import MainHeader from "../../components/MainHeader";
 import Title from "../../components/Title";
@@ -19,7 +19,8 @@ const useStyles = makeStyles((theme) => ({
 
 const BirthdaySettingsPage = () => {
   const classes = useStyles();
-
+//   const socketManager = useContext(SocketContext);
+  const { user, socket } = useContext(AuthContext);
   return (
     <MainContainer>
       <MainHeader>

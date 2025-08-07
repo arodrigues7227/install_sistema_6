@@ -1,4 +1,3 @@
-// src/components/BirthdaySettings/index.js
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { makeStyles } from "@material-ui/core/styles";
@@ -29,6 +28,7 @@ import {
 } from "@material-ui/icons";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import { i18n } from "../../translate/i18n";
+import { AuthContext } from "../../context/Auth/AuthContext";
 import api from "../../services/api";
 
 const useStyles = makeStyles((theme) => ({
@@ -114,6 +114,7 @@ const useStyles = makeStyles((theme) => ({
 
 const BirthdaySettings = () => {
   const classes = useStyles();
+  const { user, socket } = React.useContext(AuthContext);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -123,11 +124,7 @@ const BirthdaySettings = () => {
     general: true
   });
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
+    const fetchSettings = async () => {
     try {
       const { data } = await api.get("/birthdays/settings");
       setSettings(data.data);
@@ -138,6 +135,10 @@ const BirthdaySettings = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   const handleSettingChange = (field, value) => {
     setSettings(prev => ({
