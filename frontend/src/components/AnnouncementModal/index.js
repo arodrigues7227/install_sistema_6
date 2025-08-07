@@ -272,7 +272,7 @@ const AnnouncementModal = ({ open, onClose, announcementId, reload }) => {
       error={touched.targetCompanyId && Boolean(errors.targetCompanyId)}
     >
       <MenuItem value={null}>Todas as Empresas</MenuItem>
-      <MenuItem value={user?.companyId}>Apenas Minha Empresa</MenuItem>
+      <MenuItem value="1">Apenas Minha Empresa</MenuItem>
     </Field>
   </FormControl>
 </Grid>
