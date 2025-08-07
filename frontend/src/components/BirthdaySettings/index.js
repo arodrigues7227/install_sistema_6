@@ -16,8 +16,7 @@ import {
   CardContent,
   CardHeader,
   IconButton,
-  Collapse,
-  Alert
+  Collapse
 } from "@material-ui/core";
 import {
   Cake as CakeIcon,
@@ -392,7 +391,7 @@ const BirthdaySettings = () => {
             </Grid>
           </Grid>
 
-          <Alert severity="info" style={{ marginTop: 16 }}>
+        
             <Typography variant="body2">
               <strong>Variáveis disponíveis nas mensagens:</strong>
             </Typography>
@@ -400,7 +399,7 @@ const BirthdaySettings = () => {
               • <code>{"{nome}"}</code> - Nome da pessoa<br/>
               • <code>{"{idade}"}</code> - Idade da pessoa (apenas para contatos)
             </Typography>
-          </Alert>
+        
         </Collapse>
       </Paper>
 
