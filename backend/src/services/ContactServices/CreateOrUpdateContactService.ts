@@ -29,6 +29,7 @@ interface Request {
   remoteJid?: string;
   whatsappId?: number;
   wbot?: any;
+  birthDate?: Date | string;
 }
 
 const downloadProfileImage = async ({
@@ -71,7 +72,8 @@ const CreateOrUpdateContactService = async ({
   extraInfo = [],
   remoteJid = "",
   whatsappId,
-  wbot
+  wbot,
+  birthDate = null
 }: Request): Promise<Contact> => {
   const transaction = await sequelize.transaction();
   
@@ -165,6 +167,7 @@ const CreateOrUpdateContactService = async ({
         name,
         number,
         email,
+        birthDate,
         isGroup,
         companyId,
         channel,

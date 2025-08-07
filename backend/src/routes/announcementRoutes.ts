@@ -8,7 +8,7 @@ import uploadConfig from "../config/upload";
 const upload = multer(uploadConfig);
 
 const routes = express.Router();
-
+routes.get("/announcements/for-company", isAuth, AnnouncementController.getAnnouncementsForCompany);
 routes.get("/announcements/list", isAuth, AnnouncementController.findList);
 routes.get("/announcements", isAuth, AnnouncementController.index);
 routes.get("/announcements/:id", isAuth, AnnouncementController.show);

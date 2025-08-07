@@ -58,9 +58,8 @@ interface ContactData {
   disableBot?: boolean;
   remoteJid?: string;
   wallets?: null | number[] | string[];
+  birthDate?: Date | string;
 }
-
-
 
 export const importXls = async (req: Request, res: Response): Promise<Response> => {
   const { companyId } = req.user;
@@ -195,6 +194,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
 
   const schema = Yup.object().shape({
     name: Yup.string().required(),
+    birthDate: Yup.date().nullable().max(new Date(), "Data de nascimento não pode ser no futuro"),
     number: Yup.string()
       .required()
       .matches(/^\d+(-\d+)?$/, "Invalid number format. Only numbers and '-' for groups are allowed.")
@@ -245,6 +245,7 @@ export const update = async (
 
   const schema = Yup.object().shape({
     name: Yup.string(),
+    birthDate: Yup.date().nullable().max(new Date(), "Data de nascimento não pode ser no futuro"),
     number: Yup.string().matches(
       /^\d+(-\d+)?$/, 
       "Invalid number format. Only numbers and '-' for groups are allowed."

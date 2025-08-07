@@ -78,6 +78,7 @@ const AnnouncementModal = ({ open, onClose, announcementId, reload }) => {
     text: "",
     priority: 3,
     status: true,
+    targetCompanyId: null,
   };
 
   const [confirmationOpen, setConfirmationOpen] = useState(false);
@@ -256,6 +257,25 @@ const AnnouncementModal = ({ open, onClose, announcementId, reload }) => {
                       </Field>
                     </FormControl>
                   </Grid>
+                  <Grid xs={12} item>
+  <FormControl variant="outlined" margin="dense" fullWidth>
+    <InputLabel id="target-company-selection-label">
+      Exibir Para
+    </InputLabel>
+    <Field
+      as={Select}
+      label="Exibir Para"
+      placeholder="Exibir Para"
+      labelId="target-company-selection-label"
+      id="targetCompanyId"
+      name="targetCompanyId"
+      error={touched.targetCompanyId && Boolean(errors.targetCompanyId)}
+    >
+      <MenuItem value={null}>Todas as Empresas</MenuItem>
+      <MenuItem value={user?.companyId}>Apenas Minha Empresa</MenuItem>
+    </Field>
+  </FormControl>
+</Grid>
                   <Grid xs={12} item>
                     <FormControl variant="outlined" margin="dense" fullWidth>
                       <InputLabel id="priority-selection-label">

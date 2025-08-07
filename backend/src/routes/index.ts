@@ -41,7 +41,7 @@ import webHook from "./webHookRoutes";
 import flowBuilder from "./flowBuilderRoutes";
 import flowCampaignRoutes from "./flowCampaignRoutes";
 import backupRoutes from "./backupRoutes";
-
+import birthdayRoutes from "./birthdayRoutes";
 
 const routes = express.Router();
 routes.use("/api/messages", apiRoutes);
@@ -89,5 +89,6 @@ routes.use(statisticsRoutes);
 routes.use(companySettingsRoutes);
 routes.use(scheduleMessageRoutes);
 routes.use(backupRoutes);
+routes.use(birthdayRoutes);
 
 export default routes;

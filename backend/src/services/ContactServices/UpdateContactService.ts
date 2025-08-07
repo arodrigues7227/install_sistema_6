@@ -30,6 +30,7 @@ interface ContactData {
   remoteJid?: string;
   wallets?: null | number[] | string[];
   users?: User[];
+  birthDate?: Date | string;
 }
 
 interface Request {
@@ -43,13 +44,13 @@ const UpdateContactService = async ({
   contactId,
   companyId
 }: Request): Promise<Contact> => {
-  const { email, name, number, extraInfo, acceptAudioMessage, active, disableBot, remoteJid, wallets, users } = contactData;
+  const { email, name, number, extraInfo, acceptAudioMessage, birthDate, active, disableBot, remoteJid, wallets, users } = contactData;
   const transaction = await sequelize.transaction();
 
   try {
     const contact = await Contact.findOne({
       where: { id: contactId },
-      attributes: ["id", "name", "number", "channel", "email", "companyId", "acceptAudioMessage", "active", "profilePicUrl", "remoteJid", "urlPicture", "isGroup", "deletedAt"],
+      attributes: ["id", "name", "number", "channel", "email", "companyId", "acceptAudioMessage", "active", "profilePicUrl", "remoteJid", "urlPicture", "isGroup", "deletedAt", "birthDate"],
       include: ["extraInfo", "tags", "users",
         {
           association: "wallets",
@@ -169,6 +170,7 @@ const UpdateContactService = async ({
       name,
       number,
       email,
+      birthDate,
       acceptAudioMessage,
       active,
       disableBot,
@@ -177,7 +179,7 @@ const UpdateContactService = async ({
 
     // Recarrega o contato com seus relacionamentos
     await contact.reload({
-      attributes: ["id", "name", "number", "channel", "email", "companyId", "acceptAudioMessage", "active", "profilePicUrl", "remoteJid", "urlPicture"],
+      attributes: ["id", "name", "number", "birthDate", "channel", "email", "companyId", "acceptAudioMessage", "active", "profilePicUrl", "remoteJid", "urlPicture"],
       include: ["extraInfo", "tags",
         {
           association: "wallets",

@@ -189,18 +189,19 @@ export default function AnnouncementsPopover() {
     }
   }, [user]);
 
-  const fetchAnnouncements = async () => {
-    try {
-      const { data } = await api.get("/announcements/", {
-        params: { searchParam, pageNumber },
-      });
-      dispatch({ type: "LOAD_ANNOUNCEMENTS", payload: data.records });
-      setHasMore(data.hasMore);
-      setLoading(false);
-    } catch (err) {
-      toastError(err);
-    }
-  };
+const fetchAnnouncements = async () => {
+  try {
+    // Usar nova rota que filtra por empresa
+    const { data } = await api.get("/announcements/for-company", {
+      params: { searchParam, pageNumber },
+    });
+    dispatch({ type: "LOAD_ANNOUNCEMENTS", payload: data.records });
+    setHasMore(data.hasMore);
+    setLoading(false);
+  } catch (err) {
+    toastError(err);
+  }
+};
 
   const loadMore = () => {
     setPageNumber((prevState) => prevState + 1);

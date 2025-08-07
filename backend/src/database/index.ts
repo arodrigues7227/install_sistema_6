@@ -53,6 +53,7 @@ import { FlowCampaignModel } from "../models/FlowCampaign";
 import { FlowImgModel } from "../models/FlowImg";
 import { WebhookModel } from "../models/Webhook";
 import UsersContacts from "../models/UsersContacts";
+import BirthdaySettings from "../models/BirthdaySettings";
 
 // eslint-disable-next-line
 const dbConfig = require("../config/database");
@@ -113,7 +114,8 @@ const models = [
   FlowCampaignModel,
   FlowImgModel,
   WebhookModel,
-  UsersContacts
+  UsersContacts,
+  BirthdaySettings
 ];
 
 sequelize.addModels(models);

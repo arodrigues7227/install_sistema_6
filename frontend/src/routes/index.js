@@ -34,6 +34,7 @@ import Annoucements from "../pages/Annoucements";
 import Chat from "../pages/Chat";
 import Prompts from "../pages/Prompts";
 import AllConnections from "../pages/AllConnections";
+import BirthdaySettingsPage from "../pages/BirthdaySettings";
 import Reports from "../pages/Reports";
 import { FlowBuilderConfig } from "../pages/FlowBuilderConfig";
 // import Integrations from '../pages/Integrations';
@@ -67,7 +68,7 @@ const Routes = () => {
             <WhatsAppsProvider>
               <LoggedInLayout>
                 <Route exact path="/financeiro" component={Financeiro} isPrivate />
-
+                <Route exact path="/birthday-settings" component={BirthdaySettingsPage} />
                 <Route exact path="/companies" component={Companies} isPrivate />
                 <Route exact path="/" component={Dashboard} isPrivate />
                 <Route exact path="/tickets/:ticketId?" component={TicketResponsiveContainer} isPrivate />

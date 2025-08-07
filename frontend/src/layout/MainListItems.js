@@ -13,7 +13,7 @@ import Collapse from "@material-ui/core/Collapse";
 import List from "@material-ui/core/List";
 import Tooltip from "@material-ui/core/Tooltip";
 import Typography from "@material-ui/core/Typography";
-
+import CakeIcon from "@material-ui/icons/Cake";
 import DashboardOutlinedIcon from "@material-ui/icons/DashboardOutlined";
 import WhatsAppIcon from "@material-ui/icons/WhatsApp";
 import SyncAltIcon from "@material-ui/icons/SyncAlt";
@@ -969,6 +969,21 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                 />
               )}
             />
+
+<Can
+  role={user.profile}
+  perform="dashboard:view"
+  yes={() => (
+    <ListItemLink
+      to="/birthday-settings"
+      primary="Configurações de Aniversário"
+      icon={<CakeIcon />}
+      tooltip={collapsed}
+    />
+  )}
+/>
+
+
             {/* {user.super && (
               <ListSubheader inset>
                 {i18n.t("mainDrawer.listItems.administration")}

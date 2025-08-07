@@ -18,6 +18,7 @@ import GetWhatsappWbot from "./helpers/GetWhatsappWbot";
 import sequelize from "./database";
 import { getMessageOptions } from "./services/WbotServices/SendWhatsAppMedia";
 import { getIO } from "./libs/socket";
+import { initializeBirthdayJobs } from "./jobs/birthdayJob";
 import path from "path";
 import User from "./models/User";
 import Company from "./models/Company";
@@ -1707,6 +1708,9 @@ export async function startQueueProcess() {
   userMonitor.process("VerifyLoginStatus", handleLoginStatus);
 
   queueMonitor.process("VerifyQueueStatus", handleVerifyQueue);
+
+  logger.info("Inicializando jobs de aniversário...");
+  initializeBirthdayJobs();
 
   scheduleMonitor.add(
     "Verify",

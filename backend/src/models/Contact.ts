@@ -13,7 +13,8 @@ import {
   ForeignKey,
   BelongsTo,
   BelongsToMany,
-  DeletedAt
+  DeletedAt,
+  DataType
 } from "sequelize-typescript";
 import ContactCustomField from "./ContactCustomField";
 import Ticket from "./Ticket";
@@ -37,6 +38,9 @@ class Contact extends Model<Contact> {
 
   @Column
   name: string;
+
+  @Column(DataType.DATEONLY)
+  birthDate: Date;
 
   @AllowNull(false)
   @Unique
@@ -120,9 +124,9 @@ class Contact extends Model<Contact> {
   @Column
   get urlPicture(): string | null {
     if (this.getDataValue("urlPicture")) {
-      
-      return this.getDataValue("urlPicture") === 'avatarpadrao.png' ?   `${process.env.FRONTEND_URL}/avatarpadrao.png` :
-      `${process.env.BACKEND_URL}${process.env.PROXY_PORT ?`:${process.env.PROXY_PORT}`:""}/public/company${this.companyId}/contacts/${this.getDataValue("urlPicture")}` 
+
+      return this.getDataValue("urlPicture") === 'avatarpadrao.png' ? `${process.env.FRONTEND_URL}/avatarpadrao.png` :
+        `${process.env.BACKEND_URL}${process.env.PROXY_PORT ? `:${process.env.PROXY_PORT}` : ""}/public/company${this.companyId}/contacts/${this.getDataValue("urlPicture")}`
 
     }
     return null;
@@ -143,6 +147,58 @@ class Contact extends Model<Contact> {
 
   @BelongsToMany(() => User, () => UsersContacts)
   users: User[];
+
+
+  /**
+     * Calcula a idade atual do contato
+     */
+  get currentAge(): number | null {
+    if (!this.birthDate) return null;
+
+    const today = new Date();
+    const birthDate = new Date(this.birthDate);
+    let age = today.getFullYear() - birthDate.getFullYear();
+
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    return age;
+  }
+
+  /**
+   * Busca todos os contatos aniversariantes de hoje de uma empresa
+   */
+  static async getTodayBirthdays(companyId: number): Promise<Contact[]> {
+    const today = new Date();
+
+    return Contact.findAll({
+      where: {
+        companyId,
+        active: true, // Só contatos ativos
+        birthDate: {
+          [require('sequelize').Op.and]: [
+            require('sequelize').literal(`EXTRACT(MONTH FROM "birthDate") = ${today.getMonth() + 1}`),
+            require('sequelize').literal(`EXTRACT(DAY FROM "birthDate") = ${today.getDate()}`)
+          ]
+        }
+      },
+      include: [
+        'company',
+        'whatsapp',
+        {
+          model: ContactWallet,
+          include: [
+            {
+              model: User,
+              attributes: ['id', 'name']
+            }
+          ]
+        }
+      ]
+    });
+  }
 }
 
 export default Contact;

@@ -1,0 +1,6 @@
+- Refactor authentication middleware: rename isAuthApi to isApi, enhance token validation logic, and remove deprecated isAuthCompany and tokenAuth middleware files. Update API routes to utilize the new isApi middleware for improved clarity and consistency. (e0e0bd2)
+- Update app.ts (3257686)
+- fx (1108b28)
+- Add default value for onlyApiMessage in Plan model and refine plan checking logic in wbotMessageListener for improved clarity and functionality. (e8c5176)
+- Refactor ApiController to simplify noRegister logic, rename SendWhatsAppMessage to SendWhatsAppMessageAPI for clarity, and enhance wbotMessageListener to improve plan checking and message processing efficiency. (0b734b4)
+- Update dependencies in package.json and package-lock.json; remove deprecated wbot.old file and refactor wbot.ts for improved message caching and error handling. (9b9b701)

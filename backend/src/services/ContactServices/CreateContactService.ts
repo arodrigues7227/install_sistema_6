@@ -28,6 +28,7 @@ interface Request {
   extraInfo?: ExtraInfo[];
   remoteJid?: string;
   wallets?: null | number[] | string[];
+  birthDate?: Date | string;
 }
 
 const CreateContactService = async ({
@@ -40,7 +41,8 @@ const CreateContactService = async ({
   companyId,
   extraInfo = [],
   remoteJid = "",
-  wallets = null
+  wallets = null,
+  birthDate = null
 }: Request): Promise<Contact> => {
   const transaction = await sequelize.transaction();
 
@@ -59,6 +61,19 @@ const CreateContactService = async ({
       ]
     });
 
+    let processedBirthDate: Date | null = null;
+    if (birthDate) {
+      if (typeof birthDate === 'string') {
+        processedBirthDate = new Date(birthDate);
+        // Validar se a data é válida
+        if (isNaN(processedBirthDate.getTime())) {
+          throw new AppError("Data de nascimento inválida");
+        }
+      } else {
+        processedBirthDate = birthDate;
+      }
+    }
+
     if (existingContact) {
       // Se o contato estiver excluído logicamente, restaura-o
       if (existingContact.deletedAt) {
@@ -71,6 +86,7 @@ const CreateContactService = async ({
         {
           name,
           email,
+          birthDate: processedBirthDate,
           profilePicUrl,
           remoteJid,
           ...(acceptAudioMessage !== undefined && { acceptAudioMessage }),
@@ -132,8 +148,9 @@ const CreateContactService = async ({
         number,
         email,
         profilePicUrl,
-        acceptAudioMessage: acceptAudioMessage !== undefined 
-          ? acceptAudioMessage 
+        birthDatE: processedBirthDate,
+        acceptAudioMessage: acceptAudioMessage !== undefined
+          ? acceptAudioMessage
           : acceptAudioMessageDefault,
         active,
         extraInfo,
@@ -167,7 +184,7 @@ const CreateContactService = async ({
     return newContact;
   } catch (error) {
     await transaction.rollback();
-    
+
     // Tratamento específico para erro de constraint única
     if (error.name === 'SequelizeUniqueConstraintError') {
       // Se ocorrer erro de duplicidade, tenta recuperar o contato novamente
@@ -177,7 +194,7 @@ const CreateContactService = async ({
           where: { number, companyId },
           paranoid: false // Busca inclusive excluídos logicamente
         });
-        
+
         if (duplicateContact) {
           // Se estiver excluído, restaura
           if (duplicateContact.deletedAt) {
@@ -189,7 +206,7 @@ const CreateContactService = async ({
       } catch (restoreError) {
         logger.error(`Erro ao tentar recuperar contato duplicado: ${restoreError}`);
       }
-      
+
       throw new AppError("ERR_DUPLICATED_CONTACT");
     }
 

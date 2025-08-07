@@ -28,6 +28,7 @@ const ShowUserService = async (id: string | number, companyId: string | number):
         "defaultTheme",
         "allowGroup",
         "defaultMenu",
+        "birthDate",
         "farewellMessage",
         "userClosePendingTicket",
         "showDashboard",

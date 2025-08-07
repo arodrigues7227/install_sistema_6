@@ -128,6 +128,7 @@ const UserModal = ({ open, onClose, userId }) => {
     profile: "user",
     startWork: "00:00",
     endWork: "23:59",
+    birthDate: "",
     farewellMessage: "",
     allTicket: "disable",
     allowGroup: true,
@@ -501,6 +502,24 @@ const UserModal = ({ open, onClose, userId }) => {
                         </Grid>
                       )}
                     />
+
+                    <Grid item xs={12} md={6} xl={6}>
+  <TextField
+    label="Data de Nascimento"
+    type="date"
+    name="birthDate"
+    value={user.birthDate || ""}
+    onChange={(e) => setUser(prev => ({ ...prev, birthDate: e.target.value }))}
+    InputLabelProps={{
+      shrink: true,
+    }}
+    fullWidth
+    variant="outlined"
+    margin="dense"
+    className={classes.textField}
+    helperText="Data de nascimento para notificações de aniversário"
+  />
+</Grid>
 
                     <Field
                       as={TextField}

@@ -67,7 +67,8 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     showDashboard,
     defaultTicketsManagerWidth = 550,
     allowRealTime,
-    allowConnections
+    allowConnections,
+    birthDate
   } = req.body;
   let userCompanyId: number | null = null;
 
@@ -165,6 +166,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
       password,
       name,
       profile,
+      birthDate,
       companyId: companyUser,
       queueIds,
       startWork,

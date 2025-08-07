@@ -29,6 +29,7 @@ interface Request {
   allowConnections?: string;
   canDeleteMessage?: boolean;
   showCampaign?: boolean;
+  birthDate: Date | string; 
 }
 
 interface Response {
@@ -42,6 +43,7 @@ const CreateUserService = async ({
   email,
   password,
   name,
+  birthDate,
   queueIds = [],
   companyId,
   profile = "admin",
@@ -111,6 +113,20 @@ const CreateUserService = async ({
     throw new AppError(err.message);
   }
 
+    // 🎂 PROCESSAR DATA DE NASCIMENTO
+  let processedBirthDate: Date | null = null;
+  if (birthDate) {
+    if (typeof birthDate === 'string') {
+      processedBirthDate = new Date(birthDate);
+      // Validar se a data é válida
+      if (isNaN(processedBirthDate.getTime())) {
+        throw new AppError("Data de nascimento inválida");
+      }
+    } else {
+      processedBirthDate = birthDate;
+    }
+  }
+
   const user = await User.create(
     {
       email,
@@ -120,6 +136,7 @@ const CreateUserService = async ({
       profile,
       startWork,
       endWork,
+      birthDate: processedBirthDate,
       whatsappId: whatsappId || null,
       allTicket,
       defaultTheme,

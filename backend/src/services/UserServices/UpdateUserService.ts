@@ -11,6 +11,7 @@ interface UserData {
   name?: string;
   profile?: string;
   companyId?: number;
+  birthDate?: Date | string;
   queueIds?: number[];
   startWork?: string;
   endWork?: string;
@@ -75,6 +76,7 @@ const UpdateUserService = async ({
     password,
     profile,
     name,
+    birthDate,
     queueIds = [],
     startWork,
     endWork,
@@ -107,6 +109,7 @@ const UpdateUserService = async ({
     password,
     profile,
     name,
+    birthDate,
     startWork,
     endWork,
     farewellMessage,
@@ -145,6 +148,7 @@ const UpdateUserService = async ({
     name: user.name,
     email: user.email,
     profile: user.profile,
+    birthDate: user.birthDate,
     companyId: user.companyId,
     company,
     queues: user.queues,

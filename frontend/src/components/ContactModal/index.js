@@ -231,6 +231,23 @@ const ContactModal = ({ open, onClose, contactId, initialValues, onSave }) => {
                     </div>
                   </>
                 )}
+
+<div>
+  <Field
+    as={TextField}
+    label="Data de Nascimento"
+    name="birthDate"
+    type="date"
+    InputLabelProps={{
+      shrink: true,
+    }}
+    fullWidth
+    margin="dense"
+    variant="outlined"
+    helperText="Data de nascimento para mensagens automáticas de aniversário"
+  />
+</div>
+
                 <br />
                 <div>
                   <TagsContainer

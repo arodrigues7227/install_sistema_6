@@ -62,7 +62,7 @@ import useSettings from "../hooks/useSettings";
 import VersionControl from "../components/VersionControl";
 import api from "../services/api";
 import { Link } from "react-router-dom";
-
+import BirthdayModal from "../components/BirthdayModal";
 // import { SocketContext } from "../context/Socket/SocketContext";
 
 const backendUrl = getBackendUrl();
@@ -219,6 +219,28 @@ const useStyles = makeStyles((theme) => ({
   hideLogo: {
     display: "none",
   },
+  birthdayAvatar: {
+    width: theme.spacing(4),
+    height: theme.spacing(4),
+    cursor: "pointer",
+    borderRadius: "50%",
+    background: "linear-gradient(45deg, #ff6b6b, #feca57)",
+    border: "3px solid #fff",
+    position: "relative",
+    animation: "$birthdayPulse 2s infinite",
+    boxShadow: "0 0 20px rgba(255, 107, 107, 0.5)",
+    "&::before": {
+      content: '"🎉"',
+      position: "absolute",
+      top: -5,
+      right: -5,
+      fontSize: 12,
+      animation: "$bounce 1s infinite",
+    },
+    "&:hover": {
+      transform: "scale(1.05)",
+    },
+  },
   avatar2: {
     width: theme.spacing(4),
     height: theme.spacing(4),
@@ -245,6 +267,37 @@ const useStyles = makeStyles((theme) => ({
     marginLeft: 'auto', // Isso empurra os ícones para a direita
     alignItems: 'center',
     gap: theme.spacing(1), // Espaçamento entre os ícones
+  },
+  animatedBadge: {
+    "& .MuiBadge-badge": {
+      animation: "$heartbeat 2s infinite",
+    },
+  },
+
+  // 🎂 NOVAS ANIMAÇÕES
+  "@keyframes birthdayPulse": {
+    "0%, 100%": { 
+      transform: "scale(1)",
+      boxShadow: "0 0 20px rgba(255, 107, 107, 0.5)"
+    },
+    "50%": { 
+      transform: "scale(1.1)",
+      boxShadow: "0 0 30px rgba(255, 107, 107, 0.8)"
+    }
+  },
+
+  "@keyframes bounce": {
+    "0%, 20%, 50%, 80%, 100%": { transform: "translateY(0)" },
+    "40%": { transform: "translateY(-5px)" },
+    "60%": { transform: "translateY(-3px)" }
+  },
+
+  "@keyframes heartbeat": {
+    "0%": { transform: "scale(1)" },
+    "14%": { transform: "scale(1.1)" },
+    "28%": { transform: "scale(1)" },
+    "42%": { transform: "scale(1.1)" },
+    "70%": { transform: "scale(1)" },
   },
 }));
 
@@ -311,6 +364,11 @@ const LoggedInLayout = ({ children, themeToggle }) => {
   const { dateToClient } = useDate();
   const [profileUrl, setProfileUrl] = useState(null);
 
+    const [birthdayModalOpen, setBirthdayModalOpen] = useState(false);
+  const [userHasBirthday, setUserHasBirthday] = useState(false);
+  const [birthdayData, setBirthdayData] = useState({ users: [], contacts: [], settings: null });
+
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const mainListItems = useMemo(
     () => <MainListItems drawerOpen={drawerOpen} collapsed={!drawerOpen} />,
@@ -318,6 +376,63 @@ const LoggedInLayout = ({ children, themeToggle }) => {
   );
 
   const settings = useSettings();
+
+   useEffect(() => {
+    if (user?.id) {
+      checkTodayBirthdays();
+    }
+  }, [user]);
+
+  const checkTodayBirthdays = async () => {
+    try {
+      const { data } = await api.get("/birthdays/today");
+      const birthdayInfo = data.data;
+      
+      setBirthdayData(birthdayInfo);
+      
+      // Verificar se o usuário logado faz aniversário hoje
+      const userBirthday = birthdayInfo.users.find(u => u.id === user.id);
+      setUserHasBirthday(!!userBirthday);
+      
+      // Abrir modal se há aniversariantes
+      const hasBirthdays = birthdayInfo.users.length > 0 || birthdayInfo.contacts.length > 0;
+      if (hasBirthdays) {
+        // Delay para dar tempo do layout carregar
+        setTimeout(() => {
+          setBirthdayModalOpen(true);
+        }, 1500);
+      }
+    } catch (error) {
+      console.error("Error checking birthdays:", error);
+    }
+  };
+
+  // 🎂 LISTENER PARA EVENTOS DE ANIVERSÁRIO VIA SOCKET
+  useEffect(() => {
+    if (user.companyId && socket) {
+      const companyId = user.companyId;
+
+      const onUserBirthday = (data) => {
+        console.log("User birthday event:", data);
+        // Atualizar dados se necessário
+        checkTodayBirthdays();
+      };
+
+      const onContactBirthday = (data) => {
+        console.log("Contact birthday event:", data);
+        // Atualizar dados se necessário
+        checkTodayBirthdays();
+      };
+
+      socket.on('user-birthday', onUserBirthday);
+      socket.on('contact-birthday', onContactBirthday);
+
+      return () => {
+        socket.off('user-birthday', onUserBirthday);
+        socket.off('contact-birthday', onContactBirthday);
+      };
+    }
+  }, [user, socket]);
 
   useEffect(() => {
     if (document.body.offsetWidth > 600) {
@@ -426,6 +541,15 @@ const LoggedInLayout = ({ children, themeToggle }) => {
     }
   };
 
+    const getInitials = (name) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   // Função para executar o backup
   const handleBackup = async () => {
     try {
@@ -467,6 +591,11 @@ const LoggedInLayout = ({ children, themeToggle }) => {
 
   return (
     <div className={classes.root}>
+            <BirthdayModal
+        open={birthdayModalOpen}
+        onClose={() => setBirthdayModalOpen(false)}
+        user={user}
+      />
       <Drawer
         variant={drawerVariant}
         className={drawerOpen ? classes.drawerPaper : classes.drawerPaperClose}
@@ -596,11 +725,13 @@ const LoggedInLayout = ({ children, themeToggle }) => {
                   variant="dot"
                   onClick={handleMenu}
                 >
-                  <Avatar
-                    alt="Multi100"
-                    className={classes.avatar2}
-                    src={profileUrl}
-                  />
+            <Avatar
+                alt="Multi100"
+                className={userHasBirthday ? classes.birthdayAvatar : classes.avatar2}
+                src={profileUrl}
+              >
+                {!profileUrl && getInitials(user.name)}
+              </Avatar>
                 </StyledBadge>
               </Tooltip>
             </div>

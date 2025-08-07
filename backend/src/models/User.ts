@@ -38,6 +38,9 @@ class User extends Model<User> {
   @Column
   email: string;
 
+  @Column(DataType.DATEONLY)
+  birthDate: Date;
+
   @Column(DataType.VIRTUAL)
   password: string;
 
@@ -186,6 +189,57 @@ class User extends Model<User> {
   static async updateChatbotsUsersReferences(user: User) {
     // Atualizar os registros na tabela Chatbots onde optQueueId é igual ao ID da fila que será excluída
     await Chatbot.update({ optUserId: null }, { where: { optUserId: user.id } });
+  }
+get isBirthdayToday(): boolean {
+    if (!this.birthDate) return false;
+    
+    const today = new Date();
+    const birthDate = new Date(this.birthDate);
+    
+    return (
+      today.getMonth() === birthDate.getMonth() &&
+      today.getDate() === birthDate.getDate()
+    );
+  }
+
+  /**
+   * Calcula a idade atual do usuário
+   */
+  get currentAge(): number | null {
+    if (!this.birthDate) return null;
+    
+    const today = new Date();
+    const birthDate = new Date(this.birthDate);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  }
+
+  /**
+   * Busca todos os usuários aniversariantes de hoje de uma empresa
+   */
+  static async getTodayBirthdays(companyId: number): Promise<User[]> {
+    const today = new Date();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+
+    return User.findAll({
+      where: {
+        companyId,
+        birthDate: {
+          [require('sequelize').Op.and]: [
+            require('sequelize').literal(`EXTRACT(MONTH FROM "birthDate") = ${today.getMonth() + 1}`),
+            require('sequelize').literal(`EXTRACT(DAY FROM "birthDate") = ${today.getDate()}`)
+          ]
+        }
+      },
+      include: ['company']
+    });
   }
 }
 
