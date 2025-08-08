@@ -10,6 +10,7 @@ import ShowTicketService from "../TicketServices/ShowTicketService";
 import FindOrCreateTicketService from "../TicketServices/FindOrCreateTicketService";
 import logger from "../../utils/logger";
 import ShowWhatsAppService from "../WhatsappService/ShowWhatsAppService";
+import { Op } from "sequelize";
 
 interface BirthdayPerson {
   id: number;
@@ -31,11 +32,83 @@ interface BirthdayData {
 export class BirthdayService {
   
   /**
+   * CORREÇÃO: Busca configurações de aniversário da empresa
+   */
+  static async getBirthdaySettings(companyId: number): Promise<BirthdaySettings> {
+    console.log("🔍 Buscando configurações para empresa:", companyId);
+    
+    try {
+      // Primeiro, tentar buscar configurações existentes
+      let settings = await BirthdaySettings.findOne({
+        where: { companyId }
+      });
+
+      // Se não existir, criar configurações padrão
+      if (!settings) {
+        console.log("⚠️ Configurações não encontradas, criando padrão...");
+        
+        settings = await BirthdaySettings.create({
+          companyId,
+          userBirthdayEnabled: true,
+          contactBirthdayEnabled: false,
+          createAnnouncementForUsers: false,
+          userBirthdayMessage: '🎉 Parabéns {nome}! Hoje é seu aniversário! Desejamos um dia repleto de alegria e realizações! 🎂',
+          contactBirthdayMessage: '🎉 Parabéns {nome}! Hoje você completa {idade} anos! Desejamos um ano repleto de felicidade e conquistas! 🎂',
+          sendBirthdayTime: '09:00:00'
+        });
+        
+        console.log("✅ Configurações padrão criadas:", settings.toJSON());
+      }
+
+      return settings;
+    } catch (error) {
+      console.error("❌ Erro ao buscar/criar configurações:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * CORREÇÃO: Atualiza configurações de aniversário
+   */
+  static async updateBirthdaySettings(
+    companyId: number, 
+    settingsData: Partial<BirthdaySettings>
+  ): Promise<BirthdaySettings> {
+    console.log("🔄 Atualizando configurações:", { companyId, settingsData });
+    
+    try {
+      let settings = await BirthdaySettings.findOne({
+        where: { companyId }
+      });
+
+      if (!settings) {
+        // Criar nova configuração se não existir
+        settings = await BirthdaySettings.create({
+          companyId,
+          ...settingsData
+        });
+        console.log("✅ Novas configurações criadas");
+      } else {
+        // Atualizar configuração existente
+        await settings.update(settingsData);
+        console.log("✅ Configurações atualizadas");
+      }
+
+      return settings;
+    } catch (error) {
+      console.error("❌ Erro ao atualizar configurações:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Busca todos os aniversariantes do dia de uma empresa
    */
   static async getTodayBirthdaysForCompany(companyId: number): Promise<BirthdayData> {
+    console.log("🎂 Buscando aniversariantes do dia para empresa:", companyId);
+    
     // Buscar configurações da empresa
-    const settings = await BirthdaySettings.getCompanySettings(companyId);
+    const settings = await this.getBirthdaySettings(companyId);
     
     const today = new Date();
     const month = today.getMonth() + 1;
@@ -48,7 +121,9 @@ export class BirthdayService {
         where: {
           companyId,
           birthDate: {
-            [require('sequelize').Op.and]: [
+            [Op.and]: [
+              { [Op.ne]: null },
+              // Para PostgreSQL - ajuste conforme seu banco
               require('sequelize').literal(`EXTRACT(MONTH FROM "birthDate") = ${month}`),
               require('sequelize').literal(`EXTRACT(DAY FROM "birthDate") = ${day}`)
             ]
@@ -60,7 +135,7 @@ export class BirthdayService {
         id: user.id,
         name: user.name,
         type: 'user' as const,
-        age: user.currentAge,
+        age: user.birthDate ? this.calculateAge(user.birthDate) : null,
         birthDate: user.birthDate,
         companyId: user.companyId
       }));
@@ -74,7 +149,8 @@ export class BirthdayService {
           companyId,
           active: true,
           birthDate: {
-            [require('sequelize').Op.and]: [
+            [Op.and]: [
+              { [Op.ne]: null },
               require('sequelize').literal(`EXTRACT(MONTH FROM "birthDate") = ${month}`),
               require('sequelize').literal(`EXTRACT(DAY FROM "birthDate") = ${day}`)
             ]
@@ -87,7 +163,7 @@ export class BirthdayService {
         id: contact.id,
         name: contact.name,
         type: 'contact' as const,
-        age: contact.currentAge,
+        age: contact.birthDate ? this.calculateAge(contact.birthDate) : null,
         birthDate: contact.birthDate,
         companyId: contact.companyId,
         whatsappId: contact.whatsappId,
@@ -95,32 +171,13 @@ export class BirthdayService {
       }));
     }
 
+    console.log(`🎉 Encontrados: ${users.length} usuários e ${contacts.length} contatos aniversariantes`);
+
     return {
       users,
       contacts,
       settings
     };
-  }
-
-  /**
-   * Busca aniversariantes de todas as empresas
-   */
-  static async getAllTodayBirthdays(): Promise<{ [companyId: number]: BirthdayData }> {
-    const companies = await Company.findAll({
-      where: { status: true },
-      attributes: ['id']
-    });
-
-    const result: { [companyId: number]: BirthdayData } = {};
-
-    for (const company of companies) {
-      const birthdayData = await this.getTodayBirthdaysForCompany(company.id);
-      if (birthdayData.users.length > 0 || birthdayData.contacts.length > 0) {
-        result[company.id] = birthdayData;
-      }
-    }
-
-    return result;
   }
 
   /**
@@ -132,6 +189,8 @@ export class BirthdayService {
     customMessage?: string
   ): Promise<boolean> {
     try {
+      console.log("📤 Enviando mensagem de aniversário:", { contactId, companyId });
+      
       const contact = await Contact.findOne({
         where: { id: contactId, companyId },
         include: ['whatsapp']
@@ -143,15 +202,16 @@ export class BirthdayService {
       }
 
       // Buscar configurações da empresa
-      const settings = await BirthdaySettings.getCompanySettings(companyId);
+      const settings = await this.getBirthdaySettings(companyId);
       
       // Usar mensagem personalizada ou padrão
       let message = customMessage || settings.contactBirthdayMessage;
       
       // Substituir placeholders
       message = message.replace(/{nome}/g, contact.name);
-      if (contact.currentAge) {
-        message = message.replace(/{idade}/g, contact.currentAge.toString());
+      if (contact.birthDate) {
+        const age = this.calculateAge(contact.birthDate);
+        message = message.replace(/{idade}/g, age.toString());
       }
 
       const whatsapp = await ShowWhatsAppService(contact.whatsappId, contact.companyId);
@@ -180,6 +240,22 @@ export class BirthdayService {
   }
 
   /**
+   * Calcular idade
+   */
+  private static calculateAge(birthDate: Date): number {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age;
+  }
+
+  /**
    * Cria informativo de aniversário para usuário
    */
   static async createUserBirthdayAnnouncement(
@@ -190,11 +266,13 @@ export class BirthdayService {
 
     try {
       // Criar informativo para a empresa do usuário
-      const announcement = await Announcement.createBirthdayAnnouncement(
-        1, // Company ID 1 (sistema) cria o informativo
-        user.companyId, // Mas é direcionado para a empresa do usuário
-        user
-      );
+      const announcement = await Announcement.create({
+        companyId: user.companyId,
+        title: `🎉 Aniversário de ${user.name}!`,
+        text: `Hoje é aniversário do(a) ${user.name}! Parabenize nosso(a) colaborador(a)! 🎂`,
+        status: true,
+        priority: 1
+      });
 
       // Emitir evento Socket.io para a empresa
       const io = getIO();
@@ -217,13 +295,16 @@ export class BirthdayService {
     logger.info('Starting daily birthday processing...');
 
     try {
-      const allBirthdays = await this.getAllTodayBirthdays();
+      const companies = await Company.findAll({
+        where: { status: true },
+        attributes: ['id']
+      });
 
-      for (const [companyId, birthdayData] of Object.entries(allBirthdays)) {
-        const companyIdNum = parseInt(companyId);
+      for (const company of companies) {
+        const birthdayData = await this.getTodayBirthdaysForCompany(company.id);
         const { users, contacts, settings } = birthdayData;
 
-        logger.info(`Processing birthdays for company ${companyId}: ${users.length} users, ${contacts.length} contacts`);
+        logger.info(`Processing birthdays for company ${company.id}: ${users.length} users, ${contacts.length} contacts`);
 
         // Processar aniversários de usuários
         for (const userBirthday of users) {
@@ -233,11 +314,11 @@ export class BirthdayService {
             
             // Emitir evento Socket.io para notificar sobre aniversário
             const io = getIO();
-            io.of(String(companyIdNum)).emit(`user-birthday`, {
+            io.of(String(company.id)).emit(`user-birthday`, {
               user: {
                 id: user.id,
                 name: user.name,
-                age: user.currentAge
+                age: userBirthday.age
               }
             });
           }
@@ -248,13 +329,13 @@ export class BirthdayService {
           if (settings.contactBirthdayEnabled) {
             await this.sendBirthdayMessageToContact(
               contactBirthday.id,
-              companyIdNum
+              company.id
             );
           }
 
           // Emitir evento Socket.io para notificar sobre aniversário de contato
           const io = getIO();
-          io.of(String(companyIdNum)).emit(`contact-birthday`, {
+          io.of(String(company.id)).emit(`contact-birthday`, {
             contact: {
               id: contactBirthday.id,
               name: contactBirthday.name,
@@ -264,47 +345,11 @@ export class BirthdayService {
         }
       }
 
-      // Limpar informativos expirados
-      const cleanedCount = await Announcement.cleanExpiredAnnouncements();
-      if (cleanedCount > 0) {
-        logger.info(`Cleaned ${cleanedCount} expired announcements`);
-      }
-
       logger.info('Daily birthday processing completed successfully');
 
     } catch (error) {
       logger.error('Error in daily birthday processing:', error);
     }
-  }
-
-  /**
-   * Atualiza configurações de aniversário de uma empresa
-   */
-  static async updateBirthdaySettings(
-    companyId: number, 
-    settingsData: Partial<BirthdaySettings>
-  ): Promise<BirthdaySettings> {
-    let settings = await BirthdaySettings.findOne({
-      where: { companyId }
-    });
-
-    if (!settings) {
-      settings = await BirthdaySettings.create({
-        companyId,
-        ...settingsData
-      });
-    } else {
-      await settings.update(settingsData);
-    }
-
-    return settings;
-  }
-
-  /**
-   * Busca configurações de aniversário de uma empresa
-   */
-  static async getBirthdaySettings(companyId: number): Promise<BirthdaySettings> {
-    return BirthdaySettings.getCompanySettings(companyId);
   }
 }
 

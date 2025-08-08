@@ -1,5 +1,4 @@
-// src/pages/BirthdaySettings/index.js
-import React from "react";
+import React, { useContext } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import { Paper } from "@material-ui/core";
 import { AuthContext } from "../../context/Auth/AuthContext";
