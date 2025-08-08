@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Paper } from "@material-ui/core";
 import { AuthContext } from "../../context/Auth/AuthContext";
 import MainContainer from "../../components/MainContainer";
 import MainHeader from "../../components/MainHeader";
