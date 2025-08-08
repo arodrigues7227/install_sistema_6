@@ -969,27 +969,6 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                 />
               )}
             />
-
-<Can
-  role={user.profile}
-  perform="dashboard:view"
-  yes={() => (
-    <ListItemLink
-      to="/birthday-settings"
-      primary="Configurações de Aniversário"
-      icon={<CakeIcon />}
-      tooltip={collapsed}
-    />
-  )}
-/>
-
-
-            {/* {user.super && (
-              <ListSubheader inset>
-                {i18n.t("mainDrawer.listItems.administration")}
-              </ListSubheader>
-            )} */}
-
             {user.super && (
               <ListItemLink
                 to="/companies"
@@ -1004,12 +983,6 @@ const MainListItems = ({ collapsed, drawerClose }) => {
       {!collapsed && (
         <React.Fragment>
           <Divider />
-          {/* 
-              // IMAGEM NO MENU
-              <Hidden only={['sm', 'xs']}>
-                <img style={{ width: "100%", padding: "10px" }} src={logo} alt="image" />            
-              </Hidden> 
-              */}
           <Typography
             style={{
               fontSize: "12px",
