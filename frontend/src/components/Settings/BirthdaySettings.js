@@ -30,7 +30,6 @@ import {
 
 import Title from "../../components/Title";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
-import { AuthContext } from "../../context/Auth/AuthContext";
 import api from "../../services/api";
 
 const useStyles = makeStyles((theme) => ({
