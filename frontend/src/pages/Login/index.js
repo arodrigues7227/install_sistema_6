@@ -188,16 +188,6 @@ const Login = () => {
       if (event.data && event.data.type === "settings-update") {
         // Recarregar configurações quando houver atualização
         const companyId = getCompanyIdFromUrl();
-        getPublicSetting("enabledLanguages", companyId)
-          .then((langs) => {
-            let arr = ["pt-BR", "en"];
-            try {
-              if (langs) arr = JSON.parse(langs);
-            } catch {}
-            setEnabledLanguages(arr);
-          })
-          .catch(() => setEnabledLanguages(["pt-BR", "en"]));
-
         getPublicSetting("appLogoBackgroundLight", companyId)
           .then((bgLight) => {
             if (bgLight) {
@@ -223,15 +213,6 @@ const Login = () => {
     if (window.socket) {
       const onSettingsEvent = () => {
         const companyId = getCompanyIdFromUrl();
-        getPublicSetting("enabledLanguages", companyId)
-          .then((langs) => {
-            let arr = ["pt-BR", "en"];
-            try {
-              if (langs) arr = JSON.parse(langs);
-            } catch {}
-            setEnabledLanguages(arr);
-          })
-          .catch(() => setEnabledLanguages(["pt-BR", "en"]));
 
         getPublicSetting("appLogoBackgroundLight", companyId)
           .then((bgLight) => {
