@@ -18,18 +18,9 @@ import Visibility from "@material-ui/icons/Visibility";
 import VisibilityOff from "@material-ui/icons/VisibilityOff";
 import InputAdornment from "@material-ui/core/InputAdornment";
 import { Helmet } from "react-helmet";
-import BRFlag from "../../assets/brazil.png";
-import USFlag from "../../assets/unitedstates.png";
-import ESFlag from "../../assets/esspain.png";
 import clsx from "clsx";
 import { getBackendUrl } from "../../config";
 
-const languageOptions = [
-  { value: "pt-BR", label: "Português", icon: BRFlag },
-  { value: "en", label: "English", icon: USFlag },
-  { value: "es", label: "Spanish", icon: ESFlag },
-  { value: "ar", label: "عربي", icon: ARFlag },
-];
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -135,7 +126,6 @@ const Login = () => {
 
   const [open, setOpen] = useState(false);
   const ref = useRef();
-  const [enabledLanguages, setEnabledLanguages] = useState(["pt-BR", "en"]);
   const [backgroundLight, setBackgroundLight] = useState("");
   const [backgroundDark, setBackgroundDark] = useState("");
 
@@ -295,16 +285,6 @@ const Login = () => {
     };
   }, [getPublicSetting]);
 
-  const current =
-    languageOptions.find((opt) => opt.value === i18n.language) ||
-    languageOptions[0];
-
-  const handleSelect = (opt) => {
-    i18n.changeLanguage(opt.value);
-    localStorage.setItem("language", opt.value);
-    setOpen(false);
-    window.location.reload();
-  };
 
   let finalBackground;
   if (mode === "light") {
@@ -357,78 +337,6 @@ const Login = () => {
           backgroundPosition: "center !important",
         }}
       >
-        <div
-          ref={ref}
-          style={{
-            position: "fixed",
-            top: "10px",
-            left: "10px",
-            backgroundColor: "#ffffffcc",
-            padding: "8px 12px",
-            borderRadius: "8px",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-            zIndex: 1000,
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          <button
-            onClick={() => setOpen((o) => !o)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              background: "none",
-              border: "none",
-              fontSize: "1rem",
-              cursor: "pointer",
-              color: "#333",
-              outline: "none",
-            }}
-          >
-            <img
-              src={current.icon}
-              alt={current.label}
-              style={{ width: 20, marginRight: 8 }}
-            />
-            {current.label}
-            <span style={{ marginLeft: 8 }}>▾</span>
-          </button>
-
-          {open && (
-            <ul
-              style={{
-                position: "absolute",
-                top: "100%",
-                left: 0,
-                margin: 0,
-                padding: 0,
-                listStyle: "none",
-                background: "#fff",
-                border: "1px solid #ccc",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-                zIndex: 1000,
-                width: "100%",
-              }}
-            >
-              {languageOptions
-                .filter((opt) => enabledLanguages.includes(opt.value))
-                .map((opt) => (
-                  <li
-                    key={opt.value}
-                    onClick={() => handleSelect(opt)}
-                    className={classes.labelList}
-                  >
-                    <img
-                      src={opt.icon}
-                      alt={opt.label}
-                      style={{ width: 20, marginRight: 8 }}
-                    />
-                    {opt.label}
-                  </li>
-                ))}
-            </ul>
-          )}
-        </div>
 
         <Container
           component="main"
