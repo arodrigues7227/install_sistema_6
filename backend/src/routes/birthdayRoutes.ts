@@ -18,7 +18,4 @@ routes.post("/birthdays/send-message", isAuth, BirthdayController.sendBirthdayMe
 // Testar mensagem de aniversário
 routes.post("/birthdays/test-message", isAuth, BirthdayController.testBirthdayMessage);
 
-// Processar aniversários manualmente (admin only)
-routes.post("/birthdays/process", isAuth, BirthdayController.processTodayBirthdays);
-
 export default routes;
