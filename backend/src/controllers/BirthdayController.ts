@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import * as Yup from "yup";
 import AppError from "../errors/AppError";
-import BirthdayService from "../services/BirthdayService/BirthdayService";
+import BirthdayService from "../services/BirthdayService/BirthdayService"; // Corrigir import
 import BirthdaySettings from "../models/BirthdaySettings";
 
 // Schema de validação para configurações de aniversário
@@ -15,12 +15,6 @@ const BirthdaySettingsSchema = Yup.object().shape({
     "Formato de horário inválido (HH:MM:SS)"
   ),
   createAnnouncementForUsers: Yup.boolean()
-});
-
-// Schema para envio manual de mensagem
-const SendBirthdayMessageSchema = Yup.object().shape({
-  contactId: Yup.number().required("ID do contato é obrigatório"),
-  customMessage: Yup.string().optional().max(1000, "Mensagem muito longa")
 });
 
 export const getTodayBirthdays = async (
@@ -48,8 +42,12 @@ export const getBirthdaySettings = async (
 ): Promise<Response> => {
   try {
     const { companyId } = req.user;
+    console.log("🎂 Buscando configurações para empresa:", companyId);
 
+    // CORREÇÃO: Usar o método correto do service
     const settings = await BirthdayService.getBirthdaySettings(companyId);
+    
+    console.log("✅ Configurações encontradas:", settings);
 
     return res.json({
       status: "success",
@@ -69,6 +67,9 @@ export const updateBirthdaySettings = async (
     const { companyId } = req.user;
     const settingsData = req.body;
 
+    console.log("🎂 Atualizando configurações para empresa:", companyId);
+    console.log("📝 Dados recebidos:", settingsData);
+
     // Validar dados de entrada
     try {
       await BirthdaySettingsSchema.validate(settingsData);
@@ -76,10 +77,13 @@ export const updateBirthdaySettings = async (
       throw new AppError(err.message, 400);
     }
 
+    // CORREÇÃO: Usar o método correto do service
     const settings = await BirthdayService.updateBirthdaySettings(
       companyId,
       settingsData
     );
+
+    console.log("✅ Configurações atualizadas:", settings);
 
     return res.json({
       status: "success",
@@ -103,12 +107,7 @@ export const sendBirthdayMessage = async (
     const { companyId } = req.user;
     const { contactId, customMessage } = req.body;
 
-    // Validar dados de entrada
-    try {
-      await SendBirthdayMessageSchema.validate(req.body);
-    } catch (err: any) {
-      throw new AppError(err.message, 400);
-    }
+    console.log("📤 Enviando mensagem de aniversário para contato:", contactId);
 
     const success = await BirthdayService.sendBirthdayMessageToContact(
       contactId,
@@ -133,35 +132,6 @@ export const sendBirthdayMessage = async (
   }
 };
 
-// Endpoint para processar aniversários manualmente (admin)
-export const processTodayBirthdays = async (
-  req: Request,
-  res: Response
-): Promise<Response> => {
-  try {
-    const { profile } = req.user;
-
-    // Só admin pode executar processamento manual
-    if (profile !== 'admin') {
-      throw new AppError("Acesso negado", 403);
-    }
-
-    await BirthdayService.processTodayBirthdays();
-
-    return res.json({
-      status: "success",
-      message: "Processamento de aniversários executado com sucesso"
-    });
-  } catch (err) {
-    if (err instanceof AppError) {
-      throw err;
-    }
-    console.error("Error processing birthdays:", err);
-    throw new AppError("Erro ao processar aniversários", 500);
-  }
-};
-
-// Endpoint para testar configurações de aniversário
 export const testBirthdayMessage = async (
   req: Request,
   res: Response
@@ -173,6 +143,8 @@ export const testBirthdayMessage = async (
     if (!contactId || !messageType) {
       throw new AppError("ID do contato e tipo de mensagem são obrigatórios", 400);
     }
+
+    console.log("🧪 Enviando mensagem de teste:", { contactId, messageType });
 
     const settings = await BirthdayService.getBirthdaySettings(companyId);
     

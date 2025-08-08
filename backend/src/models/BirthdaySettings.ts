@@ -28,6 +28,7 @@ class BirthdaySettings extends Model<BirthdaySettings> {
 
   @ForeignKey(() => Company)
   @Unique
+  @AllowNull(false)
   @Column
   companyId: number;
 
@@ -38,7 +39,7 @@ class BirthdaySettings extends Model<BirthdaySettings> {
   @Column
   userBirthdayEnabled: boolean;
 
-  @Default(true)
+  @Default(false) // CORREÇÃO: Mudar para false por padrão
   @Column
   contactBirthdayEnabled: boolean;
 
@@ -46,7 +47,7 @@ class BirthdaySettings extends Model<BirthdaySettings> {
   @Column(DataType.TEXT)
   userBirthdayMessage: string;
 
-  @Default('🎉 Parabéns, {nome}! Hoje é seu aniversário! Desejamos muito sucesso, saúde e felicidade! 🎂✨')
+  @Default('🎉 Parabéns, {nome}! Hoje você completa {idade} anos! Desejamos muito sucesso, saúde e felicidade! 🎂✨')
   @Column(DataType.TEXT)
   contactBirthdayMessage: string;
 
@@ -54,7 +55,7 @@ class BirthdaySettings extends Model<BirthdaySettings> {
   @Column(DataType.TIME)
   sendBirthdayTime: string;
 
-  @Default(true)
+  @Default(false) // CORREÇÃO: Mudar para false por padrão
   @Column
   createAnnouncementForUsers: boolean;
 
@@ -64,22 +65,28 @@ class BirthdaySettings extends Model<BirthdaySettings> {
   @UpdatedAt
   updatedAt: Date;
 
-  // Método para obter configurações com fallback para valores padrão
+  // CORREÇÃO: Método para obter configurações com fallback para valores padrão
   static async getCompanySettings(companyId: number): Promise<BirthdaySettings> {
+    console.log("🔍 BirthdaySettings.getCompanySettings - companyId:", companyId);
+    
     let settings = await BirthdaySettings.findOne({
       where: { companyId }
     });
 
     if (!settings) {
+      console.log("⚠️ Configurações não encontradas, criando padrão...");
+      
       settings = await BirthdaySettings.create({
         companyId,
         userBirthdayEnabled: true,
-        contactBirthdayEnabled: true,
+        contactBirthdayEnabled: false,
         userBirthdayMessage: '🎉 Parabéns, {nome}! Hoje é seu dia especial! Desejamos muito sucesso e felicidade! 🎂',
-        contactBirthdayMessage: '🎉 Parabéns, {nome}! Hoje é seu aniversário! Desejamos muito sucesso, saúde e felicidade! 🎂✨',
+        contactBirthdayMessage: '🎉 Parabéns, {nome}! Hoje você completa {idade} anos! Desejamos muito sucesso, saúde e felicidade! 🎂✨',
         sendBirthdayTime: '09:00:00',
-        createAnnouncementForUsers: true
+        createAnnouncementForUsers: false
       });
+      
+      console.log("✅ Configurações padrão criadas:", settings.id);
     }
 
     return settings;
