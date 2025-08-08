@@ -48,6 +48,7 @@ routes.use("/api/messages", apiRoutes);
 routes.use(userRoutes);
 routes.use("/auth", authRoutes);
 routes.use(settingRoutes);
+routes.use(birthdayRoutes);
 routes.use(contactRoutes);
 routes.use(ticketRoutes);
 routes.use(whatsappRoutes);
@@ -89,6 +90,6 @@ routes.use(statisticsRoutes);
 routes.use(companySettingsRoutes);
 routes.use(scheduleMessageRoutes);
 routes.use(backupRoutes);
-routes.use(birthdayRoutes);
+
 
 export default routes;
