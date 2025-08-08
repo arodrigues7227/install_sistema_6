@@ -1,6 +1,32 @@
 const messages = {
   pt: {
     translations: {
+      whitelabel: {
+        primaryColorLight: "Cor Primária (Tema Claro)",
+        primaryColorDark: "Cor Primária (Tema Escuro)",
+        appName: "Nome da Aplicação",
+        logoLight: "Logo (Tema Claro)",
+        logoDark: "Logo (Tema Escuro)",
+        favicon: "Favicon",
+        backgroundLight: "Imagem de Fundo (Tema Claro)",
+        backgroundDark: "Imagem de Fundo (Tema Escuro)",
+        preview: "Visualizar",
+        delete: "Excluir",
+        upload: "Enviar",
+        availableLanguages: "Idiomas Disponíveis",
+        atLeastOneLanguage: "Pelo menos um idioma deve estar habilitado",
+
+        sections: {
+          general: "Configurações Gerais",
+          generalDescription: "Configure o nome e informações básicas da aplicação",
+          colors: "Cores e Temas",
+          colorsDescription: "Personalize as cores primárias para temas claro e escuro",
+          logos: "Logos e Imagens",
+          logosDescription: "Carregue os logos e imagens de fundo da aplicação",
+          languages: "Idiomas Disponíveis",
+          languagesDescription: "Selecione quais idiomas estarão disponíveis no sistema"
+        }
+      },
       signup: {
         title: "Cadastre-se",
         toasts: {
