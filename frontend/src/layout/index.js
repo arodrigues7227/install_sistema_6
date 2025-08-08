@@ -1,4 +1,3 @@
-// src/layout/index.js - Versão completa com modal de aniversário
 import React, { useState, useContext, useEffect, useMemo } from "react";
 import clsx from "clsx";
 
@@ -19,13 +18,17 @@ import {
   Badge,
   withStyles,
   Chip,
-  Tooltip, // 🎂 NOVO IMPORT
+  Tooltip,
 } from "@material-ui/core";
 
 import MenuIcon from "@material-ui/icons/Menu";
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import CachedIcon from "@material-ui/icons/Cached";
+import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
+import WhatsAppIcon from "@material-ui/icons/WhatsApp";
+import TranslateIcon from "@material-ui/icons/TranslateIcon";
 
+import BackupModal from "../components/BackupModal";
 import MainListItems from "./MainListItems";
 import NotificationsPopOver from "../components/NotificationsPopOver";
 import NotificationsVolume from "../components/NotificationsVolume";
@@ -42,16 +45,16 @@ import logoDark from "../assets/logo-black.png";
 import ChatPopover from "../pages/Chat/ChatPopover";
 
 import { useDate } from "../hooks/useDate";
+import UserLanguageSelector from "../components/UserLanguageSelector";
 
-import ColorModeContext from "../layout/themeContext";
+import ColorModeContext from "./themeContext";
 import Brightness4Icon from "@material-ui/icons/Brightness4";
 import Brightness7Icon from "@material-ui/icons/Brightness7";
 import { getBackendUrl } from "../config";
 import useSettings from "../hooks/useSettings";
 import VersionControl from "../components/VersionControl";
-
-import { FaGlobe } from "react-icons/fa";
-import api from "../services/api"; // 🎂 NOVO IMPORT
+import api from "../services/api";
+import { Link } from "react-router-dom";
 
 const backendUrl = getBackendUrl();
 
@@ -67,22 +70,14 @@ const useStyles = makeStyles((theme) => ({
     },
     backgroundColor: theme.palette.fancyBackground,
     "& .MuiButton-outlinedPrimary": {
-      color: theme.palette.primary.main,
-      border: `1px solid ${theme.palette.primary.main}40`,
-      borderRadius: "8px",
-      fontWeight: 600,
-      textTransform: "none",
-      transition: "all 0.3s ease",
-      "&:hover": {
-        backgroundColor: `${theme.palette.primary.main}10`,
-        borderColor: theme.palette.primary.main,
-        transform: "translateY(-1px)",
-        boxShadow: `0 4px 12px ${theme.palette.primary.main}30`,
-      },
+      color: theme.palette.primary,
+      border:
+        theme.mode === "light"
+          ? "1px solid rgba(0 124 102)"
+          : "1px solid rgba(255, 255, 255, 0.5)",
     },
     "& .MuiTab-textColorPrimary.Mui-selected": {
-      color: theme.palette.primary.main,
-      fontWeight: 700,
+      color: theme.palette.primary,
     },
   },
 
@@ -98,11 +93,7 @@ const useStyles = makeStyles((theme) => ({
   toolbar: {
     paddingRight: 24,
     color: theme.palette.dark.main,
-    background: theme.palette.primary.main,
-    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-    transition: "all 0.3s ease",
-    position: "relative",
-    overflow: "hidden",
+    background: theme.palette.barraSuperior,
   },
 
   // 🎂 NOVO: Toolbar com animação de aniversário
@@ -113,7 +104,6 @@ const useStyles = makeStyles((theme) => ({
     backgroundSize: "400% 400%",
     animation: "$gradientShift 3s ease infinite",
     boxShadow: "0 2px 20px rgba(255, 107, 107, 0.5)",
-    transition: "all 0.3s ease",
     position: "relative",
     overflow: "hidden",
     "&::before": {
@@ -149,10 +139,6 @@ const useStyles = makeStyles((theme) => ({
     [theme.breakpoints.down("sm")]: {
       height: "48px",
     },
-    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${
-      theme.palette.primary.dark || theme.palette.primary.main
-    } 100%)`,
-    transition: "all 0.3s ease",
   },
 
   appBar: {
@@ -183,10 +169,9 @@ const useStyles = makeStyles((theme) => ({
     flexGrow: 1,
     fontSize: 14,
     color: "white",
-    fontWeight: 600,
-    letterSpacing: "0.025em",
-    position: "relative",
-    zIndex: 2,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   },
 
   // 🎂 NOVO: Título com animação de aniversário
@@ -317,35 +302,6 @@ const useStyles = makeStyles((theme) => ({
     }
   },
 
-  // 🎂 Mais sparkles com pseudo-elementos adicionais
-  moreSparkles: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    pointerEvents: "none",
-    zIndex: 1,
-    "&::before": {
-      content: '"💫"',
-      position: "absolute",
-      top: "40%",
-      left: "20%",
-      fontSize: "1.2rem",
-      animation: "$sparkle 2.5s ease-in-out infinite",
-      animationDelay: "0.5s",
-    },
-    "&::after": {
-      content: '"🌟"',
-      position: "absolute",
-      top: "70%",
-      right: "25%",
-      fontSize: "1rem",
-      animation: "$sparkle 2.5s ease-in-out infinite",
-      animationDelay: "1.5s",
-    }
-  },
-
   drawerPaper: {
     position: "relative",
     whiteSpace: "nowrap",
@@ -356,11 +312,6 @@ const useStyles = makeStyles((theme) => ({
     }),
     overflowX: "hidden",
     overflowY: "hidden",
-    borderRight: `1px solid ${theme.mode === "light" ? "#e0e0e0" : "#424242"}`,
-    boxShadow:
-      theme.mode === "light"
-        ? "2px 0 8px rgba(0, 0, 0, 0.1)"
-        : "2px 0 8px rgba(0, 0, 0, 0.3)",
   },
 
   drawerPaperClose: {
@@ -383,15 +334,11 @@ const useStyles = makeStyles((theme) => ({
   content: {
     flex: 1,
     overflow: "auto",
-    padding: 0,
-    margin: 0,
   },
 
   container: {
-    padding: 0,
-    margin: 0,
-    maxWidth: "none",
-    width: "100%",
+    paddingTop: theme.spacing(4),
+    paddingBottom: theme.spacing(4),
   },
 
   containerWithScroll: {
@@ -408,9 +355,7 @@ const useStyles = makeStyles((theme) => ({
     "scrollbar-width": "none",
   },
 
-  NotificationsPopOver: {
-    // Mantém original
-  },
+  NotificationsPopOver: {},
 
   logo: {
     width: "100%",
@@ -422,16 +367,7 @@ const useStyles = makeStyles((theme) => ({
       maxWidth: 180,
     },
     logo: theme.logo,
-    content:
-      "url(" +
-      (theme.mode === "light"
-        ? theme.calculatedLogoLight()
-        : theme.calculatedLogoDark()) +
-      ")",
-    transition: "all 0.3s ease",
-    "&:hover": {
-      transform: "scale(1.02)",
-    },
+    content: "url(" + (theme.mode === "light" ? theme.calculatedLogoLight() : theme.calculatedLogoDark()) + ")"
   },
 
   hideLogo: {
@@ -444,11 +380,6 @@ const useStyles = makeStyles((theme) => ({
     cursor: "pointer",
     borderRadius: "50%",
     border: "2px solid #ccc",
-    transition: "all 0.3s ease",
-    "&:hover": {
-      transform: "scale(1.05)",
-      borderColor: theme.palette.primary.main,
-    },
   },
 
   // 🎂 NOVO: Avatar com animação de aniversário
@@ -482,77 +413,21 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: "center",
   },
 
-  toolbarButton: {
-    color: "rgba(255, 255, 255, 0.9)",
-    borderRadius: "8px",
-    padding: "8px",
-    margin: "0 2px",
-    transition: "all 0.3s ease",
-    "&:hover": {
-      backgroundColor: "rgba(255, 255, 255, 0.1)",
-      transform: "translateY(-1px)",
-    },
-    "&:active": {
-      transform: "translateY(0)",
-    },
-  },
-
-  menuButton: {
+  ticketIcon: {
     color: "white",
-    "&:hover": {
-      backgroundColor: "rgba(255, 255, 255, 0.1)",
-    },
-    "& .MuiSvgIcon-root": {
-      transition: "transform 0.3s ease",
-    },
-    "&:hover .MuiSvgIcon-root": {
-      transform: "rotate(90deg)",
+  },
+
+  desktopIcon: {
+    [theme.breakpoints.down("sm")]: {
+      display: "none",
     },
   },
 
-  languageSelector: {
-    position: "relative",
-    display: "inline-block",
-    "& > button": {
-      background: "rgba(255, 255, 255, 0.1)",
-      border: "none",
-      borderRadius: "8px",
-      color: "rgba(255, 255, 255, 0.9)",
-      fontSize: "18px",
-      padding: "8px 12px",
-      cursor: "pointer",
-      transition: "all 0.3s ease",
-      "&:hover": {
-        background: "rgba(255, 255, 255, 0.2)",
-        transform: "translateY(-1px)",
-      },
-    },
-    "& > div": {
-      position: "absolute",
-      top: "35px",
-      left: "0",
-      background: "#fff",
-      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-      borderRadius: "8px",
-      padding: "8px",
-      zIndex: 1000,
-      minWidth: "120px",
-      maxWidth: "200px",
-      "& button": {
-        background: "none",
-        border: "none",
-        cursor: "pointer",
-        display: "block",
-        width: "100%",
-        padding: "4px",
-      },
-    },
-  },
-
-  animatedBadge: {
-    "& .MuiBadge-badge": {
-      animation: "$heartbeat 2s infinite",
-    },
+  mobileIconsContainer: {
+    display: 'flex',
+    marginLeft: 'auto',
+    alignItems: 'center',
+    gap: theme.spacing(1),
   },
 
   // 🎂 NOVAS ANIMAÇÕES FESTIVAS
@@ -616,17 +491,6 @@ const useStyles = makeStyles((theme) => ({
     }
   },
 
-  "@keyframes rainbowText": {
-    "0%": { color: "#ff6b6b" },
-    "16%": { color: "#feca57" },
-    "32%": { color: "#48dbfb" },
-    "48%": { color: "#ff9ff3" },
-    "64%": { color: "#54a0ff" },
-    "80%": { color: "#5f27cd" },
-    "100%": { color: "#ff6b6b" }
-  },
-
-  // 🎂 NOVAS ANIMAÇÕES
   "@keyframes birthdayPulse": {
     "0%, 100%": { 
       transform: "scale(1)",
@@ -690,26 +554,29 @@ const SmallAvatar = withStyles((theme) => ({
   },
 }))(Avatar);
 
- // eslint-disable-next-line react-hooks/exhaustive-deps
 const LoggedInLayout = ({ children, themeToggle }) => {
   const classes = useStyles();
+  const [userToken, setUserToken] = useState("disabled");
+  const [loadingUserToken, setLoadingUserToken] = useState(false);
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user, socket, handleLogout, loading } = useContext(AuthContext);
+  const { handleLogout, loading } = useContext(AuthContext);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerVariant, setDrawerVariant] = useState("permanent");
-
-  const [showOptions, setShowOptions] = useState(false);
+  const { user, socket } = useContext(AuthContext);
+  const [backupUrl, setBackupUrl] = useState(null);
+  const [backupModalOpen, setBackupModalOpen] = useState(false);
 
   // 🎂 NOVOS STATES PARA ANIVERSÁRIO
   const [birthdayModalOpen, setBirthdayModalOpen] = useState(false);
   const [userHasBirthday, setUserHasBirthday] = useState(false);
   const [birthdayData, setBirthdayData] = useState({ users: [], contacts: [], settings: null });
-
+  
   const theme = useTheme();
   const { colorMode } = useContext(ColorModeContext);
   const greaterThenSm = useMediaQuery(theme.breakpoints.up("sm"));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [volume, setVolume] = useState(localStorage.getItem("volume") || 1);
 
@@ -763,7 +630,7 @@ const LoggedInLayout = ({ children, themeToggle }) => {
         }, 1500);
       }
     } catch (error) {
-      toastError("Error checking birthdays:", error);
+      console.error("Error checking birthdays:", error);
     }
   };
 
@@ -809,7 +676,7 @@ const LoggedInLayout = ({ children, themeToggle }) => {
     }
   };
 
-    // 🎂 EFEITO PARA VERIFICAR ANIVERSÁRIOS AO FAZER LOGIN
+  // 🎂 EFEITO PARA VERIFICAR ANIVERSÁRIOS AO FAZER LOGIN
   useEffect(() => {
     if (user?.id) {
       checkTodayBirthdays();
@@ -818,14 +685,12 @@ const LoggedInLayout = ({ children, themeToggle }) => {
 
   // 🎂 LISTENER PARA EVENTOS DE ANIVERSÁRIO VIA SOCKET
   useEffect(() => {
-    // ✅ VERIFICAÇÃO ADEQUADA: socket existe E tem os métodos necessários
     if (user?.companyId && socket && typeof socket.on === 'function') {
       const companyId = user.companyId;
   
       const onUserBirthday = (data) => {
         console.log("User birthday event:", data);
         checkTodayBirthdays();
-        // 🎂 TOCAR SOM FESTIVO SE FOR ANIVERSÁRIO DO USUÁRIO LOGADO
         if (data.user.id === user.id) {
           playBirthdaySound();
         }
@@ -836,14 +701,11 @@ const LoggedInLayout = ({ children, themeToggle }) => {
         checkTodayBirthdays();
       };
   
-      // Adicionar listeners apenas se socket tem os métodos
       try {
         socket.on('user-birthday', onUserBirthday);
         socket.on('contact-birthday', onContactBirthday);
   
-        // Cleanup function
         return () => {
-          // ✅ VERIFICAÇÃO também no cleanup
           if (socket && typeof socket.off === 'function') {
             socket.off('user-birthday', onUserBirthday);
             socket.off('contact-birthday', onContactBirthday);
@@ -855,7 +717,6 @@ const LoggedInLayout = ({ children, themeToggle }) => {
     }
   }, [user, socket]);
 
-  
   useEffect(() => {
     if (document.body.offsetWidth > 600) {
       if (user.defaultMenu === "closed") {
@@ -896,7 +757,7 @@ const LoggedInLayout = ({ children, themeToggle }) => {
             window.location.reload();
           }, 1000);
         }
-      };
+      }
 
       socket.on(`company-${companyId}-auth`, onCompanyAuthLayout);
 
@@ -938,6 +799,16 @@ const LoggedInLayout = ({ children, themeToggle }) => {
     }
   };
 
+  // Função para abrir o modal de backup
+  const handleOpenBackupModal = () => {
+    setBackupModalOpen(true);
+  };
+
+  // Função para fechar o modal de backup
+  const handleCloseBackupModal = () => {
+    setBackupModalOpen(false);
+  };
+
   const handleRefreshPage = () => {
     window.location.reload(false);
   };
@@ -949,14 +820,40 @@ const LoggedInLayout = ({ children, themeToggle }) => {
     }
   };
 
-  const handleLanguageChange = (lng) => {
-    i18n.changeLanguage(lng);
-    localStorage.setItem("language", lng);
-    window.location.reload();
+  // Função para executar o backup
+  const handleBackup = async () => {
+    try {
+      const backendUrl = getBackendUrl();
+      const response = await api.get(`${backendUrl}/api/backup`, {
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      let fileName = "backup.zip";
+      
+      const contentDisposition = response.headers["content-disposition"];
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename=(.+)$/);
+        if (fileNameMatch && fileNameMatch[1]) {
+          fileName = fileNameMatch[1].trim();
+          if (!fileName.toLowerCase().endsWith('.zip')) {
+            fileName += '.zip';
+          }
+        }
+      }
+
+      setBackupUrl({ url, fileName });
+      handleOpenBackupModal();
+    } catch (error) {
+      console.log(error);
+      toastError("Erro ao gerar backup");
+    }
   };
 
   // 🎂 FUNÇÃO PARA OBTER INICIAIS DO NOME
   const getInitials = (name) => {
+    if (!name) return '';
     return name
       .split(' ')
       .map(word => word.charAt(0))
@@ -970,7 +867,7 @@ const LoggedInLayout = ({ children, themeToggle }) => {
   }
 
   return (
-    <div className={clsx(classes.root, "logged-in-layout")}>
+    <div className={classes.root}>
       {/* 🎂 MODAL DE ANIVERSÁRIO */}
       <BirthdayModal
         open={birthdayModalOpen}
@@ -990,16 +887,14 @@ const LoggedInLayout = ({ children, themeToggle }) => {
         open={drawerOpen}
       >
         <div className={classes.toolbarIcon}>
-          <img
-            className={drawerOpen ? classes.logo : classes.hideLogo}
+          <img className={drawerOpen ? classes.logo : classes.hideLogo}
             style={{
               display: "block",
               margin: "0 auto",
               height: "50px",
               width: "100%",
             }}
-            alt="logo"
-          />
+            alt="logo" />
           <IconButton onClick={() => setDrawerOpen(!drawerOpen)}>
             <ChevronLeftIcon />
           </IconButton>
@@ -1023,12 +918,7 @@ const LoggedInLayout = ({ children, themeToggle }) => {
           {userHasBirthday && <div className={classes.confetti} />}
           
           {/* 🎂 NOVO: Brilhos/Sparkles se for aniversário */}
-          {userHasBirthday && (
-            <>
-              <div className={classes.sparkles} />
-              <div className={classes.moreSparkles} />
-            </>
-          )}
+          {userHasBirthday && <div className={classes.sparkles} />}
 
           <IconButton
             edge="start"
@@ -1041,267 +931,292 @@ const LoggedInLayout = ({ children, themeToggle }) => {
             <MenuIcon />
           </IconButton>
 
-          <Typography
-            component="h2"
-            variant="h6"
-            color="inherit"
-            noWrap
-            className={userHasBirthday ? classes.birthdayTitle : classes.title}
-          >
-            {greaterThenSm &&
-            user?.profile === "admin" &&
-            user?.company?.dueDate ? (
-              <>
-                {/* 🎂 TEXTO ESPECIAL DE ANIVERSÁRIO */}
-                {userHasBirthday ? (
-                  <>
-                    🎉 PARABÉNS {user.name.toUpperCase()}! HOJE É SEU ANIVERSÁRIO! 🎂
-                  </>
-                ) : (
-                  <>
-                    {i18n.t("mainDrawer.appBar.user.message")} <b>{user.name}</b>,{" "}
-                    {i18n.t("mainDrawer.appBar.user.messageEnd")}{" "}
-                    <b>{user?.company?.name}</b>! (
-                    {i18n.t("mainDrawer.appBar.user.active")}{" "}
-                    {dateToClient(user?.company?.dueDate)})
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                {/* 🎂 TEXTO ESPECIAL DE ANIVERSÁRIO PARA NÃO ADMIN */}
-                {userHasBirthday ? (
-                  <>
-                    🎉 PARABÉNS {user.name.toUpperCase()}! HOJE É SEU ANIVERSÁRIO! 🎂
-                  </>
-                ) : (
-                  <>
-                    {i18n.t("mainDrawer.appBar.user.message")} <b>{user.name}</b>,{" "}
-                    {i18n.t("mainDrawer.appBar.user.messageEnd")}{" "}
-                    <b>{user?.company?.name}</b>!
-                  </>
-                )}
-              </>
-            )}
-          </Typography>
-
-          <VersionControl />
-
-          {/* Seletor de idioma */}
-          <div
-            style={{ position: "relative", display: "inline-block" }}
-            className="language-dropdown"
-          >
-            <button
-              onClick={() => setShowOptions(!showOptions)}
-              style={{
-                background: "none",
-                border: "none",
-                color: "white",
-                cursor: "pointer",
-                fontSize: "22px",
-                paddingRight: "20px",
-                paddingTop: "8px",
-              }}
+          {/* Só exibe o título em dispositivos não móveis */}
+          {greaterThenSm && (
+            <Typography
+              component="h2"
+              variant="h6"
+              color="inherit"
+              noWrap
+              className={userHasBirthday ? classes.birthdayTitle : classes.title}
             >
-              <FaGlobe />
-            </button>
-
-            {showOptions && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "35px",
-                  left: "0",
-                  background: "#fff",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-                  borderRadius: "8px",
-                  padding: "8px",
-                  zIndex: 1000,
-                  minWidth: "120px",
-                  maxWidth: "200px",
-                }}
-              >
-                <button
-                  onClick={() => handleLanguageChange("pt-BR")}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    display: "block",
-                    width: "100%",
-                    padding: "4px",
-                  }}
-                >
-                  Português
-                </button>
-                <button
-                  onClick={() => handleLanguageChange("en")}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    display: "block",
-                    width: "100%",
-                    padding: "4px",
-                  }}
-                >
-                  English
-                </button>
-                <button
-                  onClick={() => handleLanguageChange("es")}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    display: "block",
-                    width: "100%",
-                    padding: "4px",
-                  }}
-                >
-                  Spanish
-                </button>
-                <button
-                  onClick={() => handleLanguageChange("ar")}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    display: "block",
-                    width: "100%",
-                    padding: "4px",
-                  }}
-                >
-                  عربي
-                </button>
-              </div>
-            )}
-          </div>
-
-          <IconButton edge="start" onClick={colorMode.toggleColorMode}>
-            {theme.mode === "dark" ? (
-              <Brightness7Icon style={{ color: "white" }} />
-            ) : (
-              <Brightness4Icon style={{ color: "white" }} />
-            )}
-          </IconButton>
-
-          <NotificationsVolume setVolume={setVolume} volume={volume} />
-
-          <IconButton
-            onClick={handleRefreshPage}
-            aria-label={i18n.t("mainDrawer.appBar.refresh")}
-            color="inherit"
-          >
-            <CachedIcon style={{ color: "white" }} />
-          </IconButton>
-
-          {user.id && <NotificationsPopOver volume={volume} />}
-
-          <AnnouncementsPopover />
-
-          <ChatPopover />
-
-          <div className="user-menu-wrapper">
-            {/* 🎂 TOOLTIP ESPECIAL DE ANIVERSÁRIO */}
-            <Tooltip 
-              title={userHasBirthday ? "🎉 FELIZ ANIVERSÁRIO! 🎂 Clique para ver seu perfil!" : "Perfil do usuário"}
-              arrow
-              placement="bottom"
-            >
-              <StyledBadge
-                overlap="circular"
-                anchorOrigin={{
-                  vertical: "bottom",
-                  horizontal: "right",
-                }}
-                variant="dot"
-                onClick={handleMenu}
-                className={userHasBirthday ? classes.birthdayAvatarContainer : ""}
-              >
-                {/* 🎂 AVATAR COM ANIMAÇÃO DE ANIVERSÁRIO SUPER APRIMORADA */}
-                <Avatar
-                  alt="Multi100"
-                  className={userHasBirthday ? classes.birthdayAvatar : classes.avatar2}
-                  src={profileUrl}
-                  style={{
-                    position: "relative",
-                    zIndex: 2,
-                  }}
-                >
-                  {!profileUrl && getInitials(user.name)}
-                </Avatar>
-                
-                {/* 🎂 BADGE DE ANIVERSÁRIO */}
-                {userHasBirthday && (
-                  <div className={classes.birthdayBadge}>
-                    🎂
-                  </div>
-                )}
-              </StyledBadge>
-            </Tooltip>
-
-            <UserModal
-              open={userModalOpen}
-              onClose={() => setUserModalOpen(false)}
-              onImageUpdate={(newProfileUrl) => setProfileUrl(newProfileUrl)}
-              userId={user?.id}
-            />
-
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorEl}
-              getContentAnchorEl={null}
-              anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "right",
-              }}
-              transformOrigin={{
-                vertical: "top",
-                horizontal: "right",
-              }}
-              open={menuOpen}
-              onClose={handleCloseMenu}
-              PaperProps={{
-                style: {
-                  minWidth: "150px",
-                  maxWidth: "200px",
-                  width: "auto",
-                  // 🎂 MENU COM DECORAÇÃO DE ANIVERSÁRIO
-                  ...(userHasBirthday && {
-                    background: "linear-gradient(135deg, #ff6b6b22, #feca5722, #48dbfb22)",
-                    border: "2px solid #ff6b6b55",
-                    boxShadow: "0 8px 32px rgba(255, 107, 107, 0.3)",
-                  })
-                },
-              }}
-            >
-              {/* 🎂 ITEM DE MENU ESPECIAL PARA ANIVERSÁRIO */}
-              {userHasBirthday && (
-                <MenuItem disabled style={{ 
-                  justifyContent: "center", 
-                  color: theme.palette.primary.main,
-                  fontWeight: "bold",
-                  fontSize: "0.9rem",
-                  animation: `${classes["@keyframes rainbowText"]} 3s infinite`
-                }}>
-                  🎉 FELIZ ANIVERSÁRIO! 🎂
-                </MenuItem>
+              {user?.profile === "admin" && user?.company?.dueDate ? (
+                <>
+                  {/* 🎂 TEXTO ESPECIAL DE ANIVERSÁRIO */}
+                  {userHasBirthday ? (
+                    <>
+                      PARABÉNS {user.name.toUpperCase()}! HOJE É SEU ANIVERSÁRIO!
+                    </>
+                  ) : (
+                    <>
+                      {i18n.t("mainDrawer.appBar.user.message")} <b>{user.name}</b>,{" "}
+                      {i18n.t("mainDrawer.appBar.user.messageEnd")}{" "}
+                      <b>{user?.company?.name}</b>! (
+                      {i18n.t("mainDrawer.appBar.user.active")}{" "}
+                      {dateToClient(user?.company?.dueDate)})
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* 🎂 TEXTO ESPECIAL DE ANIVERSÁRIO PARA NÃO ADMIN */}
+                  {userHasBirthday ? (
+                    <>
+                      PARABÉNS {user.name.toUpperCase()}! HOJE É SEU ANIVERSÁRIO!
+                    </>
+                  ) : (
+                    <>
+                      {i18n.t("mainDrawer.appBar.user.message")} <b>{user.name}</b>,{" "}
+                      {i18n.t("mainDrawer.appBar.user.messageEnd")}{" "}
+                      <b>{user?.company?.name}</b>!
+                    </>
+                  )}
+                </>
               )}
+            </Typography>
+          )}
+
+          {/* Container para ícones em dispositivos móveis */}
+          {isMobile && (
+            <div className={classes.mobileIconsContainer}>
+              {/* Botão que leva para tela de atendimento (mobile) */}
+              <Tooltip title={i18n.t("mainDrawer.listItems.tickets")}>
+                <IconButton
+                  component={Link}
+                  to="/tickets"
+                  aria-label={i18n.t("mainDrawer.listItems.tickets")}
+                  color="inherit"
+                >
+                  <WhatsAppIcon className={classes.ticketIcon} />
+                </IconButton>
+              </Tooltip>
+
+              {/* Seletor de tema escuro/claro */}
+              <Tooltip title={theme.mode === "dark" ? "Modo claro" : "Modo escuro"}>
+                <IconButton edge="start" onClick={colorMode.toggleColorMode}>
+                  {theme.mode === "dark" ? (
+                    <Brightness7Icon style={{ color: "white" }} />
+                  ) : (
+                    <Brightness4Icon style={{ color: "white" }} />
+                  )}
+                </IconButton>
+              </Tooltip>
               
-              <MenuItem onClick={handleOpenUserModal}>
-                {userHasBirthday && "🎁 "}
-                {i18n.t("mainDrawer.appBar.user.profile")}
+              {/* Seletor de idioma com ícone melhor */}
+              <Tooltip title={i18n.t("mainDrawer.appBar.user.language") || "Idioma"}>
+                <IconButton>
+                  <TranslateIcon style={{ color: "white" }} />
+                </IconButton>
+              </Tooltip>
+              
+              {/* Adicione o controle de volume em mobile */}
+              <Tooltip title={i18n.t("mainDrawer.appBar.volume") || "Volume"}>
+                <div>
+                  <NotificationsVolume setVolume={setVolume} volume={volume} />
+                </div>
+              </Tooltip>
+                            
+              {/* Notificações */}
+              {user.id && <NotificationsPopOver volume={volume} />}
+              
+              {/* Perfil do usuário */}
+              <Tooltip title={userHasBirthday ? "🎉 FELIZ ANIVERSÁRIO! 🎂 Clique para ver seu perfil!" : "Perfil do usuário"}>
+                <StyledBadge
+                  overlap="circular"
+                  anchorOrigin={{
+                    vertical: "bottom",
+                    horizontal: "right",
+                  }}
+                  variant="dot"
+                  onClick={handleMenu}
+                  className={userHasBirthday ? classes.birthdayAvatarContainer : ""}
+                >
+                  <Avatar
+                    alt="Multi100"
+                    className={userHasBirthday ? classes.birthdayAvatar : classes.avatar2}
+                    src={profileUrl}
+                  >
+                    {!profileUrl && getInitials(user.name)}
+                  </Avatar>
+                  
+                  {/* 🎂 BADGE DE ANIVERSÁRIO */}
+                  {userHasBirthday && (
+                    <div className={classes.birthdayBadge}>
+                      🎂
+                    </div>
+                  )}
+                </StyledBadge>
+              </Tooltip>
+            </div>
+          )}
+
+          {userToken === "enabled" && user?.companyId === 1 && (
+            <Chip
+              className={classes.chip}
+              label={i18n.t("mainDrawer.appBar.user.token")}
+            />
+          )}
+          
+          {/* Version control só visível em desktop */}
+          {greaterThenSm && <VersionControl />}
+
+          {user.profile === "admin" && user?.companyId === 1 && !isMobile && (
+            <Tooltip title={i18n.t("mainDrawer.appBar.backup") || "Backup"}>
+              <IconButton
+                onClick={handleBackup}
+                aria-label={i18n.t("mainDrawer.appBar.backup") || "Backup"}
+                color="inherit"
+                className={classes.desktopIcon}
+              >
+                <CloudDownloadIcon style={{ color: "white" }} />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          {/* Desktop: ícones e botões normais */}
+          {!isMobile && (
+            <>
+              {/* Seletor de idioma (apenas ícone) */}
+              <Tooltip title={i18n.t("mainDrawer.appBar.user.language") || "Idioma"}>
+                <div>
+                  <UserLanguageSelector iconOnly={true} />
+                </div>
+              </Tooltip>
+
+              <Tooltip title={theme.mode === "dark" ? "Modo claro" : "Modo escuro"}>
+                <IconButton edge="start" onClick={colorMode.toggleColorMode}>
+                  {theme.mode === "dark" ? (
+                    <Brightness7Icon style={{ color: "white" }} />
+                  ) : (
+                    <Brightness4Icon style={{ color: "white" }} />
+                  )}
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title={i18n.t("mainDrawer.appBar.volume") || "Volume"}>
+                <div>
+                  <NotificationsVolume setVolume={setVolume} volume={volume} />
+                </div>
+              </Tooltip>
+
+              <Tooltip title={i18n.t("mainDrawer.appBar.refresh")}>
+                <IconButton
+                  onClick={handleRefreshPage}
+                  aria-label={i18n.t("mainDrawer.appBar.refresh")}
+                  color="inherit"
+                  className={classes.desktopIcon}
+                >
+                  <CachedIcon style={{ color: "white" }} />
+                </IconButton>
+              </Tooltip>
+
+              {/* Notificações (visível em mobile e desktop) */}
+              {user.id && <NotificationsPopOver volume={volume} />}
+
+              {/* Componentes visíveis apenas em desktop */}
+              <AnnouncementsPopover />
+              
+              <ChatPopover />
+
+              <Tooltip title={userHasBirthday ? "🎉 FELIZ ANIVERSÁRIO! 🎂 Clique para ver seu perfil!" : "Perfil do usuário"}>
+                <div>
+                  <StyledBadge
+                    overlap="circular"
+                    anchorOrigin={{
+                      vertical: "bottom",
+                      horizontal: "right",
+                    }}
+                    variant="dot"
+                    onClick={handleMenu}
+                    className={userHasBirthday ? classes.birthdayAvatarContainer : ""}
+                  >
+                    <Avatar
+                      alt="Multi100"
+                      className={userHasBirthday ? classes.birthdayAvatar : classes.avatar2}
+                      src={profileUrl}
+                    >
+                      {!profileUrl && getInitials(user.name)}
+                    </Avatar>
+                    
+                    {/* 🎂 BADGE DE ANIVERSÁRIO */}
+                    {userHasBirthday && (
+                      <div className={classes.birthdayBadge}>
+                        🎂
+                      </div>
+                    )}
+                  </StyledBadge>
+                </div>
+              </Tooltip>
+            </>
+          )}
+
+          <UserModal
+            open={userModalOpen}
+            onClose={() => setUserModalOpen(false)}
+            onImageUpdate={(newProfileUrl) => setProfileUrl(newProfileUrl)}
+            userId={user?.id}
+          />
+
+          <Menu
+            id="menu-appbar"
+            anchorEl={anchorEl}
+            getContentAnchorEl={null}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "right",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
+            open={menuOpen}
+            onClose={handleCloseMenu}
+            PaperProps={{
+              style: {
+                minWidth: "150px",
+                maxWidth: "200px",
+                width: "auto",
+                // 🎂 MENU COM DECORAÇÃO DE ANIVERSÁRIO
+                ...(userHasBirthday && {
+                  background: "linear-gradient(135deg, #ff6b6b22, #feca5722, #48dbfb22)",
+                  border: "2px solid #ff6b6b55",
+                  boxShadow: "0 8px 32px rgba(255, 107, 107, 0.3)",
+                })
+              },
+            }}
+          >
+            {/* 🎂 ITEM DE MENU ESPECIAL PARA ANIVERSÁRIO */}
+            {userHasBirthday && (
+              <MenuItem disabled style={{ 
+                justifyContent: "center", 
+                color: theme.palette.primary.main,
+                fontWeight: "bold",
+                fontSize: "0.9rem",
+              }}>
+                🎉 FELIZ ANIVERSÁRIO! 🎂
               </MenuItem>
-              <MenuItem onClick={handleClickLogout}>
-                {i18n.t("mainDrawer.appBar.user.logout")}
-              </MenuItem>
-            </Menu>
-          </div>
+            )}
+            
+            <MenuItem onClick={handleOpenUserModal}>
+              {userHasBirthday && "🎁 "}
+              {i18n.t("mainDrawer.appBar.user.profile")}
+            </MenuItem>
+            <MenuItem onClick={handleClickLogout}>
+              {i18n.t("mainDrawer.appBar.user.logout")}
+            </MenuItem>
+          </Menu>
         </Toolbar>
       </AppBar>
+
+      <BackupModal
+        open={backupModalOpen}
+        onClose={handleCloseBackupModal}
+        backupUrl={backupUrl}
+      />
+
       <main className={classes.content}>
         <div className={classes.appBarSpacer} />
+
         {children ? children : null}
       </main>
     </div>
