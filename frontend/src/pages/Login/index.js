@@ -158,25 +158,6 @@ const Login = () => {
       .catch((error) => {
         console.log("Error reading setting", error);
       });
-    getPublicSetting("enabledLanguages", companyId)
-      .then((langs) => {
-        let arr = ["pt-BR", "en"];
-        try {
-          if (langs) arr = JSON.parse(langs);
-        } catch {}
-        console.log(
-          "Login - enabledLanguages carregadas:",
-          arr,
-          "para companyId:",
-          companyId
-        );
-        setEnabledLanguages(arr);
-      })
-      .catch(() => {
-        console.log("Login - erro ao carregar enabledLanguages, usando padrão");
-        setEnabledLanguages(["pt-BR", "en"]);
-      });
-
     getPublicSetting("appLogoBackgroundLight", companyId)
       .then((bgLight) => {
         if (bgLight) {
