@@ -9,10 +9,8 @@ import {
   TextField,
   Button,
   Grid,
-  Divider,
   Box,
   CircularProgress,
-  Alert,
   IconButton,
   Collapse
 } from "@material-ui/core";
@@ -294,25 +292,19 @@ const BirthdaySettings = () => {
       {/* Mostrar erro se houver */}
       {error && (
         <div className={classes.errorContainer}>
-          <Alert 
-            severity="error" 
-            action={
               <Button color="inherit" size="small" onClick={fetchSettings}>
                 Tentar Novamente
               </Button>
-            }
-          >
             {error}
-          </Alert>
         </div>
       )}
 
       {/* Status de conectividade */}
-      <Alert severity="info" style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 16 }}>
         <strong>Status:</strong> {error ? "❌ Offline" : "✅ Conectado"} | 
         <strong> Usuário:</strong> {user?.name} | 
         <strong> Empresa:</strong> {user?.companyId}
-      </Alert>
+      </div>
 
       {/* Configurações de Usuários */}
       <Paper className={classes.paper}>
