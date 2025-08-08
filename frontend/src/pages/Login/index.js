@@ -21,7 +21,6 @@ import { Helmet } from "react-helmet";
 import BRFlag from "../../assets/brazil.png";
 import USFlag from "../../assets/unitedstates.png";
 import ESFlag from "../../assets/esspain.png";
-import ARFlag from "../../assets/arabe.png";
 import clsx from "clsx";
 import { getBackendUrl } from "../../config";
 
