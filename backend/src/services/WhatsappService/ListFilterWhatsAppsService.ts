@@ -1,7 +1,5 @@
 import { FindOptions } from "sequelize/types";
-import Queue from "../../models/Queue";
 import Whatsapp from "../../models/Whatsapp";
-import Prompt from "../../models/Prompt";
 
 interface Request {
   companyId: number;
@@ -15,15 +13,20 @@ const ListFilterWhatsAppsService = async ({
   channel = "whatsapp"
 }: Request): Promise<Whatsapp[]> => {
   const options: FindOptions = {
+    attributes: [
+      "id",
+      "name",
+      "channel",
+      "status",
+      "qrcode",
+      "isDefault",
+      "updatedAt"
+    ],
     where: {
       companyId,
       channel
     }
   };
-
-  if (session !== undefined && session == 0) {
-    options.attributes = { exclude: ["session"] };
-  }
 
   const whatsapps = await Whatsapp.findAll(options);
 
