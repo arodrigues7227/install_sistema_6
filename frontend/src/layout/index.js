@@ -26,7 +26,6 @@ import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import CachedIcon from "@material-ui/icons/Cached";
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import WhatsAppIcon from "@material-ui/icons/WhatsApp";
-import TranslateIcon from "@material-ui/icons/TranslateIcon";
 
 import BackupModal from "../components/BackupModal";
 import MainListItems from "./MainListItems";
@@ -1004,9 +1003,10 @@ const LoggedInLayout = ({ children, themeToggle }) => {
               
               {/* Seletor de idioma com ícone melhor */}
               <Tooltip title={i18n.t("mainDrawer.appBar.user.language") || "Idioma"}>
-                <IconButton>
-                  <TranslateIcon style={{ color: "white" }} />
-                </IconButton>
+                <div>
+          {/* Seletor de idioma (apenas ícone) */}
+          <UserLanguageSelector iconOnly={true} />
+                </div>
               </Tooltip>
               
               {/* Adicione o controle de volume em mobile */}
