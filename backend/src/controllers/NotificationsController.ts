@@ -3,7 +3,7 @@ import ListService from "../services/NotificationsServices/ListService"
 import DeleteService from "../services/NotificationsServices/DeleteService"
 import { Request, Response } from "express";
 import webpush from "web-push";
-import { logger } from "../utils/logger";
+import logger from "../utils/logger";
 
 
 webpush.setVapidDetails(
