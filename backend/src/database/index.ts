@@ -15,6 +15,7 @@ import TicketNote from "../models/TicketNote";
 import QuickMessage from "../models/QuickMessage";
 import Help from "../models/Help";
 import TicketTraking from "../models/TicketTraking";
+import Notifications from "../models/Notifications";
 import UserRating from "../models/UserRating";
 import Schedule from "../models/Schedule";
 import Tag from "../models/Tag";
@@ -115,7 +116,8 @@ const models = [
   FlowImgModel,
   WebhookModel,
   UsersContacts,
-  BirthdaySettings
+  BirthdaySettings,
+  Notifications
 ];
 
 sequelize.addModels(models);

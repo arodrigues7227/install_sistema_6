@@ -125,6 +125,8 @@ const UserModal = ({ open, onClose, userId }) => {
     name: "",
     email: "",
     password: "",
+    number: "",
+    notifications: "disabled",
     profile: "user",
     startWork: "00:00",
     endWork: "23:59",
@@ -216,7 +218,7 @@ const UserModal = ({ open, onClose, userId }) => {
 
     try {
       if (userId) {
-        const { data } = await api.put(`/users/${userId}`, userData);  
+        const { data } = await api.put(`/users/${userId}`, userData);
         if (
           avatar &&
           (!user?.profileImage || !user?.profileImage !== avatar.name)
@@ -504,22 +506,22 @@ const UserModal = ({ open, onClose, userId }) => {
                     />
 
                     <Grid item xs={12} md={6} xl={6}>
-  <TextField
-    label="Data de Nascimento"
-    type="date"
-    name="birthDate"
-    value={user.birthDate || ""}
-    onChange={(e) => setUser(prev => ({ ...prev, birthDate: e.target.value }))}
-    InputLabelProps={{
-      shrink: true,
-    }}
-    fullWidth
-    variant="outlined"
-    margin="dense"
-    className={classes.textField}
-    helperText="Data de nascimento para notificações de aniversário"
-  />
-</Grid>
+                      <TextField
+                        label="Data de Nascimento"
+                        type="date"
+                        name="birthDate"
+                        value={user.birthDate || ""}
+                        onChange={(e) => setUser(prev => ({ ...prev, birthDate: e.target.value }))}
+                        InputLabelProps={{
+                          shrink: true,
+                        }}
+                        fullWidth
+                        variant="outlined"
+                        margin="dense"
+                        className={classes.textField}
+                        helperText="Data de nascimento para notificações de aniversário"
+                      />
+                    </Grid>
 
                     <Field
                       as={TextField}
@@ -926,7 +928,7 @@ const UserModal = ({ open, onClose, userId }) => {
                                 </>
                               </FormControl>
                             </Grid>
-														<Grid item xs={12} md={6} xl={6}>
+                            <Grid item xs={12} md={6} xl={6}>
                               <FormControl
                                 variant="outlined"
                                 className={classes.maxWidth}
@@ -959,6 +961,46 @@ const UserModal = ({ open, onClose, userId }) => {
                                     </MenuItem>
                                   </Field>
                                 </>
+                              </FormControl>
+                            </Grid>
+                          </Grid>
+                          <Grid container spacing={1}>
+                            <Grid item xs={12} md={6} xl={6}>
+                              <Field
+                                as={TextField}
+                                label={i18n.t("userModal.form.phoneNumber")}
+                                name="number"
+                                error={touched.number && Boolean(errors.number)}
+                                helperText={touched.number && errors.number}
+                                variant="outlined"
+                                margin="dense"
+                                fullWidth
+                              />
+                            </Grid>
+                            <Grid item xs={12} md={6} xl={6}>
+                              <FormControl
+                                variant="outlined"
+                                className={classes.maxWidth}
+                                margin="dense"
+                                fullWidth
+                              >
+                                <InputLabel>
+                                  {i18n.t("userModal.form.notifications")}
+                                </InputLabel>
+                                <Field
+                                  as={Select}
+                                  label={i18n.t("userModal.form.notifications")}
+                                  name="notifications"
+                                  type="notifications"
+                                  required
+                                >
+                                  <MenuItem value="disabled">
+                                    {i18n.t("userModal.form.notificationsDisabled")}
+                                  </MenuItem>
+                                  <MenuItem value="enabled">
+                                    {i18n.t("userModal.form.notificationsEnabled")}
+                                  </MenuItem>
+                                </Field>
                               </FormControl>
                             </Grid>
                           </Grid>

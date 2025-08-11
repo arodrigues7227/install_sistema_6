@@ -19,10 +19,13 @@ import User from "../../models/User";
 import CompaniesSettings from "../../models/CompaniesSettings";
 import CreateLogTicketService from "./CreateLogTicketService";
 import TicketTag from "../../models/TicketTag";
+import Setting from "../../models/Setting";
 import Tag from "../../models/Tag";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import FindOrCreateTicketService from "./FindOrCreateTicketService";
 import formatBody from "../../helpers/Mustache";
+import ListUsersService from "../UserServices/ListUsersService";
+import { notifyAll } from "../../controllers/NotificationsController";
 import { Mutex } from "async-mutex";
 
 interface TicketData {
@@ -75,6 +78,9 @@ const UpdateTicketService = async ({
     let isBot: boolean | null = ticketData.isBot || false;
     let queueOptionId: number | null = ticketData.queueOptionId || null;
 
+    let url = `${process.env.BACKEND_URL}${process.env.PROXY_PORT ?`:${process.env.PROXY_PORT}`:""}`;
+    let icon;
+
     const io = getIO();
 
     const settings = await CompaniesSettings.findOne({
@@ -82,6 +88,20 @@ const UpdateTicketService = async ({
         companyId: companyId
       }
     });
+    
+    const keyFavicon = "appLogoFavicon";
+    const settingFavicon = await Setting.findOne({
+          where: {
+            companyId,
+            key: keyFavicon
+          }
+    });
+        
+    if (settingFavicon){
+      icon = `${url+"/public/"+settingFavicon.value}`;
+    }else{
+      icon = "favicon-24x24.png";
+    }
 
     let ticket = await ShowTicketService(ticketId, companyId);
 
@@ -701,6 +721,76 @@ const UpdateTicketService = async ({
     ticketTraking.queueId = queueId;
 
     await ticket.reload();
+
+        // Envia notificação quando muda de area e/ou fila.
+    if (status == "pending" && queueId != oldQueueId){
+      const { users } = await ListUsersService({
+        companyId
+      });
+      
+      for (let user of users) {
+        if (user.number && user.number.length > 0 || user.notifications && user.notifications.length > 0) {
+          const containsId = user.queues.some(queue => queue?.id === queueId);
+          const filteredQueues = user.queues.filter(queue => queue?.id === queueId);
+          
+          // Verificar se deve notificar para grupos
+          const shouldNotifyForGroup = ticket.isGroup && containsId;
+          
+          // Verificar se deve notificar para tickets individuais
+          const shouldNotifyForIndividual = !ticket.isGroup && containsId;
+          
+          if (shouldNotifyForGroup || shouldNotifyForIndividual) {
+            // Envia notificação push
+            const ticketType = ticket.isGroup ? "Grupo" : "Individual";
+            const fakeRequest = {
+              body: {
+                title: `🔔 Novo chamado ${ticketType} 🔔`,
+                message: `Fila: ${filteredQueues[0]?.name || "Sem fila"}\nNome: ${ticket.contact.name}`,
+                userId: user.id,
+                vibrate: [100, 50, 100],
+                actions: [
+                  {
+                    action: "view",
+                    title: "🔍 Ver Chamado"
+                  },
+                  {
+                    action: "ignore",
+                    title: "❌ Ignorar"
+                  }
+                ],
+                url: `${process.env.FRONTEND_URL+"/tickets/"+ticket.uuid}`,
+                icon: icon
+              }
+            } as any;
+            const fakeResponse = {
+              status: (code: number) => ({
+                json: (data: any) => data
+              })
+            } as any;
+            await notifyAll(fakeRequest, fakeResponse);
+            
+            // Envia notificação via WhatsApp
+            if (user.number && user.number.length > 0){
+              const wbot = await GetTicketWbot(ticket);
+              await wbot.sendPresenceUpdate('composing', `${user.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`);
+              const msgtxt = `Existe um novo chamado ${ticketType.toLowerCase()} conforme abaixo:\n\nNome: ${ticket.contact.name}\nArea: ${filteredQueues[0]?.name || "Sem fila"}\n\n${process.env.FRONTEND_URL}/tickets/${ticket.uuid}`;
+              const media = {
+                image: {
+                  url: ticket.contact.profilePicUrl
+                },
+                caption: msgtxt,
+                mimetype: 'image/jpeg'
+              };
+              const queueAlertMessage = await wbot.sendMessage(
+                `${user.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
+                media
+              );
+              await wbot.sendPresenceUpdate('paused', `${user.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`);
+            }
+          }
+        }
+      }
+    }
 
     // ticket = await ShowTicketService(ticket.id, companyId)
 
