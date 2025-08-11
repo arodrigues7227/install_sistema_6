@@ -10,6 +10,8 @@ interface UserData {
   password?: string;
   name?: string;
   profile?: string;
+  number?: string;
+  notifications?: string;
   companyId?: number;
   birthDate?: Date | string;
   queueIds?: number[];
@@ -95,7 +97,9 @@ const UpdateUserService = async ({
     allowRealTime,
     profileImage,
     canDeleteMessage = true,
-    showCampaign = true
+    showCampaign = true,
+    number,
+    notifications,
   } = userData;
 
   try {
@@ -109,6 +113,8 @@ const UpdateUserService = async ({
     password,
     profile,
     name,
+    number,
+    notifications, 
     birthDate,
     startWork,
     endWork,
@@ -148,6 +154,8 @@ const UpdateUserService = async ({
     name: user.name,
     email: user.email,
     profile: user.profile,
+    number: user.number,
+    notifications: user.notifications,
     birthDate: user.birthDate,
     companyId: user.companyId,
     company,

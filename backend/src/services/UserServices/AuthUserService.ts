@@ -27,6 +27,8 @@ interface SerializedUser {
   userClosePendingTicket?: string;
   showDashboard?: string;
   token?: string;
+  number?: string;
+  notifications?: string;
 }
 
 interface Request {

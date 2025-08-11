@@ -10,6 +10,8 @@ interface Request {
   email: string;
   password: string;
   name: string;
+  number?: string;
+  notifications?: string;
   queueIds?: number[];
   companyId?: number;
   profile?: string;
@@ -49,6 +51,8 @@ const CreateUserService = async ({
   profile = "admin",
   startWork,
   endWork,
+  number,
+  notifications,
   whatsappId,
   allTicket,
   defaultTheme,
@@ -134,6 +138,8 @@ const CreateUserService = async ({
       name,
       companyId,
       profile,
+      number,
+      notifications,
       startWork,
       endWork,
       birthDate: processedBirthDate,
