@@ -2,7 +2,7 @@ export function register() {
   console.log("Registrando service worker", navigator)
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      const swUrl = `${process.env.PUBLIC_URL}/service-worker.js`;
+      const swUrl = `${process.env.PUBLIC_URL}/serviceWorker.js`;
 
       navigator.serviceWorker.register(swUrl)
         .then((registration) => {
@@ -11,6 +11,16 @@ export function register() {
         .catch((error) => {
           console.error('Erro durante o registro do service worker:', error);
         });
+    });
+    window.addEventListener('push', (event) => {
+      const data = event.data ? event.data.json() : {};
+      console.log('Push recebido:', data);
+      if (data.title) {
+        new Notification(data.title, {
+          body: data.body,
+          icon: data.icon || `${process.env.PUBLIC_URL}/favicon.ico`
+        });
+      }
     });
   }
 }
