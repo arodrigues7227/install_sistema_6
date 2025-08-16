@@ -69,7 +69,8 @@ interface QueryParams {
 
 export const index = async (req: Request, res: Response): Promise<Response> => {
   const { companyId } = req.user;
-  const whatsapps = await ListWhatsAppsService({ companyId });
+  const { session } = req.query as QueryParams;
+  const whatsapps = await ListWhatsAppsService({ companyId, session });
 
   return res.status(200).json(whatsapps);
 };

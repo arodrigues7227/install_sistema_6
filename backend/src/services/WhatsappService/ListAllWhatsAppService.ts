@@ -10,15 +10,6 @@ const ListAllWhatsAppsService = async ({
   session,
 }: Request): Promise<Whatsapp[]> => {
   const options: FindOptions = {
-        attributes: [
-      "id",
-      "name",
-      "channel",
-      "status",
-      "qrcode",
-      "isDefault",
-      "updatedAt"
-    ],
     include: [
       {
         model: Queue,
@@ -27,6 +18,11 @@ const ListAllWhatsAppsService = async ({
       }
     ]
   };
+
+  if (session !== undefined && session == 0) {
+    options.attributes = { exclude: ["session"] };
+  }
+
   const whatsapps = await Whatsapp.findAll(options);
 
   return whatsapps;
