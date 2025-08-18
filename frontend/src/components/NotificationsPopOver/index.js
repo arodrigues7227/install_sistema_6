@@ -66,6 +66,8 @@ const NotificationsPopOver = ({ volume }) => {
 	const [showGroupNotification, setShowGroupNotification] = useState(false);
 
 	const [desktopNotifications, setDesktopNotifications] = useState([]);
+	const [isIOS, setIsIOS] = useState(false);
+	const [isPWA, setIsPWA] = useState(false);
 
 	const { tickets } = useTickets({
 		withUnreadMessages: "true"
@@ -76,30 +78,104 @@ const NotificationsPopOver = ({ volume }) => {
 
 	const historyRef = useRef(history);
 
-	// Solicitar permissão de notificação no carregamento do componente
+	// Detecta se é iOS e PWA
+	useEffect(() => {
+		const detectDevice = () => {
+			const userAgent = navigator.userAgent;
+			const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent);
+			const isPWAMode = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+			
+			setIsIOS(isIOSDevice);
+			setIsPWA(isPWAMode);
+			
+			console.log('Dispositivo detectado:', {
+				isIOS: isIOSDevice,
+				isPWA: isPWAMode,
+				userAgent: userAgent
+			});
+		};
+		
+		detectDevice();
+	}, []);
+
+	// Solicitar permissão de notificação otimizada para iOS
 	useEffect(() => {
 		const requestNotificationPermission = async () => {
-			if ("Notification" in window) {
+			if (!("Notification" in window)) {
+				console.log("Este navegador não suporta notificações desktop");
+				return;
+			}
+
+			console.log("Permissão atual:", Notification.permission);
+
+			if (Notification.permission === "granted") {
+				console.log("Permissão já concedida");
+				return;
+			}
+
+			if (Notification.permission === "denied") {
+				console.log("Permissão negada pelo usuário");
+				if (isIOS) {
+					console.log("Instruções para iOS: Configurações > Safari > Notificações");
+				}
+				return;
+			}
+
+			try {
 				const permission = await Notification.requestPermission();
+				console.log("Nova permissão:", permission);
+				
 				if (permission !== "granted") {
 					console.log("Permissão para notificações foi negada");
+					
+					if (isIOS) {
+						// Instrução mais detalhada para iOS
+						const message = `Para receber notificações no iOS:
+1. Vá em Configurações do iOS
+2. Role até encontrar este site/Safari
+3. Toque em Notificações
+4. Ative "Permitir Notificações"
+5. ${isPWA ? 'Use o ícone da tela inicial' : 'Adicione este site à tela inicial'}`;
+						
+						console.log(message);
+						// Você pode mostrar um modal com essas instruções
+					}
+				} else {
+					console.log("Permissão concedida! Testando notificação...");
+					
+					// Teste de notificação
+					try {
+						const testNotification = new Notification("Notificações ativadas!", {
+							body: "Você receberá notificações de novas mensagens",
+							icon: defaultLogoFavicon,
+							tag: "test-notification",
+							requireInteraction: false,
+							silent: false
+						});
+						
+						setTimeout(() => {
+							testNotification.close();
+						}, 3000);
+					} catch (notifError) {
+						console.error("Erro ao criar notificação de teste:", notifError);
+					}
 				}
-			} else {
-				console.log("Este navegador não suporta notificações desktop");
+			} catch (error) {
+				console.error("Erro ao solicitar permissão:", error);
 			}
 		};
 		
-		requestNotificationPermission();
-	}, []);
+		// Aguarda um pouco antes de solicitar para melhor UX
+		const timer = setTimeout(requestNotificationPermission, 1000);
+		return () => clearTimeout(timer);
+	}, [isIOS, isPWA]);
 
 	useEffect(() => {
 		const fetchSettings = async () => {
 			try {
-				const setting = await getSetting(
-					{
-						"column": "showNotificationPending"
-					}
-				);
+				const setting = await getSetting({
+					"column": "showNotificationPending"
+				});
 
 				if (setting.showNotificationPending === true) {
 					setShowNotificationPending(true);
@@ -114,7 +190,7 @@ const NotificationsPopOver = ({ volume }) => {
 			} catch (err) {
 				toastError(err);
 			}
-		}
+		};
 
 		fetchSettings();
 	}, [getSetting, user.allTicket, user.allowGroup]);
@@ -126,7 +202,7 @@ const NotificationsPopOver = ({ volume }) => {
 	useEffect(() => {
 		const processNotifications = () => {
 			setNotifications(tickets);
-		}
+		};
 
 		processNotifications();
 	}, [tickets]);
@@ -141,10 +217,13 @@ const NotificationsPopOver = ({ volume }) => {
 		const companyId = user.companyId;
 		
 		const onConnectNotificationsPopover = () => {
+			console.log("Conectado ao socket para notificações");
 			socket.emit("joinNotification");
-		}
+		};
 
 		const onCompanyTicketNotificationsPopover = (data) => {
+			console.log("Evento de ticket recebido:", data);
+			
 			if (data.action === "updateUnread" || data.action === "delete") {
 				setNotifications(prevState => {
 					const ticketIndex = prevState.findIndex(t => t.id === data.ticketId);
@@ -156,32 +235,23 @@ const NotificationsPopOver = ({ volume }) => {
 				});
 
 				setDesktopNotifications(prevState => {
-					const notfiticationIndex = prevState.findIndex(
+					const notificationIndex = prevState.findIndex(
 						n => n.tag === String(data.ticketId)
 					);
-					if (notfiticationIndex !== -1) {
-						prevState[notfiticationIndex].close();
-						prevState.splice(notfiticationIndex, 1);
+					if (notificationIndex !== -1) {
+						prevState[notificationIndex].close();
+						prevState.splice(notificationIndex, 1);
 						return [...prevState];
 					}
 					return prevState;
 				});
 			}
 			
-			// Nova lógica para notificar quando um ticket for atribuído a uma fila
 			if (data.action === "update" && data.ticket) {
 				const { ticket } = data;
-				// Verificar se o ticket tem uma fila que o usuário pode acessar
 				const canUserAccessQueue = user?.queues?.some(queue => queue.id === ticket.queueId);
-				
-				// Verificar se o ticket já está nas notificações
 				const ticketAlreadyInNotifications = notifications.some(t => t.id === ticket.id);
 				
-				// Condições para notificar:
-				// 1. O ticket tem uma fila (queueId)
-				// 2. A fila está entre as filas do usuário OU o usuário pode ver tickets sem fila
-				// 3. O ticket ainda não está nas notificações
-				// 4. O status do ticket é apropriado para notificação
 				if (
 					ticket.queueId && 
 					(canUserAccessQueue || (showTicketWithoutQueue === true)) &&
@@ -194,25 +264,26 @@ const NotificationsPopOver = ({ volume }) => {
 						return [ticket, ...prevState];
 					});
 
-					// Não notificar se o ticket já estiver aberto e visível
 					const shouldNotNotificate =
 						(ticket.id === ticketIdRef.current &&
 							document.visibilityState === "visible") ||
 						(ticket.userId && ticket.userId !== user?.id) ||
 						(ticket.isGroup && ticket.whatsapp?.groupAsTicket === "disabled" && showGroupNotification === false);
 
-					if (shouldNotNotificate === true) return;
-
-					handleNotifications({
-						ticket,
-						message: { body: i18n.t("tickets.notification.newTicketQueue") },
-						contact: ticket.contact || { name: i18n.t("tickets.notification.unknownContact") }
-					});
+					if (!shouldNotNotificate) {
+						handleNotifications({
+							ticket,
+							message: { body: i18n.t("tickets.notification.newTicketQueue") },
+							contact: ticket.contact || { name: i18n.t("tickets.notification.unknownContact") }
+						});
+					}
 				}
 			}
 		};
 
 		const onCompanyAppMessageNotificationsPopover = (data) => {
+			console.log("Evento de mensagem recebido:", data);
+			
 			if (
 				data.action === "create" && !data.message.fromMe &&
 				!data.message.read &&
@@ -238,11 +309,11 @@ const NotificationsPopOver = ({ volume }) => {
 					(data.ticket.userId && data.ticket.userId !== user?.id) ||
 					(data.ticket.isGroup && data.ticket?.whatsapp?.groupAsTicket === "disabled" && showGroupNotification === false);
 
-				if (shouldNotNotificate === true) return;
-
-				handleNotifications(data);
+				if (!shouldNotNotificate) {
+					handleNotifications(data);
+				}
 			}
-		}
+		};
 
 		socket.on("connect", onConnectNotificationsPopover);
 		socket.on(`company-${companyId}-ticket`, onCompanyTicketNotificationsPopover);
@@ -267,7 +338,9 @@ const NotificationsPopOver = ({ volume }) => {
 	const handleNotifications = data => {
 		const { message, contact, ticket } = data;
 
-		// Garantir que a notificação só será exibida se o navegador suportar e a permissão estiver concedida
+		console.log("Processando notificação:", { message, contact, ticket });
+
+		// Verifica suporte a notificações
 		if (!("Notification" in window)) {
 			console.log("Este navegador não suporta notificações desktop");
 			soundAlertRef.current();
@@ -275,53 +348,89 @@ const NotificationsPopOver = ({ volume }) => {
 		}
 
 		if (Notification.permission !== "granted") {
-			// Se a permissão não estiver concedida, apenas tocar o som
+			console.log("Permissão de notificação não concedida:", Notification.permission);
 			soundAlertRef.current();
 			return;
 		}
 
-		// Configurações da notificação
+		// Configurações otimizadas para iOS
 		const options = {
 			body: `${message.body} - ${format(new Date(), "HH:mm")}`,
 			icon: contact.urlPicture || defaultLogoFavicon,
+			badge: contact.urlPicture || defaultLogoFavicon,
 			tag: String(ticket.id),
 			renotify: true,
-			requireInteraction: false,
-			silent: true, // Silenciar a notificação para usar nosso próprio som
+			requireInteraction: isIOS, // Mais agressivo no iOS
+			silent: false, // CRÍTICO para áudio
+			vibrate: isIOS ? [200, 100, 200] : undefined, // Vibração apenas se suportado
+			timestamp: Date.now(),
 			data: {
-				url: `/tickets/${ticket.uuid}`
-			}
+				url: `/tickets/${ticket.uuid}`,
+				ticketId: ticket.id,
+				timestamp: Date.now()
+			},
+			// Configurações específicas para iOS
+			dir: 'ltr',
+			lang: 'pt-BR'
 		};
 
 		try {
+			console.log("Criando notificação com opções:", options);
+			
 			const notification = new Notification(
 				`${i18n.t("tickets.notification.message")} ${contact.name}`,
 				options
 			);
 
-			notification.onclick = () => {
+			notification.onclick = (event) => {
+				console.log("Notificação clicada");
+				event.preventDefault();
 				window.focus();
 				setTabOpen(ticket.status);
 				historyRef.current.push(`/tickets/${ticket.uuid}`);
 				notification.close();
 			};
 
+			notification.onshow = () => {
+				console.log("Notificação exibida");
+			};
+
+			notification.onerror = (error) => {
+				console.error("Erro na notificação:", error);
+			};
+
+			notification.onclose = () => {
+				console.log("Notificação fechada");
+			};
+
+			// Gerenciar lista de notificações ativas
 			setDesktopNotifications(prevState => {
 				const notificationIndex = prevState.findIndex(
 					n => n.tag === notification.tag
 				);
 				if (notificationIndex !== -1) {
+					prevState[notificationIndex].close();
 					prevState[notificationIndex] = notification;
 					return [...prevState];
 				}
 				return [notification, ...prevState];
 			});
 
-			// Tocar o som de alerta explicitamente, independente da configuração silent da notificação
+			// Tocar som SEMPRE, independente da configuração da notificação
 			soundAlertRef.current();
+
+			// Auto-fechar após um tempo no iOS para economizar recursos
+			if (isIOS) {
+				setTimeout(() => {
+					if (notification) {
+						notification.close();
+					}
+				}, 10000); // 10 segundos
+			}
+
 		} catch (err) {
 			console.error("Erro ao criar notificação:", err);
-			// Em caso de erro na criação da notificação, pelo menos tocamos o som
+			// Em caso de erro, pelo menos tocar o som
 			soundAlertRef.current();
 		}
 	};
@@ -339,16 +448,17 @@ const NotificationsPopOver = ({ volume }) => {
 	};
 
 	const browserNotification = () => {
-		const numbers = "⓿➊➋➌➍➎➏➐➑➒➓⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴";
+		// Atualizar título da página com contador
 		if (notifications.length > 0) {
-      if (notifications.length < 21) {
-        document.title = (theme.appName || "...");
-      } else {
-        document.title = "(" + notifications.length + ")" + (theme.appName || "...");
-      }
-    } else {
-      document.title = theme.appName || "...";
-    }
+			if (notifications.length < 21) {
+				document.title = `(${notifications.length}) ${theme.appName || "App"}`;
+			} else {
+				document.title = `(${notifications.length}+) ${theme.appName || "App"}`;
+			}
+		} else {
+			document.title = theme.appName || "App";
+		}
+
 		return (
 			<>
 				<Favicon
@@ -368,7 +478,7 @@ const NotificationsPopOver = ({ volume }) => {
 			<IconButton
 				onClick={handleClick}
 				ref={anchorEl}
-				aria-label="Open Notifications"
+				aria-label="Abrir Notificações"
 				color="inherit"
 				style={{ color: "white" }}
 			>
@@ -376,6 +486,7 @@ const NotificationsPopOver = ({ volume }) => {
 					<ChatIcon />
 				</Badge>
 			</IconButton>
+			
 			<Popover
 				disableScrollLock
 				open={isOpen}
@@ -392,6 +503,14 @@ const NotificationsPopOver = ({ volume }) => {
 				onClose={handleClickAway}
 			>
 				<List dense className={classes.tabContainer}>
+					{isIOS && (
+						<ListItem>
+							<ListItemText 
+								primary="📱 iOS Detectado" 
+								secondary={`PWA: ${isPWA ? 'Sim' : 'Não'} | Permissão: ${Notification.permission}`}
+							/>
+						</ListItem>
+					)}
 					{notifications.length === 0 ? (
 						<ListItem>
 							<ListItemText>{i18n.t("notifications.noTickets")}</ListItemText>

@@ -1,6 +1,5 @@
 import Notifications from "../../models/Notifications";
 
-
 interface PushSubscription {
   endpoint: string;
   expirationTime: null | string;

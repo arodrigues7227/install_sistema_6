@@ -6,8 +6,8 @@ const DeleteService = async (userId: number): Promise<void> => {
     where: { userId }
   });
 
-  if (!notifications) {
-    throw new AppError("ERR_NO_HOLIDAYS_FOUND", 404);
+  if (!notifications || notifications.length === 0) {
+    throw new AppError("ERR_NO_NOTIFICATIONS_FOUND", 404);
   }
 
   await Promise.all(notifications.map(notification => notification.destroy()));

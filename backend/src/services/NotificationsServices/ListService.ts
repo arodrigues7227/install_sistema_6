@@ -1,7 +1,6 @@
 import { Op } from "sequelize";
 import Notifications from "../../models/Notifications";
 
-
 interface Response {
   notifications: Notifications[];
   count: number;
