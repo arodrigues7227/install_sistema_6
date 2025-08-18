@@ -208,16 +208,16 @@ const SettingsCustom = () => {
                         settings={oldSettings}
                       />
                     </TabPanel>
-                    <TabPanel
-                      className={classes.container}
-                      value={tab}
-                      name={"birthday-settings"}
-                    >
-                      <BirthdaySettings />
-                    </TabPanel>
                   </>
                 )}
               />
+              <TabPanel
+                className={classes.container}
+                value={tab}
+                name={"birthday-settings"}
+              >
+                <BirthdaySettings />
+              </TabPanel>
               <TabPanel className={classes.container} value={tab} name={"options"}>
                 <Options
                   settings={settings}

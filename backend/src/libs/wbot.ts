@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/node";
+
 import makeWASocket, {
   Browsers,
   DisconnectReason,
@@ -10,7 +10,7 @@ import makeWASocket, {
   isJidGroup,
   jidNormalizedUser,
   makeCacheableSignalKeyStore,
-  proto
+  proto,
 } from "baileys";
 import { FindOptions } from "sequelize/types";
 import Whatsapp from "../models/Whatsapp";
@@ -32,12 +32,20 @@ import NodeCache from 'node-cache';
 import Message from "../models/Message";
 import { getVersionByIndexFromUrl } from "../utils/versionHelper";
 
+const userDevicesCache = new NodeCache({
+  stdTTL: 600,
+  maxKeys: 1000,
+  checkperiod: 300,
+  useClones: false
+});
+
 const msgRetryCounterCache = new NodeCache({
   stdTTL: 600,
   maxKeys: 1000,
   checkperiod: 300,
   useClones: false
 });
+
 const msgCache = new NodeCache({
   stdTTL: 60,
   maxKeys: 1000,
@@ -46,10 +54,12 @@ const msgCache = new NodeCache({
 });
 
 const loggerBaileys = MAIN_LOGGER.child({});
-loggerBaileys.level = "error";
+loggerBaileys.level = "silent";
 
 export type Session = WASocket & {
   id?: number;
+  myJid?: string;
+  myLid?: string;
   cacheMessage?: (msg: proto.IWebMessageInfo) => void;
 };
 
@@ -129,9 +139,20 @@ export const removeWbot = async (
     if (sessionIndex !== -1) {
       if (isLogout) {
         sessions[sessionIndex].logout();
-        sessions[sessionIndex].ws.close();
       }
 
+      sessions[sessionIndex].ev.removeAllListeners("connection.update");
+      sessions[sessionIndex].ev.removeAllListeners("creds.update");
+      sessions[sessionIndex].ev.removeAllListeners("presence.update");
+      sessions[sessionIndex].ev.removeAllListeners("groups.upsert");
+      sessions[sessionIndex].ev.removeAllListeners("groups.update");
+      sessions[sessionIndex].ev.removeAllListeners("group-participants.update");
+      sessions[sessionIndex].ev.removeAllListeners("contacts.upsert");
+      sessions[sessionIndex].ev.removeAllListeners("contacts.update");
+      sessions[sessionIndex].end(null);
+
+      sessions[sessionIndex].ws.removeAllListeners();
+      await sessions[sessionIndex].ws.close();
       sessions.splice(sessionIndex, 1);
     }
   } catch (err) {
@@ -168,51 +189,6 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
           useClones: false
         });
 
-        async function getMessage(
-          key: WAMessageKey
-        ): Promise<WAMessageContent> {
-          if (!key.id) return null;
-
-          const message = store.get(key.id);
-
-          if (message) {
-            logger.debug({ message }, "cacheMessage: recovered from cache");
-            return message;
-          }
-
-          logger.debug(
-            { key },
-            "cacheMessage: not found in cache - fallback to database"
-          );
-
-          let msg: Message;
-
-          msg = await Message.findOne({
-            where: { id: key.id, fromMe: true }
-          });
-
-          if (!msg) {
-            return null;
-          }
-
-          try {
-            const data = JSON.parse(msg.dataJson);
-            logger.debug(
-              { key, data },
-              "cacheMessage: recovered from database"
-            );
-            store.set(key.id, data.message);
-            return data.message || undefined;
-          } catch (error) {
-            logger.error(
-              { key },
-              `cacheMessage: error parsing message from database - ${error.message}`
-            );
-          }
-
-          return undefined;
-        }
-
         const versionWA = await getVersionByIndexFromUrl(2);      
 
         const { state, saveCreds } = await useMultiFileAuthState(whatsapp);
@@ -220,32 +196,22 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
         wsocket = makeWASocket({
           version: versionWA || [2, 3000, 1025190524],
           logger: loggerBaileys,
+          // auth: state as AuthenticationState,
           auth: {
             creds: state.creds,
             /** caching makes the store faster to send/recv messages */
             keys: makeCacheableSignalKeyStore(state.keys, logger),
           },
-          generateHighQualityLinkPreview: true,
-          linkPreviewImageThumbnailWidth: 192,
-          shouldIgnoreJid: (jid) => {
-            if (typeof jid !== 'string') {
-              return false;
-            }
-            //   // const isGroupJid = !allowGroup && isJidGroup(jid)
-            return isJidBroadcast(jid) || (!allowGroup && isJidGroup(jid)) //|| jid.includes('newsletter')
-          },
+          shouldIgnoreJid: jid =>
+            isJidBroadcast(jid) || jid?.endsWith("@newsletter"),
           browser: Browsers.appropriate("Desktop"),
-          defaultQueryTimeoutMs: undefined,
+          defaultQueryTimeoutMs: 60000,
+          userDevicesCache,
           msgRetryCounterCache,
-          markOnlineOnConnect: false,
-          retryRequestDelayMs: 500,
-          maxMsgRetryCount: 5,
+          markOnlineOnConnect: true,
           emitOwnEvents: true,
-          fireInitQueries: true,
           transactionOpts: { maxCommitRetries: 10, delayBetweenTriesMs: 3000 },
-          connectTimeoutMs: 25_000,
-          // keepAliveIntervalMs: 60_000,
-          getMessage: msgDB.get
+          getMessage: msgDB.get,
         });
 
         wsocket.cacheMessage = (msg: proto.IWebMessageInfo): void => {
@@ -436,6 +402,10 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
             }
 
             if (connection === "open") {
+
+              wsocket.myLid = jidNormalizedUser(wsocket.user?.lid)
+              wsocket.myJid = jidNormalizedUser(wsocket.user.id)
+
               await whatsapp.update({
                 status: "CONNECTED",
                 qrcode: "",
@@ -445,6 +415,21 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
                     ? jidNormalizedUser((wsocket as WASocket).user.id).split("@")[0]
                     : "-"
               });
+
+              logger.debug(
+                {
+                  id: jidNormalizedUser(wsocket.user.id),
+                  name: wsocket.user.name,
+                  lid: jidNormalizedUser(wsocket.user?.lid),
+                  notify: wsocket.user?.notify,
+                  verifiedName: wsocket.user?.verifiedName,
+                  imgUrl: wsocket.user?.imgUrl,
+                  status: wsocket.user?.status
+                },
+                `Session ${name} details`
+              );
+
+
 
               io.of(String(companyId))
                 .emit(`company-${whatsapp.companyId}-whatsappSession`, {
@@ -513,7 +498,6 @@ export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
         // store.bind(wsocket.ev);
       })();
     } catch (error) {
-      Sentry.captureException(error);
       console.log(error);
       reject(error);
     }
