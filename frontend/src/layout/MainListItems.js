@@ -60,7 +60,7 @@ import usePlans from "../hooks/usePlans";
 import useVersion from "../hooks/useVersion";
 import { i18n } from "../translate/i18n";
 import { Campaign, ShapeLine, Webhook } from "@mui/icons-material";
-
+import { Ri24HoursFill } from "react-icons/ri";
 const useStyles = makeStyles((theme) => ({
   listItem: {
     height: "44px",
@@ -945,6 +945,19 @@ const MainListItems = ({ collapsed, drawerClose }) => {
                 />
               )}
             />
+            <Can
+              role={user.profile}
+              perform="dashboard:view"
+              yes={() => (
+              <ListItemLink
+                to="/plantao"
+                primary={'Plantão'}
+                icon={<Ri24HoursFill size={20} />}
+                drawerClose={drawerClose}
+              />
+              )}
+            />
+
             <Can
               role={user.profile}
               perform="dashboard:view"

@@ -55,6 +55,7 @@ import { FlowImgModel } from "../models/FlowImg";
 import { WebhookModel } from "../models/Webhook";
 import UsersContacts from "../models/UsersContacts";
 import BirthdaySettings from "../models/BirthdaySettings";
+import Plantao from "../models/Plantao";
 
 // eslint-disable-next-line
 const dbConfig = require("../config/database");
@@ -117,7 +118,8 @@ const models = [
   WebhookModel,
   UsersContacts,
   BirthdaySettings,
-  Notifications
+  Notifications,
+  Plantao
 ];
 
 sequelize.addModels(models);

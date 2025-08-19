@@ -43,6 +43,7 @@ import flowBuilder from "./flowBuilderRoutes";
 import flowCampaignRoutes from "./flowCampaignRoutes";
 import backupRoutes from "./backupRoutes";
 import birthdayRoutes from "./birthdayRoutes";
+import PlantaoRoutes from "./plantaoRoutes";
 
 const routes = express.Router();
 routes.use("/api/messages", apiRoutes);
@@ -86,7 +87,7 @@ routes.use(webHook)
 routes.use(flowBuilder)
 routes.use(flowCampaignRoutes)
 
-
+routes.use(PlantaoRoutes);
 routes.use(promptRoutes);
 routes.use(statisticsRoutes);
 routes.use(companySettingsRoutes);

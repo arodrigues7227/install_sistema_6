@@ -360,7 +360,6 @@ export const show = async (req: Request, res: Response): Promise<Response> => {
   const { companyId } = req.user;
   const { session } = req.query;
 
-  // console.log("SHOWING WHATSAPP", whatsappId)
   const whatsapp = await ShowWhatsAppService(whatsappId, companyId, session);
 
 

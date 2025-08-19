@@ -47,6 +47,8 @@ import Files from "../pages/Files";
 import ToDoList from "../pages/ToDoList";
 import Kanban from "../pages/Kanban";
 import TagsKanban from "../pages/TagsKanban";
+import { Plantao } from "../pages/Plantao";
+
 const Routes = () => {
   const [showCampaigns, setShowCampaigns] = useState(false);
 
@@ -110,6 +112,7 @@ const Routes = () => {
                 <Route exact path="/TagsKanban" component={TagsKanban} isPrivate />
                 <Route exact path="/prompts" component={Prompts} isPrivate />
                 <Route exact path="/allConnections" component={AllConnections} isPrivate />
+                <Route exact path="/plantao" component={Plantao} isPrivate />
                 {showCampaigns && (
                   <>
                     <Route exact path="/contact-lists" component={ContactLists} isPrivate />

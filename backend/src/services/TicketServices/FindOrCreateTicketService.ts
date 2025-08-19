@@ -3,6 +3,7 @@ import { sub } from "date-fns";
 
 import Contact from "../../models/Contact";
 import Ticket from "../../models/Ticket";
+import Message from "../../models/Message";
 import ShowTicketService from "./ShowTicketService";
 import FindOrCreateATicketTrakingService from "./FindOrCreateATicketTrakingService";
 import { isNil } from "lodash";
@@ -14,6 +15,7 @@ import CreateLogTicketService from "./CreateLogTicketService";
 import AppError from "../../errors/AppError";
 import UpdateTicketService from "./UpdateTicketService";
 
+import { NotifyPlantaoService } from "../PlantaoServices/NotifyPlantaoService";
 // interface Response {
 //   ticket: Ticket;
 //   // isCreated: boolean;
@@ -36,7 +38,7 @@ const FindOrCreateTicketService = async (
 ): Promise<Ticket> => {
   // try {
   // let isCreated = false;
-
+  let notification = false
   let openAsLGPD = false
   if (settings.enableLGPD) { //adicionar lgpdMessage
 
@@ -180,6 +182,16 @@ const FindOrCreateTicketService = async (
     // });
   }
 
+  ticket = await ShowTicketService(ticket.id, companyId);
+
+  notification = ticket.status === 'pending' ? true : false;
+
+  const lastMessage = await Message.findOne({
+    where: {
+      ticketId: ticket.id
+    },
+    order: [["id", "DESC"]]
+  });
 
   if (queueId != 0 && !isNil(queueId)) {
     //Determina qual a fila esse ticket pertence.
@@ -197,6 +209,23 @@ const FindOrCreateTicketService = async (
     ticketId: ticket.id,
     type: openAsLGPD ? "lgpd" : "create"
   });
+
+
+  if (!isForward) {
+    io.to(ticket.status)
+      .to("notification")
+      .to(ticket.id.toString())
+      .emit(`company-${companyId}-ticket`, {
+        action: "update",
+        ticket
+      });
+  };
+
+    const fromMe = lastMessage?.fromMe || false;
+
+  if (new Date() >= ticket.nextNotify && notification && !fromMe) {
+    await NotifyPlantaoService({ companyId, ticket });
+  }
 
 
   return ticket;
