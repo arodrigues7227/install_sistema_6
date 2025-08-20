@@ -143,9 +143,9 @@ const FindOrCreateTicketService = async (
       status: (!isImported && !isNil(settings.enableLGPD)
         && openAsLGPD && !groupContact) ? //verifica se lgpd está habilitada e não é grupo e se tem a mensagem e link da política
         "lgpd" :  //abre como LGPD caso habilitado parâmetro
-        (whatsapp.groupAsTicket === "enabled" || !groupContact) ? // se lgpd estiver desabilitado, verifica se é para tratar ticket como grupo ou se é contato normal
-          "pending" : //caso  é para tratar grupo como ticket ou não é grupo, abre como pendente
-          "group", // se não é para tratar grupo como ticket, vai direto para grupos
+        groupContact ? // se for grupo, sempre vai para groups
+          "group" : // grupos sempre na aba grupos
+          "pending", // contatos individuais vão para pending
       isGroup: !!groupContact,
       unreadMessages,
       whatsappId: whatsapp.id,
@@ -163,9 +163,9 @@ const FindOrCreateTicketService = async (
         ticketData.status = (!isImported && !isNil(settings.enableLGPD)
           && openAsLGPD && !groupContact) ? //verifica se lgpd está habilitada e não é grupo e se tem a mensagem e link da política
           "lgpd" :  //abre como LGPD caso habilitado parâmetro
-          (whatsapp.groupAsTicket === "enabled" || !groupContact) ? // se lgpd estiver desabilitado, verifica se é para tratar ticket como grupo ou se é contato normal
-            "open" : //caso  é para tratar grupo como ticket ou não é grupo, abre como pendente
-            "group", // se não é para tratar grupo como ticket, vai direto para grupos
+          groupContact ? // se for grupo, sempre vai para groups
+            "group" : // grupos sempre na aba grupos
+            "open", // contatos individuais com wallet vão direto para open
           ticketData.userId = wallets[0].id;
       }
     }

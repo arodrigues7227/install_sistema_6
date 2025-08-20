@@ -179,10 +179,10 @@ const UpdateContactService = async ({
 
     // Recarrega o contato com seus relacionamentos
     await contact.reload({
-      attributes: ["id", "name", "number", "birthDate", "channel", "email", "companyId", "acceptAudioMessage", "active", "profilePicUrl", "remoteJid", "urlPicture"],
-      include: ["extraInfo", "tags",
+      attributes: ["id", "name", "number", "birthDate", "channel", "email", "companyId", "acceptAudioMessage", "active", "profilePicUrl", "remoteJid", "urlPicture", "isGroup"],
+      include: ["extraInfo", "tags", "users",
         {
-          association: "wallets",
+          association: "wallets", 
           attributes: ["id", "name"]
         }],
       transaction

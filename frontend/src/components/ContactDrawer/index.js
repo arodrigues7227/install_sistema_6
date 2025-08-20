@@ -118,6 +118,7 @@ const ContactDrawer = ({
     contact.acceptAudioMessage
   );
   const [selectedUsers, setSelectedUsers] = useState([]);
+  const [savingUsers, setSavingUsers] = useState(false);
 
   useEffect(() => {
     setSelectedUsers(contact?.users || []);
@@ -169,6 +170,22 @@ const ContactDrawer = ({
       toastError(err);
     }
     setBlockingContact(false);
+  };
+
+  const handleSaveUsers = async () => {
+    if (!contact.isGroup) return;
+    
+    setSavingUsers(true);
+    try {
+      await api.put(`/contacts/${contact.id}`, {
+        users: selectedUsers
+      });
+      toast.success("Usuários do grupo atualizados com sucesso!");
+    } catch (err) {
+      toastError(err);
+    } finally {
+      setSavingUsers(false);
+    }
   };
 
   if (loading) return null;
@@ -278,10 +295,24 @@ const ContactDrawer = ({
                   )}
 
                   <AutocompleteMultipleUsers
-                    disabled={true}
+                    disabled={false}
                     selectedUsers={selectedUsers}
                     onUsersChange={setSelectedUsers}
                   />
+
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleSaveUsers}
+                    disabled={savingUsers}
+                    style={{ 
+                      fontSize: 12, 
+                      marginTop: 8,
+                      width: '100%'
+                    }}
+                  >
+                    {savingUsers ? "Salvando..." : "Salvar Usuários"}
+                  </Button>
                 </>
               ) : (
                 <></>
