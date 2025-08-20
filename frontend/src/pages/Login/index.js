@@ -21,11 +21,11 @@ import { Helmet } from "react-helmet";
 import clsx from "clsx";
 import { getBackendUrl } from "../../config";
 
-
 const useStyles = makeStyles((theme) => ({
   root: {
     width: "100vw !important",
-    height: "100vh !important",
+    height: "100vh !important", 
+    minHeight: "100vh !important", // Garantir altura mínima
     display: "flex !important",
     flexDirection: "column !important",
     alignItems: "center !important",
@@ -34,7 +34,10 @@ const useStyles = makeStyles((theme) => ({
     padding: "0 !important",
     margin: "0 !important",
     boxSizing: "border-box !important",
-    overflow: "auto !important", // Permitir scroll se necessário
+    overflow: "auto !important",
+    position: "fixed !important", // Fixar para ocupar toda a viewport
+    top: "0 !important",
+    left: "0 !important",
     // Background será definido via inline style para permitir dinâmica
   },
   // Container específico para login - forçar centralização
@@ -48,6 +51,7 @@ const useStyles = makeStyles((theme) => ({
     right: "auto !important",
     transform: "none !important",
     flex: "none !important",
+    zIndex: 1, // Garantir que fique acima do background
   },
   paper: {
     backgroundColor:
@@ -186,7 +190,6 @@ const Login = () => {
   useEffect(() => {
     const handleSettingsUpdate = (event) => {
       if (event.data && event.data.type === "settings-update") {
-        // Recarregar configurações quando houver atualização
         const companyId = getCompanyIdFromUrl();
         getPublicSetting("appLogoBackgroundLight", companyId)
           .then((bgLight) => {
@@ -247,7 +250,6 @@ const Login = () => {
     };
   }, [getPublicSetting]);
 
-
   let finalBackground;
   if (mode === "light") {
     if (backgroundLight) {
@@ -265,6 +267,37 @@ const Login = () => {
 
   finalBackground = String(finalBackground || "#f5f5f5");
 
+  // Estilos específicos para background 100%
+  const backgroundStyles = {
+    width: "100vw",
+    height: "100vh",
+    minHeight: "100vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "0",
+    margin: "0",
+    boxSizing: "border-box",
+    overflow: "auto",
+    position: "fixed",
+    top: "0",
+    left: "0",
+    zIndex: 0,
+  };
+
+  // Se for imagem, aplicar propriedades específicas de background
+  if (typeof finalBackground === "string" && finalBackground.includes("url(")) {
+    backgroundStyles.backgroundImage = finalBackground;
+    backgroundStyles.backgroundRepeat = "no-repeat";
+    backgroundStyles.backgroundSize = "cover"; // cover garante que a imagem cubra toda a área
+    backgroundStyles.backgroundPosition = "center center";
+    backgroundStyles.backgroundAttachment = "fixed"; // Manter fixo durante scroll
+    backgroundStyles.backgroundColor = "transparent";
+  } else {
+    backgroundStyles.backgroundColor = finalBackground;
+    backgroundStyles.backgroundImage = "none";
+  }
+
   return (
     <>
       <Helmet>
@@ -273,39 +306,13 @@ const Login = () => {
       </Helmet>
       <div
         className={clsx(classes.root, "login-page")}
-        style={{
-          // Backup inline styles - vão sobrescrever qualquer CSS global
-          width: "100vw !important",
-          height: "100vh !important",
-          display: "flex !important",
-          alignItems: "center !important",
-          justifyContent: "center !important",
-          padding: "0 !important",
-          margin: "0 !important",
-          boxSizing: "border-box !important",
-          overflow: "auto !important",
-          backgroundColor:
-            typeof finalBackground === "string" &&
-            finalBackground.includes("url(")
-              ? "transparent"
-              : finalBackground,
-          backgroundImage:
-            typeof finalBackground === "string" &&
-            finalBackground.includes("url(")
-              ? finalBackground
-              : "none",
-          backgroundRepeat: "no-repeat !important",
-          backgroundSize: "cover !important",
-          backgroundPosition: "center !important",
-        }}
+        style={backgroundStyles}
       >
-
         <Container
           component="main"
           maxWidth="xs"
           className={classes.containerLogin}
           style={{
-            // Backup inline styles para forçar centralização
             maxWidth: "444px",
             width: "auto",
             margin: "0 auto",
@@ -315,6 +322,7 @@ const Login = () => {
             right: "auto",
             transform: "none",
             flex: "none",
+            zIndex: 1, // Garantir que o conteúdo fique acima do background
           }}
         >
           <CssBaseline />
