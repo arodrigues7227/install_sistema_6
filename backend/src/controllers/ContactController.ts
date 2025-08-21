@@ -31,6 +31,7 @@ import ToggleDisableBotContactService from "../services/ContactServices/ToggleDi
 import GetDefaultWhatsApp from "../helpers/GetDefaultWhatsApp";
 import Contact from "../models/Contact";
 import Tag from "../models/Tag";
+import User from "../models/User";
 import ContactTag from "../models/ContactTag";
 import logger from "../utils/logger";
 
