@@ -58,6 +58,7 @@ interface ContactData {
   disableBot?: boolean;
   remoteJid?: string;
   wallets?: null | number[] | string[];
+  users?: User[];
   birthDate?: Date | string;
 }
 
