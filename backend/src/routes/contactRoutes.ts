@@ -9,15 +9,14 @@ import * as ImportPhoneContactsController from "../controllers/ImportPhoneContac
 
 const contactRoutes = express.Router();
 const upload = multer(uploadConfig);
-
+contactRoutes.post("/contacts", isAuth, ContactController.store);
+contactRoutes.put("/contacts/:contactId", isAuth, ContactController.update);
 contactRoutes.post("/contacts/import", isAuth, ImportPhoneContactsController.store);
-
 contactRoutes.post("/contactsImport", isAuth, ContactController.importXls);
 contactRoutes.get("/contacts", isAuth, ContactController.index);
 contactRoutes.get("/contacts/list", isAuth, ContactController.list);
 contactRoutes.get("/contacts/:contactId", isAuth, ContactController.show);
-contactRoutes.post("/contacts", isAuth, ContactController.store);
-contactRoutes.put("/contacts/:contactId", isAuth, ContactController.update);
+
 contactRoutes.delete("/contacts/:contactId", isAuth, isAdmin, ContactController.remove);
 contactRoutes.put("/contacts/toggleAcceptAudio/:contactId", isAuth, ContactController.toggleAcceptAudio);
 contactRoutes.get("/contacts", isAuth, ContactController.getContactVcard);
