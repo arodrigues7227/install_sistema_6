@@ -163,7 +163,8 @@ const UpdateTicketService = async ({
     const ticketTraking = await FindOrCreateATicketTrakingService({
       ticketId,
       companyId,
-      whatsappId: ticket?.whatsappId
+      whatsappId: ticket?.whatsappId,
+      userId: ticket.userId
     });
     // console.log("GETTING WHATSAPP UPDATE TICKETSERVICE", ticket?.whatsappId)
     const { complationMessage, ratingMessage, groupAsTicket } = await ShowWhatsAppService(
@@ -180,24 +181,39 @@ const UpdateTicketService = async ({
         user = await User.findByPk(_userId);
       }
 
-      if (settings.userRating === "enabled" &&
+      if (
+        settings.userRating === "enabled" &&
         (sendFarewellMessage || sendFarewellMessage === undefined) &&
-        (!isNil(ratingMessage) && ratingMessage !== "") &&
-        !ticket.isGroup) {
-
+        !isNil(ratingMessage) &&
+        ratingMessage !== "" &&
+        !ticket.isGroup
+      ) {
         if (ticketTraking.ratingAt == null) {
 
           const ratingTxt = ratingMessage || "";
           let bodyRatingMessage = `\u200e ${ratingTxt}\n`;
 
-          if (ticket.channel === "whatsapp" && ticket.whatsapp.status === 'CONNECTED') {
-            const msg = await SendWhatsAppMessage({ body: bodyRatingMessage, ticket, isForwarded: false });
+          if (
+            ticket.channel === "whatsapp" &&
+            ticket.whatsapp.status === "CONNECTED"
+          ) {
+            const msg = await SendWhatsAppMessage({
+              body: bodyRatingMessage,
+              ticket,
+              isForwarded: false
+            });
             await verifyMessage(msg, ticket, ticket.contact);
-          } else
-            if (["facebook", "instagram"].includes(ticket.channel)) {
-
-              const msg = await sendFaceMessage({ body: bodyRatingMessage, ticket });
-              await verifyMessageFace(msg, bodyRatingMessage, ticket, ticket.contact);
+          } else if (["facebook", "instagram"].includes(ticket.channel)) {
+            const msg = await sendFaceMessage({
+              body: bodyRatingMessage,
+              ticket
+            });
+            await verifyMessageFace(
+              msg,
+              bodyRatingMessage,
+              ticket,
+              ticket.contact
+            );
             }
 
           await ticketTraking.update({
@@ -264,14 +280,25 @@ const UpdateTicketService = async ({
           } else {
             body = `\u200e ${complationMessage}`;
           }
-          if (ticket.channel === "whatsapp" && (!ticket.isGroup || groupAsTicket === "enabled") && ticket.whatsapp.status === 'CONNECTED') {
-            const sentMessage = await SendWhatsAppMessage({ body, ticket, isForwarded: false });
+          if (
+            ticket.channel === "whatsapp" &&
+            (!ticket.isGroup || groupAsTicket === "enabled") &&
+            ticket.whatsapp.status === "CONNECTED"
+          ) {
+            const sentMessage = await SendWhatsAppMessage({
+              body,
+              ticket,
+              isForwarded: false
+            });
 
             await verifyMessage(sentMessage, ticket, ticket.contact);
 
           }
 
-          if (["facebook", "instagram"].includes(ticket.channel) && (!ticket.isGroup || groupAsTicket === "enabled")) {
+          if (
+            ["facebook", "instagram"].includes(ticket.channel) &&
+            (!ticket.isGroup || groupAsTicket === "enabled")
+          ) {
             const sentMessage = await sendFaceMessage({ body, ticket });
 
             // await verifyMessageFace(sentMessage, body, ticket, ticket.contact );
@@ -367,20 +394,31 @@ const UpdateTicketService = async ({
             queueId,
             userId,
             null,
-            ticket.channel, false, false, settings, isTransfered);
+            ticket.channel,
+            false,
+            false,
+            settings,
+            isTransfered
+          );
 
-          await FindOrCreateATicketTrakingService({ ticketId: newTicketTransfer.id, companyId, whatsappId: ticket.whatsapp.id, userId });
-
+          await FindOrCreateATicketTrakingService({
+            ticketId: newTicketTransfer.id,
+            companyId,
+            whatsappId: ticket.whatsapp.id,
+            userId
+          });
         }
 
         if (!isNil(msgTransfer)) {
           const messageData = {
-            wid: `PVT${newTicketTransfer.updatedAt.toString().replace(' ', '')}`,
+            wid: `PVT${newTicketTransfer.updatedAt
+              .toString()
+              .replace(" ", "")}`,
             ticketId: newTicketTransfer.id,
             contactId: undefined,
             body: msgTransfer,
             fromMe: true,
-            mediaType: 'extendedTextMessage',
+            mediaType: "extendedTextMessage",
             read: true,
             quotedMsgId: null,
             ack: 2,

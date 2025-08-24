@@ -26,6 +26,7 @@ import {
   generateWAMessageContent,
   generateWAMessageFromContent
 } from "baileys";
+import { msgDB } from "../../libs/wbot";
 import Baileys from "../../models/Baileys";
 import Company from "../../models/Company";
 import Plan from "../../models/Plan";
@@ -180,7 +181,10 @@ const getTypeMessage = (msg: proto.IWebMessageInfo): string => {
   return msgType
 };
 const getAd = (msg: any): string => {
-  if (msg.key.fromMe && msg.message?.listResponseMessage?.contextInfo?.externalAdReply) {
+  if (
+    msg.key.fromMe &&
+    msg.message?.listResponseMessage?.contextInfo?.externalAdReply
+  ) {
     let bodyMessage = `*${msg.message?.listResponseMessage?.contextInfo?.externalAdReply?.title}*`;
 
     bodyMessage += `\n\n${msg.message?.listResponseMessage?.contextInfo?.externalAdReply?.body}`;
@@ -235,33 +239,65 @@ export const getBodyMessage = (msg: proto.IWebMessageInfo): string | null => {
       imageMessage: msg.message?.imageMessage?.caption,
       videoMessage: msg.message?.videoMessage?.caption,
       extendedTextMessage: msg?.message?.extendedTextMessage?.text,
-      buttonsResponseMessage: msg.message?.buttonsResponseMessage?.selectedDisplayText,
-      listResponseMessage: msg.message?.listResponseMessage?.title || msg.message?.listResponseMessage?.singleSelectReply?.selectedRowId,
-      templateButtonReplyMessage: msg.message?.templateButtonReplyMessage?.selectedId,
-      messageContextInfo: msg.message?.buttonsResponseMessage?.selectedButtonId || msg.message?.listResponseMessage?.title,
-      buttonsMessage: getBodyButton(msg) || msg.message?.listResponseMessage?.title,
+      buttonsResponseMessage:
+        msg.message?.buttonsResponseMessage?.selectedDisplayText,
+      listResponseMessage:
+        msg.message?.listResponseMessage?.title ||
+        msg.message?.listResponseMessage?.singleSelectReply?.selectedRowId,
+      templateButtonReplyMessage:
+        msg.message?.templateButtonReplyMessage?.selectedId,
+      messageContextInfo:
+        msg.message?.buttonsResponseMessage?.selectedButtonId ||
+        msg.message?.listResponseMessage?.title,
+      buttonsMessage:
+        getBodyButton(msg) || msg.message?.listResponseMessage?.title,
       stickerMessage: "sticker",
       contactMessage: msg.message?.contactMessage?.vcard,
-      contactsArrayMessage: (msg.message?.contactsArrayMessage?.contacts) && contactsArrayMessageGet(msg),
+      contactsArrayMessage:
+        msg.message?.contactsArrayMessage?.contacts &&
+        contactsArrayMessageGet(msg),
       //locationMessage: `Latitude: ${msg.message.locationMessage?.degreesLatitude} - Longitude: ${msg.message.locationMessage?.degreesLongitude}`,
-      locationMessage: msgLocation(msg.message?.locationMessage?.jpegThumbnail, msg.message?.locationMessage?.degreesLatitude, msg.message?.locationMessage?.degreesLongitude),
+      locationMessage: msgLocation(
+        msg.message?.locationMessage?.jpegThumbnail,
+        msg.message?.locationMessage?.degreesLatitude,
+        msg.message?.locationMessage?.degreesLongitude
+      ),
       liveLocationMessage: `Latitude: ${msg.message?.liveLocationMessage?.degreesLatitude} - Longitude: ${msg.message?.liveLocationMessage?.degreesLongitude}`,
       documentMessage: msg.message?.documentMessage?.caption,
       audioMessage: "Áudio",
-      listMessage: getBodyButton(msg) || msg.message?.listResponseMessage?.title,
+      listMessage:
+        getBodyButton(msg) || msg.message?.listResponseMessage?.title,
       viewOnceMessage: getBodyButton(msg),
       reactionMessage: msg.message?.reactionMessage?.text || "reaction",
-      senderKeyDistributionMessage: msg?.message?.senderKeyDistributionMessage?.axolotlSenderKeyDistributionMessage,
-      documentWithCaptionMessage: msg.message?.documentWithCaptionMessage?.message?.documentMessage?.caption,
-      viewOnceMessageV2: msg.message?.viewOnceMessageV2?.message?.imageMessage?.caption,
+      senderKeyDistributionMessage:
+        msg?.message?.senderKeyDistributionMessage
+          ?.axolotlSenderKeyDistributionMessage,
+      documentWithCaptionMessage:
+        msg.message?.documentWithCaptionMessage?.message?.documentMessage
+          ?.caption,
+      viewOnceMessageV2:
+        msg.message?.viewOnceMessageV2?.message?.imageMessage?.caption,
+      adMetaPreview: msgAdMetaPreview(
+        msg.message?.extendedTextMessage?.contextInfo?.externalAdReply?.thumbnail,
+        msg.message?.extendedTextMessage?.contextInfo?.externalAdReply?.title,
+        msg.message?.extendedTextMessage?.contextInfo?.externalAdReply?.body,
+        msg.message?.extendedTextMessage?.contextInfo?.externalAdReply?.sourceUrl,
+        msg.message?.extendedTextMessage?.text
+      ),
       editedMessage:
         msg?.message?.protocolMessage?.editedMessage?.conversation ||
-        msg?.message?.editedMessage?.message?.protocolMessage?.editedMessage?.conversation,
-      ephemeralMessage: msg.message?.ephemeralMessage?.message?.extendedTextMessage?.text,
-      imageWhitCaptionMessage: msg?.message?.ephemeralMessage?.message?.imageMessage,
+        msg?.message?.editedMessage?.message?.protocolMessage?.editedMessage
+          ?.conversation,
+      ephemeralMessage:
+        msg.message?.ephemeralMessage?.message?.extendedTextMessage?.text,
+      imageWhitCaptionMessage:
+        msg?.message?.ephemeralMessage?.message?.imageMessage,
       highlyStructuredMessage: msg.message?.highlyStructuredMessage,
-      protocolMessage: msg?.message?.protocolMessage?.editedMessage?.conversation,
-      advertising: getAd(msg) || msg.message?.listResponseMessage?.contextInfo?.externalAdReply?.title,
+      protocolMessage:
+        msg?.message?.protocolMessage?.editedMessage?.conversation,
+      advertising:
+        getAd(msg) ||
+        msg.message?.listResponseMessage?.contextInfo?.externalAdReply?.title
     };
 
     const objKey = Object.keys(types).find(key => key === type);
@@ -279,6 +315,19 @@ export const getBodyMessage = (msg: proto.IWebMessageInfo): string | null => {
     Sentry.captureException(error);
     console.log(error);
   }
+};
+
+const msgAdMetaPreview = (image, title, body, sourceUrl, messageUser) => {
+  // ✅ CORREÇÃO: Processar anúncios mesmo sem imagem
+  let imageData = "";
+  if (image) {
+    var b64 = Buffer.from(image).toString("base64");
+    imageData = `data:image/png;base64,${b64}`;
+  }
+
+  // Formato: image|sourceUrl|title|body|messageUser
+  let data = `${imageData}|${sourceUrl || ""}|${title || ""}|${body || ""}|${messageUser || ""}`;
+  return data;
 };
 
 export const getQuotedMessage = (msg: proto.IWebMessageInfo) => {
@@ -962,13 +1011,16 @@ const isValidMsg = (msg: proto.IWebMessageInfo): boolean => {
       msgType === "protocolMessage" ||
       msgType === "listResponseMessage" ||
       msgType === "listMessage" ||
+      msgType === "interactiveMessage" ||
+      msgType === "pollCreationMessageV3" ||
       msgType === "viewOnceMessage" ||
       msgType === "documentWithCaptionMessage" ||
       msgType === "viewOnceMessageV2" ||
       msgType === "editedMessage" ||
       msgType === "advertisingMessage" ||
-      msgType === "highlyStructuredMessage";
-
+      msgType === "highlyStructuredMessage" ||
+      msgType === "eventMessage" ||
+      msgType === "adMetaPreview";
 
     if (!ifType) {
       logger.warn(`#### Nao achou o type em isValidMsg: ${msgType}
@@ -1470,10 +1522,13 @@ const verifyQueue = async (
       }
 
       if (
-        settings?.scheduleType === "queue" && ticket.status !== "open" &&
-        !isNil(currentSchedule) && (ticket.amountUsedBotQueues < maxUseBotQueues || maxUseBotQueues === 0)
-        && (!currentSchedule || currentSchedule.inActivity === false)
-        && (!ticket.isGroup || ticket.whatsapp?.groupAsTicket === "enabled")
+        settings?.scheduleType === "queue" &&
+        ticket.status !== "open" &&
+        !isNil(currentSchedule) &&
+        (ticket.amountUsedBotQueues < maxUseBotQueues ||
+          maxUseBotQueues === 0) &&
+        (!currentSchedule || currentSchedule.inActivity === false) &&
+        (!ticket.isGroup || ticket.whatsapp?.groupAsTicket === "enabled")
       ) {
         if (timeUseBotQueues !== "0") {
           console.log("log... 1483")
@@ -1653,7 +1708,7 @@ const verifyQueue = async (
             ticketData: {
               status: "closed",
               queueId: choosenQueue.id,
-              // sendFarewellMessage: false,
+              sendFarewellMessage: false
             },
             ticketId: ticket.id,
             companyId,
@@ -1710,7 +1765,11 @@ const verifyQueue = async (
 
       if (ticket.isGroup) return;
 
-      if (maxUseBotQueues && maxUseBotQueues !== 0 && ticket.amountUsedBotQueues >= maxUseBotQueues) {
+      if (
+        maxUseBotQueues &&
+        maxUseBotQueues !== 0 &&
+        ticket.amountUsedBotQueues >= maxUseBotQueues
+      ) {
         // await UpdateTicketService({
         //   ticketData: { queueId: queues[0].id },
         //   ticketId: ticket.id
@@ -1725,15 +1784,18 @@ const verifyQueue = async (
         let dataLimite = new Date();
         let Agora = new Date();
 
-        console.log("log... 1749")
-
         if (ticketTraking.chatbotAt !== null) {
           dataLimite.setMinutes(ticketTraking.chatbotAt.getMinutes() + (Number(timeUseBotQueues)));
 
           console.log("log... 1754")
 
-          if (ticketTraking.chatbotAt !== null && Agora < dataLimite && timeUseBotQueues !== "0" && ticket.amountUsedBotQueues !== 0) {
-            return
+          if (
+            ticketTraking.chatbotAt !== null &&
+            Agora < dataLimite &&
+            timeUseBotQueues !== "0" &&
+            ticket.amountUsedBotQueues !== 0
+          ) {
+            return;
           }
         }
         await ticketTraking.update({
@@ -1850,9 +1912,7 @@ const verifyQueue = async (
         );
 
         await UpdateTicketService({
-          ticketData: {
-
-          },
+          ticketData: { amountUsedBotQueues: ticket.amountUsedBotQueues + 1 },
           ticketId: ticket.id,
           companyId
         });
@@ -1917,7 +1977,11 @@ export const handleRating = async (
     rate: finalRate,
   });
 
-  if (!isNil(complationMessage) && complationMessage !== "" && !ticket.isGroup) {
+  if (
+    !isNil(complationMessage) &&
+    complationMessage !== "" &&
+    !ticket.isGroup
+  ) {
     const body = formatBody(`\u200e${complationMessage}`, ticket);
     if (ticket.channel === "whatsapp") {
       const msg = await SendWhatsAppMessage({ body, ticket });
@@ -1950,7 +2014,7 @@ export const handleRating = async (
     .emit(`company-${companyId}-ticket`, {
       action: "delete",
       ticket,
-      ticketId: ticket.id,
+      ticketId: ticket.id
     });
 
   io.of(String(companyId))
@@ -1961,7 +2025,6 @@ export const handleRating = async (
       ticket,
       ticketId: ticket.id
     });
-
 };
 
 const sanitizeName = (name: string): string => {
@@ -1978,7 +2041,7 @@ const deleteFileSync = (path: string): void => {
   }
 };
 
-const convertTextToSpeechAndSaveToFile = (
+export const convertTextToSpeechAndSaveToFile = (
   text: string,
   filename: string,
   subscriptionKey: string,
@@ -2806,10 +2869,14 @@ const handleMessage = async (
       msg.message?.ephemeralMessage?.message?.imageMessage ||
       msg.message?.viewOnceMessage?.message?.imageMessage ||
       msg.message?.viewOnceMessage?.message?.videoMessage ||
-      msg.message?.ephemeralMessage?.message?.viewOnceMessage?.message?.imageMessage ||
-      msg.message?.ephemeralMessage?.message?.viewOnceMessage?.message?.videoMessage ||
-      msg.message?.ephemeralMessage?.message?.viewOnceMessage?.message?.audioMessage ||
-      msg.message?.ephemeralMessage?.message?.viewOnceMessage?.message?.documentMessage ||
+      msg.message?.ephemeralMessage?.message?.viewOnceMessage?.message
+        ?.imageMessage ||
+      msg.message?.ephemeralMessage?.message?.viewOnceMessage?.message
+        ?.videoMessage ||
+      msg.message?.ephemeralMessage?.message?.viewOnceMessage?.message
+        ?.audioMessage ||
+      msg.message?.ephemeralMessage?.message?.viewOnceMessage?.message
+        ?.documentMessage ||
       msg.message?.documentWithCaptionMessage?.message?.documentMessage ||
       msg.message?.templateMessage?.hydratedTemplate?.imageMessage ||
       msg.message?.templateMessage?.hydratedTemplate?.documentMessage ||
@@ -2823,10 +2890,17 @@ const handleMessage = async (
       msg.message?.interactiveMessage?.header?.imageMessage ||
       msg.message?.interactiveMessage?.header?.documentMessage ||
       msg.message?.interactiveMessage?.header?.videoMessage ||
-      msg.message?.highlyStructuredMessage?.hydratedHsm?.hydratedTemplate?.documentMessage ||
-      msg.message?.highlyStructuredMessage?.hydratedHsm?.hydratedTemplate?.videoMessage ||
-      msg.message?.highlyStructuredMessage?.hydratedHsm?.hydratedTemplate?.imageMessage ||
-      msg.message?.highlyStructuredMessage?.hydratedHsm?.hydratedTemplate?.locationMessage
+      msg.message?.highlyStructuredMessage?.hydratedHsm?.hydratedTemplate
+        ?.documentMessage ||
+      msg.message?.highlyStructuredMessage?.hydratedHsm?.hydratedTemplate
+        ?.videoMessage ||
+      msg.message?.highlyStructuredMessage?.hydratedHsm?.hydratedTemplate
+        ?.imageMessage ||
+      msg.message?.highlyStructuredMessage?.hydratedHsm?.hydratedTemplate
+        ?.locationMessage;
+    // const isPrivate = /\u200d/.test(bodyMessage);
+
+    // if (isPrivate) return;
 
     if (msg.key.fromMe) {
       if (/\u200e/.test(bodyMessage)) return;
@@ -3022,14 +3096,13 @@ const handleMessage = async (
             ticket
           });
       } catch (err) {
-        Sentry.captureException(err);
         logger.error(`Error handling message ack. Err: ${err}`);
       }
       return
     }
 
     const ticketTraking = await FindOrCreateATicketTrakingService({
-      ticketId: ticket.id,
+     ticketId: ticket.id,
       companyId,
       userId,
       whatsappId: whatsapp?.id
@@ -3046,17 +3119,22 @@ const handleMessage = async (
         if (!isNil(whatsapp.collectiveVacationMessage && !isGroup)) {
           const currentDate = moment();
 
-          console.log("log... 3136")
-
-          if (currentDate.isBetween(moment(whatsapp.collectiveVacationStart), moment(whatsapp.collectiveVacationEnd))) {
-
-            console.log("log... 3140")
-
+          if (
+            currentDate.isBetween(
+              moment(whatsapp.collectiveVacationStart),
+              moment(whatsapp.collectiveVacationEnd)
+            )
+          ) {
             if (hasMedia) {
-
-              console.log("log... 3144")
-
-              await verifyMediaMessage(msg, ticket, contact, ticketTraking, false, false, wbot);
+              await verifyMediaMessage(
+                msg,
+                ticket,
+                contact,
+                ticketTraking,
+                false,
+                false,
+                wbot
+              );
             } else {
               console.log("log... 3148")
               await verifyMessage(msg, ticket, contact, ticketTraking);
@@ -3130,8 +3208,8 @@ const handleMessage = async (
       Sentry.captureException(e);
       console.log(e);
     }
-
-    const isMsgForwarded = msg.message?.extendedTextMessage?.contextInfo?.isForwarded ||
+    const isMsgForwarded =
+      msg.message?.extendedTextMessage?.contextInfo?.isForwarded ||
       msg.message?.imageMessage?.contextInfo?.isForwarded ||
       msg.message?.audioMessage?.contextInfo?.isForwarded ||
       msg.message?.videoMessage?.contextInfo?.isForwarded ||
@@ -3147,7 +3225,14 @@ const handleMessage = async (
       } else {
         console.log("log... 3396")
         // console.log("antes do verifyMessage")
-        await verifyMessage(msg, ticket, contact, ticketTraking, false, isMsgForwarded);
+        await verifyMessage(
+          msg,
+          ticket,
+          contact,
+          ticketTraking,
+          false,
+          isMsgForwarded
+        );
       }
     }
 
@@ -3172,7 +3257,12 @@ const handleMessage = async (
     }
 
     try {
-      if (!msg.key.fromMe && settings.scheduleType && (!ticket.isGroup || whatsapp.groupAsTicket === "enabled") && !["open", "group"].includes(ticket.status) && !isImported) {
+      if (
+        !msg.key.fromMe &&
+        settings.scheduleType &&
+        (!ticket.isGroup || whatsapp.groupAsTicket === "enabled") &&
+        !["open", "group"].includes(ticket.status)
+      ) {
         /**
          * Tratamento para envio de mensagem quando a empresa está fora do expediente
          */
@@ -3204,7 +3294,6 @@ const handleMessage = async (
             //Regra para desabilitar o chatbot por x minutos/horas após o primeiro envio
             let dataLimite = new Date();
             let Agora = new Date();
-
 
             if (ticketTraking.chatbotAt !== null) {
               dataLimite.setMinutes(ticketTraking.chatbotAt.getMinutes() + (Number(whatsapp.timeUseBotQueues)));
@@ -3386,7 +3475,13 @@ const handleMessage = async (
 
 
     try {
-      if (!msg.key.fromMe && settings?.scheduleType && ticket.queueId !== null && (!ticket.isGroup || whatsapp.groupAsTicket === "enabled") && ticket.status !== "open") {
+      if (
+        !msg.key.fromMe &&
+        settings?.scheduleType &&
+        ticket.queueId !== null &&
+        (!ticket.isGroup || whatsapp.groupAsTicket === "enabled") &&
+        ticket.status !== "open"
+      ) {
         /**
          * Tratamento para envio de mensagem quando a empresa/fila está fora do expediente
          */
@@ -3467,7 +3562,13 @@ const handleMessage = async (
       console.log(e);
     }
 
-    if (ticket.queue && ticket.queueId && !msg.key.fromMe) {
+    if (
+      ticket.queue &&
+      ticket.queueId &&
+      !msg.key.fromMe &&
+      !ticket.useIntegration &&
+      !ticket.integrationId
+    ) {
       if (!ticket.user || ticket.queue?.chatbots?.length > 0) {
         await sayChatbot(ticket.queueId, wbot, ticket, contact, msg, ticketTraking);
       }
@@ -3507,7 +3608,17 @@ const handleMsgAck = async (
           include: [
             {
               model: Contact,
-              attributes: ["id", "name", "number", "email", "profilePicUrl", "acceptAudioMessage", "active", "urlPicture", "companyId"],
+              attributes: [
+                "id",
+                "name",
+                "number",
+                "email",
+                "profilePicUrl",
+                "acceptAudioMessage",
+                "active",
+                "urlPicture",
+                "companyId"
+              ],
               include: ["extraInfo", "tags"]
             },
             {
@@ -3516,7 +3627,7 @@ const handleMsgAck = async (
             },
             {
               model: Whatsapp,
-              attributes: ["id", "name", "groupAsTicket"]
+              attributes: ["id", "name", "groupAsTicket", "color"]
             },
             {
               model: User,
@@ -3568,7 +3679,12 @@ const verifyRecentCampaign = async (
     if (campaigns) {
       const ids = campaigns.map(c => c.id);
       const campaignShipping = await CampaignShipping.findOne({
-        where: { campaignId: { [Op.in]: ids }, number, confirmation: null, deliveredAt: { [Op.ne]: null } }
+        where: {
+          campaignId: { [Op.in]: ids },
+          number,
+          confirmation: null,
+          deliveredAt: { [Op.ne]: null }
+        }
       });
 
       if (campaignShipping) {
@@ -3591,7 +3707,11 @@ const verifyRecentCampaign = async (
   }
 };
 
-const verifyCampaignMessageAndCloseTicket = async (message: proto.IWebMessageInfo, companyId: number, wbot: Session) => {
+const verifyCampaignMessageAndCloseTicket = async (
+  message: proto.IWebMessageInfo,
+  companyId: number,
+  wbot: Session
+) => {
   if (!isValidMsg(message)) {
     return;
   }
@@ -3615,7 +3735,11 @@ const verifyCampaignMessageAndCloseTicket = async (message: proto.IWebMessageInf
       }
     });
 
-    if (!isNull(messageRecord) || !isNil(messageRecord) || messageRecord !== null) {
+    if (
+      !isNull(messageRecord) ||
+      !isNil(messageRecord) ||
+      messageRecord !== null
+    ) {
       const ticket = await Ticket.findByPk(messageRecord.ticketId);
       await ticket.update({ status: "closed", amountUsedBotQueues: 0 });
 
@@ -3640,6 +3764,8 @@ const verifyCampaignMessageAndCloseTicket = async (message: proto.IWebMessageInf
 };
 
 const filterMessages = (msg: WAMessage): boolean => {
+  msgDB.save(msg);
+
   if (msg.message?.protocolMessage?.editedMessage) return true;
   if (msg.message?.protocolMessage) return false;
 

@@ -206,7 +206,6 @@ Entre em contato com o Suporte para mais informações! `);
   const getCurrentUserInfo = async () => {
     try {
       const { data } = await api.get("/auth/me");
-      console.log(data)
       return data;
     } catch (_) {
       return null;

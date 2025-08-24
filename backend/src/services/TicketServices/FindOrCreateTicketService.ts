@@ -66,13 +66,19 @@ const FindOrCreateTicketService = async (
     order: [["id", "DESC"]]
   });
 
-
-
-
   if (ticket) {
+    //if (groupContact && groupContact?.users?.length > 0) {
+    //  await ticket.update({ status: "open", unreadMessages, whatsappId: whatsapp.id, queueId: null, userId: null });
+    //}
 
     if (groupContact && groupContact?.users?.length > 0) {
-      await ticket.update({ status: "open", unreadMessages, whatsappId: whatsapp.id, queueId: null, userId: null });
+      await ticket.update({
+        status: (whatsapp.groupAsTicket === "enabled" || !groupContact) ? "pending" : "group",
+        unreadMessages,
+        whatsappId: whatsapp.id,
+        queueId: null,
+        userId: null
+      });
     }
 
     if (isCampaign) {
@@ -95,11 +101,7 @@ const FindOrCreateTicketService = async (
         throw new AppError(`Ticket em outro atendimento. ${"Atendente: " + ticket?.user?.name} - ${"Fila: " + ticket?.queue?.name}`);
       }
     }
-
-    // isCreated = true;
-
     return ticket
-
   }
 
   const timeCreateNewTicket = whatsapp.timeCreateNewTicket;
@@ -137,15 +139,14 @@ const FindOrCreateTicketService = async (
   }
 
   if (!ticket) {
-
     const ticketData: any = {
       contactId: groupContact ? groupContact.id : contact.id,
       status: (!isImported && !isNil(settings.enableLGPD)
         && openAsLGPD && !groupContact) ? //verifica se lgpd está habilitada e não é grupo e se tem a mensagem e link da política
         "lgpd" :  //abre como LGPD caso habilitado parâmetro
-        groupContact ? // se for grupo, sempre vai para groups
-          "group" : // grupos sempre na aba grupos
-          "pending", // contatos individuais vão para pending
+        (whatsapp.groupAsTicket === "enabled" || !groupContact) ? // se lgpd estiver desabilitado, verifica se é para tratar ticket como grupo ou se é contato normal
+          "pending" : //caso  é para tratar grupo como ticket ou não é grupo, abre como pendente
+          "group", // se não é para tratar grupo como ticket, vai direto para grupos
       isGroup: !!groupContact,
       unreadMessages,
       whatsappId: whatsapp.id,
@@ -155,7 +156,6 @@ const FindOrCreateTicketService = async (
       imported: isImported ? new Date() : null,
       isActiveDemand: false,
     };
-
     if (DirectTicketsToWallets && contact.id) {
       const wallet: any = contact;
       const wallets = await wallet.getWallets();
@@ -163,23 +163,22 @@ const FindOrCreateTicketService = async (
         ticketData.status = (!isImported && !isNil(settings.enableLGPD)
           && openAsLGPD && !groupContact) ? //verifica se lgpd está habilitada e não é grupo e se tem a mensagem e link da política
           "lgpd" :  //abre como LGPD caso habilitado parâmetro
-          groupContact ? // se for grupo, sempre vai para groups
-            "group" : // grupos sempre na aba grupos
-            "open", // contatos individuais com wallet vão direto para open
-          ticketData.userId = wallets[0].id;
+          (whatsapp.groupAsTicket === "enabled" || !groupContact) ? // se lgpd estiver desabilitado, verifica se é para tratar ticket como grupo ou se é contato normal
+            "pending" : //caso é para tratar grupo como ticket ou não é grupo, abre como pendente
+            "group", // se não é para tratar grupo como ticket, vai direto para grupos
+          ticketData.userId = userId;
+        ticketData.queueId = wallets.queueId;
+        ticketData.isBot = false;
+        ticketData.startBot = false;
+        ticketData.useIntegration = false;
+        ticketData.integrationId = null;
+        ticketData.isGroup = groupContact ? true : false;
       }
     }
 
     ticket = await Ticket.create(
       ticketData
     );
-
-    // await FindOrCreateATicketTrakingService({
-    //   ticketId: ticket.id,
-    //   companyId,
-    //   whatsappId: whatsapp.id,
-    //   userId: userId ? userId : ticket.userId
-    // });
   }
 
   ticket = await ShowTicketService(ticket.id, companyId);
@@ -221,7 +220,7 @@ const FindOrCreateTicketService = async (
       });
   };
 
-    const fromMe = lastMessage?.fromMe || false;
+  const fromMe = lastMessage?.fromMe || false;
 
   if (new Date() >= ticket.nextNotify && notification && !fromMe) {
     await NotifyPlantaoService({ companyId, ticket });

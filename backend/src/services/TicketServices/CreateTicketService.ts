@@ -56,6 +56,8 @@ const CreateTicketService = async ({
   if (!defaultWhatsapp)
     defaultWhatsapp = await GetDefaultWhatsApp(whatsapp.id, companyId);
 
+  // Obter a configuração groupAsTicket do WhatsApp
+  const groupAsTicketEnabled = defaultWhatsapp.groupAsTicket === "enabled";
 
   const checkTicket = await CheckContactOpenTickets(contactId, companyId, defaultWhatsapp.id);
 
@@ -76,6 +78,16 @@ const CreateTicketService = async ({
 
   const { isGroup } = await ShowContactService(contactId, companyId);
 
+  // Definir o status baseado na configuração groupAsTicket e se é grupo
+  let ticketStatus;
+  if (isGroup) {
+    // Se for grupo, verifica a configuração groupAsTicket
+    ticketStatus = groupAsTicketEnabled ? "pending" : "group";
+  } else {
+    // Se não for grupo, mantém como "open"
+    ticketStatus = "open";
+  }
+
   let ticket = await Ticket.create({
     contactId,
     companyId,
@@ -85,14 +97,9 @@ const CreateTicketService = async ({
     userId,
     isBot: true,
     queueId,
-    status: isGroup ? "group" : "open",
+    status: ticketStatus, // Usando o status calculado
     isActiveDemand: true
   });
-
-  // await Ticket.update(
-  //   { companyId, queueId, userId, status: isGroup? "group": "open", isBot: true },
-  //   { where: { id } }
-  // );
 
   ticket = await ShowTicketService(ticket.id, companyId);
 
@@ -101,9 +108,6 @@ const CreateTicketService = async ({
   }
 
   io.of(String(companyId))
-    // .to(ticket.status)
-    // .to("notification")
-    // .to(ticket.id.toString())
     .emit(`company-${companyId}-ticket`, {
       action: "update",
       ticket
