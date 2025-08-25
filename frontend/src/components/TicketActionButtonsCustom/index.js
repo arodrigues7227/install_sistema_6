@@ -342,9 +342,20 @@ const TicketActionButtonsCustom = ({
   const handleAcepptTicket = async (id) => {
     setLoading(true);
     try {
+      // Determinar o status correto baseado no tipo de ticket e configuração groupAsTicket
+      let targetStatus;
+      if (ticket.isGroup) {
+        // Se é um grupo, verificar se groupAsTicket está habilitado
+        targetStatus = ticket.whatsapp?.groupAsTicket === "enabled" ? "open" : "group";
+      } else {
+        targetStatus = "open";
+      }
+      
       const otherTicket = await api.put(`/tickets/${id}`, {
-        status: ticket.isGroup ? "group" : "open",
+        status: targetStatus,
         userId: user?.id,
+        // Para grupos sem queueId, manter nulo para permitir reabertura
+        queueId: ticket.queueId || null
       });
       if (otherTicket.data.id !== ticket.id) {
         if (otherTicket.data.userId !== user?.id) {
@@ -422,7 +433,21 @@ const TicketActionButtonsCustom = ({
                   loading={loading}
                   startIcon={<Replay />}
                   size="small"
-                  onClick={(e) => handleOpenAcceptTicketWithouSelectQueue()}
+                  onClick={(e) => {
+                    // Se é um grupo tratado como ticket, dar opção direta de reabrir sem fila
+                    if (ticket.isGroup && ticket.whatsapp?.groupAsTicket === "enabled") {
+                      const escolha = window.confirm(
+                        "Deseja reabrir com seleção de fila?\n\nSim = Selecionar fila\nNão = Reabrir sem fila"
+                      );
+                      if (escolha) {
+                        handleOpenAcceptTicketWithouSelectQueue();
+                      } else {
+                        handleAcepptTicket(ticket.id);
+                      }
+                    } else {
+                      handleOpenAcceptTicketWithouSelectQueue();
+                    }
+                  }}
                 >
                   {i18n.t("messagesList.header.buttons.reopen")}
                 </ButtonWithSpinner>

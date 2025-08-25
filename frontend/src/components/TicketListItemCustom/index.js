@@ -352,10 +352,19 @@ const TicketListItemCustom = ({ setTabOpen, ticket, isNotification = false }) =>
   const handleAcepptTicket = async (id) => {
     setLoading(true);
     try {
+      // Determinar o status correto baseado no tipo de ticket e configuração groupAsTicket
+      let targetStatus;
+      if (ticket.isGroup && ticket.channel === "whatsapp") {
+        // Se é um grupo do WhatsApp, verificar configuração groupAsTicket
+        targetStatus = ticket.whatsapp?.groupAsTicket === "enabled" ? "open" : "group";
+      } else {
+        targetStatus = "open";
+      }
+      
       const otherTicket = await api.put(`/tickets/${id}`, {
-        status:
-          ticket.isGroup && ticket.channel === "whatsapp" ? "group" : "open",
+        status: targetStatus,
         userId: user?.id,
+        queueId: ticket.queueId || null
       });
 
       if (otherTicket.data.id !== ticket.id) {
@@ -365,7 +374,9 @@ const TicketListItemCustom = ({ setTabOpen, ticket, isNotification = false }) =>
           setQueueTicketOpen(otherTicket.data.queue.name);
         } else {
           setLoading(false);
-          setTabOpen(ticket.isGroup ? "group" : "open");
+          // Determinar a aba correta baseada no status retornado pelo backend
+          const tabToOpen = otherTicket.data.status === "group" ? "group" : "open";
+          setTabOpen(tabToOpen);
           handleSelectTicket(otherTicket.data);
           // history.push('/tickets');
           // setTimeout(() => {
@@ -393,7 +404,9 @@ const TicketListItemCustom = ({ setTabOpen, ticket, isNotification = false }) =>
           setLoading(false);
         }
 
-        setTabOpen(ticket.isGroup ? "group" : "open");
+        // Determinar a aba correta baseada no status definido
+        const tabToOpen = targetStatus === "group" ? "group" : "open";
+        setTabOpen(tabToOpen);
         handleSelectTicket(ticket);
         // history.push('/tickets');
         // setTimeout(() => {
@@ -767,7 +780,21 @@ const TicketListItemCustom = ({ setTabOpen, ticket, isNotification = false }) =>
                   className={classes.acceptButton}
                   size="small"
                   loading={loading}
-                  onClick={(e) => handleOpenAcceptTicketWithouSelectQueue()}
+                  onClick={(e) => {
+                    // Se é um grupo tratado como ticket, dar opção de reabrir sem fila
+                    if (ticket.isGroup && ticket.whatsapp?.groupAsTicket === "enabled") {
+                      const escolha = window.confirm(
+                        "Reabrir este grupo:\n\nOK = Com seleção de fila\nCancelar = Sem fila (direto)"
+                      );
+                      if (escolha) {
+                        handleOpenAcceptTicketWithouSelectQueue();
+                      } else {
+                        handleAcepptTicket(ticket.id);
+                      }
+                    } else {
+                      handleOpenAcceptTicketWithouSelectQueue();
+                    }
+                  }}
                 >
                   <Tooltip title={`${i18n.t("ticketsList.buttons.accept")}`}>
                     <Done />
@@ -934,7 +961,21 @@ const TicketListItemCustom = ({ setTabOpen, ticket, isNotification = false }) =>
                   className={classes.acceptButton}
                   size="small"
                   loading={loading}
-                  onClick={(e) => handleOpenAcceptTicketWithouSelectQueue()}
+                  onClick={(e) => {
+                    // Se é um grupo tratado como ticket, dar opção de reabrir sem fila
+                    if (ticket.isGroup && ticket.whatsapp?.groupAsTicket === "enabled") {
+                      const escolha = window.confirm(
+                        "Reabrir este grupo:\n\nOK = Com seleção de fila\nCancelar = Sem fila (direto)"
+                      );
+                      if (escolha) {
+                        handleOpenAcceptTicketWithouSelectQueue();
+                      } else {
+                        handleAcepptTicket(ticket.id);
+                      }
+                    } else {
+                      handleOpenAcceptTicketWithouSelectQueue();
+                    }
+                  }}
                 >
                   <Tooltip title={`${i18n.t("ticketsList.buttons.reopen")}`}>
                     <Replay />

@@ -120,8 +120,17 @@ const handleSendMessage = async (id) => {
 const handleUpdateTicketStatus = async (queueId) => {
 	setLoading(true);
 	try {
+		// Determinar o status correto baseado no tipo de ticket e configuração groupAsTicket
+		let targetStatus;
+		if (ticket.isGroup && ticket.channel === 'whatsapp') {
+			// Se é um grupo do WhatsApp, verificar configuração groupAsTicket
+			targetStatus = ticket.whatsapp?.groupAsTicket === "enabled" ? "open" : "group";
+		} else {
+			targetStatus = "open";
+		}
+		
 		const otherTicket = await api.put(`/tickets/${ticketId}`, {
-			status: ticket.isGroup && ticket.channel === 'whatsapp' ? "group" : "open",
+			status: targetStatus,
 			userId: user?.id || null,
 			queueId: queueId
 		});
@@ -133,13 +142,17 @@ const handleUpdateTicketStatus = async (queueId) => {
 				setQueueTicketOpen(otherTicket.data.queue.name)
 			} else {
 				setLoading(false);
-				setTabOpen(otherTicket.isGroup ? "group" : "open");
+				// Determinar a aba correta baseada no status retornado pelo backend
+				const tabToOpen = otherTicket.data.status === "group" ? "group" : "open";
+				setTabOpen(tabToOpen);
 				history.push(`/tickets/${otherTicket.data.uuid}`);
 			}
 		} else {
 			handleSendMessage(ticket.id)
 			setLoading(false);
-			setTabOpen(ticket.isGroup ? "group" : "open");
+			// Determinar a aba correta baseada no status atualizado
+			const tabToOpen = targetStatus === "group" ? "group" : "open";
+			setTabOpen(tabToOpen);
 			history.push(`/tickets/${ticket.uuid}`);
 			handleClose();
 		}

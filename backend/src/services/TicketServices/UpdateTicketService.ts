@@ -173,6 +173,29 @@ const UpdateTicketService = async ({
       companyId
     );
 
+    // Se o ticket foi fechado e está sendo reaberto, precisamos ajustar o status para grupos
+    if (oldStatus === "closed" && ticket.isGroup && (status === "open" || status === "pending" || status === "group")) {
+      const shouldTreatAsTicket = groupAsTicket === "enabled";
+      
+      if (shouldTreatAsTicket) {
+        // Se groupAsTicket está habilitado, permitir reabertura como ticket normal
+        // Se tem queueId ou foi fornecido um, usar "open", senão "pending"
+        if (ticket.queueId || queueId) {
+          status = "open";
+        } else {
+          // Permitir reabertura sem fila definida - vai para pending
+          status = "pending";
+        }
+      } else {
+        // Se groupAsTicket está desabilitado, sempre usar status "group"
+        status = "group";
+        // Grupos com status "group" não precisam de queueId
+        if (!queueId) {
+          queueId = null;
+        }
+      }
+    }
+
     if (status !== undefined && ["closed"].indexOf(status) > -1) {
 
       const _userId = ticket.userId || userId;
@@ -739,6 +762,24 @@ const UpdateTicketService = async ({
     }
 
     status = queue && queue.closeTicket ? "closed" : status;
+
+    // Lógica adicional para garantir consistência de grupos
+    if (ticket.isGroup && status) {
+      // Se é um grupo e o status está sendo alterado, verificar consistência
+      if (status === "group" && queueId) {
+        // Grupos com status "group" não deveriam ter queueId
+        // Mas permitir se groupAsTicket estiver habilitado
+        if (groupAsTicket !== "enabled") {
+          queueId = null;
+        }
+      }
+      
+      // Se groupAsTicket está desabilitado e status for "open" ou "pending", ajustar para "group"
+      if (groupAsTicket !== "enabled" && (status === "open" || status === "pending")) {
+        status = "group";
+        queueId = null;
+      }
+    }
 
     await ticket.update({
       status,

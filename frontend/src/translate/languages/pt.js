@@ -868,6 +868,7 @@ const messages = {
           start: "iniciar",
           closed: "Fechar",
           reopen: "Reabrir",
+          reopenWithoutQueue: "Reabrir sem fila",
           transfer: "Transferir",
           ignore: "Ignorar",
           exportAsPDF: "Exportar para PDF",
