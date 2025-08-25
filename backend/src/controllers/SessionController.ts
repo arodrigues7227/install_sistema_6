@@ -10,9 +10,6 @@ import User from "../models/User";
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const { email, password } = req.body;
-
-  console.log('email', email, 'password', password)
-
   const { token, serializedUser, refreshToken } = await AuthUserService({
     email,
     password
