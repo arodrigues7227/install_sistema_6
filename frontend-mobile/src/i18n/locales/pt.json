@@ -1,0 +1,132 @@
+{
+  "login": {
+    "title": "Entrar",
+    "subtitle": "Acesse sua conta para continuar",
+    "email": "Email",
+    "password": "Senha",
+    "loginButton": "Entrar",
+    "loading": "Entrando...",
+    "forgotPassword": "Esqueci minha senha",
+    "errors": {
+      "required": "Campo obrigatório",
+      "invalidEmail": "Email inválido",
+      "minLength": "Mínimo de {{count}} caracteres",
+      "loginFailed": "Falha no login. Verifique suas credenciais."
+    },
+    "success": "Login realizado com sucesso!",
+    "offline": "Você está offline. Verifique sua conexão."
+  },
+  "tickets": {
+    "title": "Atendimentos",
+    "search": "Buscar atendimentos...",
+    "searchButton": "Buscar",
+    "clearSearch": "Limpar busca",
+    "noTickets": "Nenhum atendimento encontrado",
+    "loadMore": "Carregar mais",
+    "loading": "Carregando...",
+    "refresh": "Atualizar",
+    "filters": {
+      "all": "Todos",
+      "open": "Abertos",
+      "pending": "Pendentes",
+      "closed": "Fechados"
+    },
+    "status": {
+      "open": "Aberto",
+      "pending": "Pendente", 
+      "closed": "Fechado"
+    },
+    "actions": {
+      "reply": "Responder",
+      "close": "Fechar",
+      "resolve": "Resolver",
+      "transfer": "Transferir"
+    },
+    "details": {
+      "contact": "Contato",
+      "queue": "Fila",
+      "user": "Atendente",
+      "createdAt": "Criado em",
+      "updatedAt": "Atualizado em",
+      "protocol": "Protocolo"
+    },
+    "chat": {
+      "title": "Conversa",
+      "typingMessage": "Digite sua mensagem...",
+      "sendButton": "Enviar",
+      "sending": "Enviando...",
+      "attachFile": "Anexar arquivo",
+      "emoji": "Emoji",
+      "messageDelivered": "Entregue",
+      "messageRead": "Lido",
+      "messagePending": "Enviando...",
+      "messageFailed": "Falha no envio",
+      "retryMessage": "Tentar novamente",
+      "deleteMessage": "Excluir mensagem"
+    }
+  },
+  "navigation": {
+    "tickets": "Atendimentos",
+    "profile": "Perfil",
+    "settings": "Configurações",
+    "logout": "Sair"
+  },
+  "common": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "close": "Fechar",
+    "ok": "OK",
+    "yes": "Sim",
+    "no": "Não",
+    "loading": "Carregando...",
+    "error": "Erro",
+    "success": "Sucesso",
+    "warning": "Atenção",
+    "info": "Informação",
+    "retry": "Tentar novamente",
+    "noData": "Nenhum dado encontrado",
+    "offline": "Offline",
+    "online": "Online"
+  },
+  "profile": {
+    "title": "Perfil",
+    "name": "Nome",
+    "email": "Email",
+    "phone": "Telefone",
+    "updateProfile": "Atualizar Perfil",
+    "changePassword": "Alterar Senha",
+    "currentPassword": "Senha Atual",
+    "newPassword": "Nova Senha",
+    "confirmPassword": "Confirmar Senha",
+    "updateSuccess": "Perfil atualizado com sucesso",
+    "updateError": "Erro ao atualizar perfil",
+    "passwordChangeSuccess": "Senha alterada com sucesso",
+    "passwordChangeError": "Erro ao alterar senha"
+  },
+  "settings": {
+    "title": "Configurações",
+    "theme": "Tema",
+    "themeLight": "Claro",
+    "themeDark": "Escuro",
+    "themeSystem": "Sistema",
+    "language": "Idioma",
+    "notifications": "Notificações",
+    "sound": "Som",
+    "vibration": "Vibração",
+    "about": "Sobre",
+    "version": "Versão",
+    "logout": "Sair da Conta"
+  },
+  "errors": {
+    "networkError": "Erro de conexão. Verifique sua internet.",
+    "serverError": "Erro no servidor. Tente novamente mais tarde.",
+    "unauthorized": "Acesso não autorizado.",
+    "forbidden": "Você não tem permissão para esta ação.",
+    "notFound": "Recurso não encontrado.",
+    "validationError": "Dados inválidos.",
+    "unknownError": "Erro desconhecido. Tente novamente."
+  }
+}
