@@ -3627,7 +3627,7 @@ const handleMsgAck = async (
             },
             {
               model: Whatsapp,
-              attributes: ["id", "name", "groupAsTicket", "color"]
+              attributes: ["id", "name", "groupAsTicket"]
             },
             {
               model: User,
