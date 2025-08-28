@@ -876,7 +876,7 @@ const TicketListItemCustom = ({ setTabOpen, ticket, isNotification = false }) =>
             )}
           </span>
           <span className={classes.secondaryContentSecond}>
-            {(ticket.status === "open" || ticket.status === "group") && (user.allowGroup === "enabled" || user.userClosePendingTicket === "enabled" || user.showDashboard === "enabled" || user.profile === "admin") (
+            {(ticket.status === "open" || ticket.status === "group") && (user.profile === "admin") && (
               <ButtonWithSpinner
                 //color="primary"
                 style={{
