@@ -615,7 +615,7 @@ const TicketListItem = ({ ticket }) => {
                         <ClearOutlinedIcon />
                     </IconButton>
                 )}
-                {ticket.status === "closed" && (
+                {ticket.status === "closed" && (user.showDashboard === "enabled") (
                     <IconButton
                         className={classes.bottomButton}
                         color="primary"
