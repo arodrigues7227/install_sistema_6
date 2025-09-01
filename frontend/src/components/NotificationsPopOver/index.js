@@ -256,9 +256,16 @@ const NotificationsPopOver = ({ volume }) => {
 					ticket.queueId && 
 					(canUserAccessQueue || (showTicketWithoutQueue === true)) &&
 					!ticketAlreadyInNotifications &&
-					(!["lgpd", "nps"].includes(ticket.status) || 
-					 (ticket.status === "pending" && showNotificationPending === true) ||
-					 (ticket.status === "group" && ticket.whatsapp?.groupAsTicket === "enabled" && showGroupNotification === true))
+					(
+						// Tickets normais (incluindo grupos tratados como tickets normais)
+						(!["lgpd", "nps", "group"].includes(ticket.status)) ||
+						
+						// Tickets pendentes se habilitado
+						(ticket.status === "pending" && showNotificationPending === true) ||
+						
+						// Tickets de grupo com status="group" se habilitado
+						(ticket.status === "group" && showGroupNotification === true)
+					)
 				) {
 					setNotifications(prevState => {
 						return [ticket, ...prevState];
