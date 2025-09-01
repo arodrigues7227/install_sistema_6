@@ -222,7 +222,7 @@ const NotificationsPopOver = ({ volume }) => {
 		};
 
 		const onCompanyTicketNotificationsPopover = (data) => {
-			console.log("Evento de ticket recebido:", data);
+			console.log("[NOTIF DEBUG] Evento de ticket recebido:", data);
 			
 			if (data.action === "updateUnread" || data.action === "delete") {
 				setNotifications(prevState => {
@@ -274,22 +274,32 @@ const NotificationsPopOver = ({ volume }) => {
 					const shouldNotNotificate =
 						(ticket.id === ticketIdRef.current &&
 							document.visibilityState === "visible") ||
-						(ticket.userId && ticket.userId !== user?.id) ||
-						(ticket.isGroup && ticket.whatsapp?.groupAsTicket === "disabled" && showGroupNotification === false);
+						(ticket.userId && ticket.userId !== user?.id);
 
 					if (!shouldNotNotificate) {
+						console.log("[GRUPO DEBUG] Enviando notificação para ticket:", ticket.id);
 						handleNotifications({
 							ticket,
 							message: { body: i18n.t("tickets.notification.newTicketQueue") },
 							contact: ticket.contact || { name: i18n.t("tickets.notification.unknownContact") }
 						});
+					} else {
+						console.log("[GRUPO DEBUG] Notificação bloqueada para ticket:", ticket.id, "shouldNotNotificate:", shouldNotNotificate);
 					}
 				}
 			}
 		};
 
 		const onCompanyAppMessageNotificationsPopover = (data) => {
-			console.log("Evento de mensagem recebido:", data);
+			console.log("[GRUPO DEBUG] Evento de mensagem recebido:", {
+				ticketId: data.ticket?.id,
+				isGroup: data.ticket?.isGroup,
+				status: data.ticket?.status,
+				groupAsTicket: data.ticket?.whatsapp?.groupAsTicket,
+				showGroupNotification,
+				messageFromMe: data.message?.fromMe,
+				messageRead: data.message?.read
+			});
 			
 			if (
 				data.action === "create" && !data.message.fromMe &&
@@ -297,9 +307,16 @@ const NotificationsPopOver = ({ volume }) => {
 				(data.ticket?.userId === user?.id || !data.ticket?.userId) &&
 				(user?.queues?.some(queue => (queue.id === data.ticket.queueId)) ||
 					!data.ticket.queueId && showTicketWithoutQueue === true) &&
-				(!["pending", "lgpd", "nps", "group"].includes(data.ticket?.status) ||
+				(
+					// Tickets normais (incluindo grupos tratados como tickets normais)
+					(!["lgpd", "nps", "group"].includes(data.ticket?.status)) ||
+					
+					// Tickets pendentes se habilitado
 					(data.ticket?.status === "pending" && showNotificationPending === true) ||
-					(data.ticket?.status === "group" && data.ticket?.whatsapp?.groupAsTicket === "enabled" && showGroupNotification === true))
+					
+					// Tickets de grupo com status="group" se habilitado
+					(data.ticket?.status === "group" && showGroupNotification === true)
+				)
 			) {
 				setNotifications(prevState => {
 					const ticketIndex = prevState.findIndex(t => t.id === data.ticket.id);
@@ -313,11 +330,13 @@ const NotificationsPopOver = ({ volume }) => {
 				const shouldNotNotificate =
 					(data.message.ticketId === ticketIdRef.current &&
 						document.visibilityState === "visible") ||
-					(data.ticket.userId && data.ticket.userId !== user?.id) ||
-					(data.ticket.isGroup && data.ticket?.whatsapp?.groupAsTicket === "disabled" && showGroupNotification === false);
+					(data.ticket.userId && data.ticket.userId !== user?.id);
 
 				if (!shouldNotNotificate) {
+					console.log("[GRUPO DEBUG] Enviando notificação para mensagem:", data.ticket.id);
 					handleNotifications(data);
+				} else {
+					console.log("[GRUPO DEBUG] Notificação bloqueada para mensagem:", data.ticket.id, "shouldNotNotificate:", shouldNotNotificate);
 				}
 			}
 		};

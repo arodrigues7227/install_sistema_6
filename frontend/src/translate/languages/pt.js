@@ -795,6 +795,8 @@ const messages = {
         },
         notification: {
           message: "Mensagem de",
+          newTicketQueue: "Nova conversa na fila",
+          unknownContact: "Contato desconhecido",
         },
         tabs: {
           open: { title: "Abertas" },
