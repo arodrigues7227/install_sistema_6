@@ -552,22 +552,6 @@ const TicketsManagerTabs = () => {
             />
           </div>
         </Tooltip>
-        {/* <IconButton
-          className={classes.filterIcon}
-          color="primary"
-          aria-label="upload picture"
-          component="span"
-          onClick={handleFilter}
-        >
-          <FilterListIcon />
-        </IconButton> */}
-        {/* <FilterListIcon
-          className={classes.filterIcon}
-          color="primary"
-          aria-label="upload picture"
-          component="span"
-          onClick={handleFilter}
-        /> */}
         <IconButton
           style={{
             backgroundColor: "transparent",
@@ -605,36 +589,6 @@ const TicketsManagerTabs = () => {
           )}
         </>
       )}
-
-      {/* <Paper elevation={0} square className={classes.tabsHeader}>
-        <Tabs
-          value={tab}
-          onChange={handleChangeTab}
-          variant="fullWidth"
-          textColor="primary"
-          aria-label="icon label tabs example"
-          classes={{ indicator: classes.tabIndicator }}
-        >
-          <Tab
-            value={"open"}
-            icon={<MoveToInboxIcon />}
-            label={i18n.t("tickets.tabs.open.title")}
-            classes={{ root: classes.tab }}
-          />
-          <Tab
-            value={"closed"}
-            icon={<CheckBoxIcon />}
-            label={i18n.t("tickets.tabs.closed.title")}
-            classes={{ root: classes.tab }}
-          />
-          <Tab
-            value={"search"}
-            icon={<SearchIcon />}
-            label={i18n.t("tickets.tabs.search.title")}
-            classes={{ root: classes.tab }}
-          />
-        </Tabs>
-      </Paper> */}
       <Paper square elevation={0} className={classes.ticketOptionsBox}>
         <Grid container alignItems="center" justifyContent="space-between">
           <Grid item>
@@ -1005,7 +959,7 @@ const TicketsManagerTabs = () => {
                     <Badge
                       overlap="rectangular"
                       classes={{ badge: classes.customBadge }}
-                      badgeContent={groupingCount}
+                      badgeContent={0}
                       color="primary"
                     >
                       <Group

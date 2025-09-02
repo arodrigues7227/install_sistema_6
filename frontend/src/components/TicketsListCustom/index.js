@@ -343,30 +343,13 @@ const TicketsListCustom = (props) => {
 
   useEffect(() => {
     const shouldUpdateTicket = (ticket) => {
-      // const queueIds = queues.map((q) => q.id);
+      // For internal groups (ticket.contact?.isGroup && ticket.contact?.users?.length > 0),
+      // always allow updates regardless of queue restrictions
+      if (ticket?.contact?.isGroup && ticket?.contact?.users?.length > 0) {
+        return (!ticket?.userId || ticket?.userId === user?.id || showAll);
+      }
 
-      // if (user?.id) {
-      //   if (profile === "user") {
-      //     console.log(
-      //       "Users Contact Ticket >>>",
-      //       ticket?.contact?.users?.map((u) => u.id).indexOf(user?.id)
-      //     );
-
-      //     if (
-      //       ticket?.contact?.users?.map((u) => u.id).indexOf(user?.id) !== -1
-      //     ) {
-      //       return true;
-      //     }
-
-      //     if (
-      //       queueIds.indexOf(ticket?.queue?.id) === -1 ||
-      //       ticket?.queue === null
-      //     ) {
-      //       return false;
-      //     }
-      //   }
-      // }
-
+      // For regular tickets and groups, apply normal filtering
       return (
         (!ticket?.userId || ticket?.userId === user?.id || showAll) &&
         ((!ticket?.queueId && showTicketWithoutQueue) ||
@@ -386,6 +369,11 @@ const TicketsListCustom = (props) => {
       ticket.queueId && selectedQueueIds.indexOf(ticket.queueId) === -1;
 
     const notBelongsToUserQueues = (ticket) => {
+      // For internal groups, don't remove them based on queue restrictions
+      if (ticket?.contact?.isGroup && ticket?.contact?.users?.length > 0) {
+        return false;
+      }
+
       if (ticket.queueId && selectedQueueIds.indexOf(ticket.queueId) === -1) {
         return true;
       }
@@ -406,26 +394,26 @@ const TicketsListCustom = (props) => {
           sortDir: sortTickets,
         });
       }
-      // console.log(shouldUpdateTicket(data.ticket))
-      if (
-        data.action === "update" &&
-        shouldUpdateTicket(data.ticket) &&
-        data.ticket.status === status
-      ) {
-        dispatch({
-          type: "UPDATE_TICKET",
-          payload: data.ticket,
-          status: status,
-          sortDir: sortTickets,
-        });
+      
+      // Handle ticket updates - improved logic for group tickets
+      if (data.action === "update" && shouldUpdateTicket(data.ticket)) {
+        // For group tickets, update regardless of status match if it's the same tab
+        const isGroupTicket = data.ticket?.isGroup || (data.ticket?.contact?.isGroup && data.ticket?.contact?.users?.length > 0);
+        const shouldUpdate = isGroupTicket ? 
+          (status === "group" || data.ticket.status === status) : 
+          data.ticket.status === status;
+          
+        if (shouldUpdate) {
+          dispatch({
+            type: "UPDATE_TICKET",
+            payload: data.ticket,
+            status: status,
+            sortDir: sortTickets,
+          });
+        }
       }
 
-      // else if (data.action === "update" && shouldUpdateTicketUser(data.ticket) && data.ticket.status === status) {
-      //     dispatch({
-      //         type: "UPDATE_TICKET",
-      //         payload: data.ticket,
-      //     });
-      // }
+      // Handle ticket removal from list
       if (data.action === "update" && notBelongsToUserQueues(data.ticket)) {
         dispatch({
           type: "DELETE_TICKET",
@@ -446,24 +434,22 @@ const TicketsListCustom = (props) => {
     };
 
     const onCompanyAppMessageTicketsList = (data) => {
-      if (
-        data.action === "create" &&
-        shouldUpdateTicket(data.ticket) &&
-        data.ticket.status === status
-      ) {
-        dispatch({
-          type: "UPDATE_TICKET_UNREAD_MESSAGES",
-          payload: data.ticket,
-          status: status,
-          sortDir: sortTickets,
-        });
+      if (data.action === "create" && shouldUpdateTicket(data.ticket)) {
+        // For group tickets, update message count regardless of status match if it's the same tab
+        const isGroupTicket = data.ticket?.isGroup || (data.ticket?.contact?.isGroup && data.ticket?.contact?.users?.length > 0);
+        const shouldUpdate = isGroupTicket ? 
+          (status === "group" || data.ticket.status === status) : 
+          data.ticket.status === status;
+          
+        if (shouldUpdate) {
+          dispatch({
+            type: "UPDATE_TICKET_UNREAD_MESSAGES",
+            payload: data.ticket,
+            status: status,
+            sortDir: sortTickets,
+          });
+        }
       }
-      // else if (data.action === "create" && shouldUpdateTicketUser(data.ticket) && data.ticket.status === status) {
-      //     dispatch({
-      //         type: "UPDATE_TICKET_UNREAD_MESSAGES",
-      //         payload: data.ticket,
-      //     });
-      // }
     };
 
     const onCompanyContactTicketsList = (data) => {

@@ -658,11 +658,31 @@ const TicketListItemCustom = ({ setTabOpen, ticket, isNotification = false }) =>
                         </Badge>
                       </Tooltip>
                       {ticket?.whatsapp?.name ? (
-                        <Badge className={classes.connectionTag}>
+                        <Badge 
+                          style={{
+                            backgroundColor:
+                              ticket.channel === "whatsapp"
+                                ? "#25D366"
+                                : ticket.channel === "facebook"
+                                ? "#4267B2"
+                                : "#E1306C",
+                          }}
+                          className={classes.connectionTag}
+                        >
                           {ticket?.whatsapp?.name?.toUpperCase()}
                         </Badge>
                       ) : (
                         <br></br>
+                      )}
+                      {ticket.queue?.name && (
+                        <Badge
+                          style={{
+                            backgroundColor: ticket.queue?.color || "#7c7c7c",
+                          }}
+                          className={classes.connectionTag}
+                        >
+                          {ticket.queue?.name?.toUpperCase()}
+                        </Badge>
                       )}
                     </span>
                   </>
