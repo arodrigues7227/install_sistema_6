@@ -300,31 +300,35 @@ const NotificationsPopOver = ({ volume }) => {
 				messageFromMe: data.message?.fromMe,
 				messageRead: data.message?.read
 			});
-			
+
 			if (
 				data.action === "create" && !data.message.fromMe &&
 				!data.message.read &&
 				(data.ticket?.userId === user?.id || !data.ticket?.userId) &&
 				(user?.queues?.some(queue => (queue.id === data.ticket.queueId)) ||
 					!data.ticket.queueId && showTicketWithoutQueue === true) &&
-				(
-					// Tickets normais (incluindo grupos tratados como tickets normais)
-					(!["lgpd", "nps", "group"].includes(data.ticket?.status)) ||
-					
-					// Tickets pendentes se habilitado
+				(!["pending", "lgpd", "nps", "group"].includes(data.ticket?.status) ||
 					(data.ticket?.status === "pending" && showNotificationPending === true) ||
-					
-					// Tickets de grupo com status="group" se habilitado
-					(data.ticket?.status === "group" && showGroupNotification === true)
-				)
+					(data.ticket?.status === "group" && showGroupNotification === true))
 			) {
+				// Aplicar lógica de permissão para mensagens pending
+				const shouldBlurMessages = data.ticket.status === "pending" && user.allowSeeMessagesInPendingTickets === "disabled";
+
+				// Se deve ocultar a mensagem, modifique o ticket antes de adicioná-lo às notificações
+				const ticketToAdd = shouldBlurMessages
+					? {
+						...data.ticket,
+						lastMessage: i18n.t("notifications.messageHidden") || "Mensagem oculta"
+					  }
+					: data.ticket;
+
 				setNotifications(prevState => {
-					const ticketIndex = prevState.findIndex(t => t.id === data.ticket.id);
+					const ticketIndex = prevState.findIndex(t => t.id === ticketToAdd.id);
 					if (ticketIndex !== -1) {
-						prevState[ticketIndex] = data.ticket;
+						prevState[ticketIndex] = ticketToAdd;
 						return [...prevState];
 					}
-					return [data.ticket, ...prevState];
+					return [ticketToAdd, ...prevState];
 				});
 
 				const shouldNotNotificate =
@@ -334,7 +338,19 @@ const NotificationsPopOver = ({ volume }) => {
 
 				if (!shouldNotNotificate) {
 					console.log("[GRUPO DEBUG] Enviando notificação para mensagem:", data.ticket.id);
-					handleNotifications(data);
+
+					// Para notificações desktop, também aplicar a lógica de ocultação
+					const messageBody = shouldBlurMessages
+						? i18n.t("notifications.messageHidden") || "Mensagem oculta"
+						: data.message.body;
+
+					handleNotifications({
+						...data,
+						message: {
+							...data.message,
+							body: messageBody
+						}
+					});
 				} else {
 					console.log("[GRUPO DEBUG] Notificação bloqueada para mensagem:", data.ticket.id, "shouldNotNotificate:", shouldNotNotificate);
 				}
