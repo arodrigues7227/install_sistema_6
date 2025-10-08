@@ -294,25 +294,32 @@ const ContactDrawer = ({
                     </Typography>
                   )}
 
-                  <AutocompleteMultipleUsers
-                    disabled={false}
-                    selectedUsers={selectedUsers}
-                    onUsersChange={setSelectedUsers}
-                  />
+                  {/* Only show user authorization field to authorized users or admins */}
+                  {(user.profile === "admin" || 
+                    contact.users?.some(u => u.id === user.id) ||
+                    contact.users?.length === 0) && (
+                    <>
+                      <AutocompleteMultipleUsers
+                        disabled={false}
+                        selectedUsers={selectedUsers}
+                        onUsersChange={setSelectedUsers}
+                      />
 
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleSaveUsers}
-                    disabled={savingUsers}
-                    style={{ 
-                      fontSize: 12, 
-                      marginTop: 8,
-                      width: '100%'
-                    }}
-                  >
-                    {savingUsers ? "Salvando..." : "Salvar Usuários"}
-                  </Button>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleSaveUsers}
+                        disabled={savingUsers}
+                        style={{ 
+                          fontSize: 12, 
+                          marginTop: 8,
+                          width: '100%'
+                        }}
+                      >
+                        {savingUsers ? "Salvando..." : "Salvar Usuários"}
+                      </Button>
+                    </>
+                  )}
                 </>
               ) : (
                 <></>

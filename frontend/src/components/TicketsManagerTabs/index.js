@@ -959,7 +959,7 @@ const TicketsManagerTabs = () => {
                     <Badge
                       overlap="rectangular"
                       classes={{ badge: classes.customBadge }}
-                      badgeContent={0}
+                      badgeContent={groupingCount}
                       color="primary"
                     >
                       <Group

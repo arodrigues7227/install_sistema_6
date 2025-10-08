@@ -289,7 +289,11 @@ const TicketsListCustom = (props) => {
     const queueIds = queues.map((q) => q.id);
     const filteredTickets = tickets.filter(
       (t) =>
+        // If it's a group with no authorized users, show it to all users in the company
+        (t.contact?.isGroup && t.contact?.users?.length === 0) ||
+        // If user is authorized for the group
         t.contact?.users?.map((u) => u.id).indexOf(user.id) > -1 ||
+        // If ticket belongs to user's queue
         queueIds.indexOf(t.queueId) > -1
     );
 
@@ -343,8 +347,12 @@ const TicketsListCustom = (props) => {
 
   useEffect(() => {
     const shouldUpdateTicket = (ticket) => {
-      // For internal groups (ticket.contact?.isGroup && ticket.contact?.users?.length > 0),
-      // always allow updates regardless of queue restrictions
+      // For internal groups with no authorized users, show to all users in the company
+      if (ticket?.contact?.isGroup && ticket?.contact?.users?.length === 0) {
+        return true;
+      }
+      
+      // For internal groups with authorized users, only show to authorized users
       if (ticket?.contact?.isGroup && ticket?.contact?.users?.length > 0) {
         return (!ticket?.userId || ticket?.userId === user?.id || showAll);
       }
@@ -369,7 +377,12 @@ const TicketsListCustom = (props) => {
       ticket.queueId && selectedQueueIds.indexOf(ticket.queueId) === -1;
 
     const notBelongsToUserQueues = (ticket) => {
-      // For internal groups, don't remove them based on queue restrictions
+      // For internal groups with no authorized users, don't remove them
+      if (ticket?.contact?.isGroup && ticket?.contact?.users?.length === 0) {
+        return false;
+      }
+      
+      // For internal groups with authorized users, don't remove them based on queue restrictions
       if (ticket?.contact?.isGroup && ticket?.contact?.users?.length > 0) {
         return false;
       }
@@ -398,7 +411,7 @@ const TicketsListCustom = (props) => {
       // Handle ticket updates - improved logic for group tickets
       if (data.action === "update" && shouldUpdateTicket(data.ticket)) {
         // For group tickets, update regardless of status match if it's the same tab
-        const isGroupTicket = data.ticket?.isGroup || (data.ticket?.contact?.isGroup && data.ticket?.contact?.users?.length > 0);
+        const isGroupTicket = data.ticket?.isGroup || (data.ticket?.contact?.isGroup && data.ticket?.contact?.users?.length >= 0);
         const shouldUpdate = isGroupTicket ? 
           (status === "group" || data.ticket.status === status) : 
           data.ticket.status === status;
@@ -436,7 +449,7 @@ const TicketsListCustom = (props) => {
     const onCompanyAppMessageTicketsList = (data) => {
       if (data.action === "create" && shouldUpdateTicket(data.ticket)) {
         // For group tickets, update message count regardless of status match if it's the same tab
-        const isGroupTicket = data.ticket?.isGroup || (data.ticket?.contact?.isGroup && data.ticket?.contact?.users?.length > 0);
+        const isGroupTicket = data.ticket?.isGroup || (data.ticket?.contact?.isGroup && data.ticket?.contact?.users?.length >= 0);
         const shouldUpdate = isGroupTicket ? 
           (status === "group" || data.ticket.status === status) : 
           data.ticket.status === status;
