@@ -1059,231 +1059,8 @@ async function handleLoginStatus(job) {
   }
 }
 
-async function handleResumeTicketsOutOfHour(job) {
-  // logger.info("Buscando atendimentos perdidos nas filas");
-  try {
-    const companies = await Company.findAll({
-      attributes: ['id', 'name'],
-      where: {
-        status: true
-      },
-      include: [
-        {
-          model: Whatsapp,
-          attributes: ["id", "name", "status", "timeSendQueue", "sendIdQueue"],
-          where: {
-            timeSendQueue: { [Op.gt]: 0 }
-          }
-        },
-      ]
-    });
-
-    companies.map(async c => {
-
-      c.whatsapps.map(async w => {
-
-        if (w.status === "CONNECTED") {
-          var companyId = c.id;
-
-          const moveQueue = w.timeSendQueue ? w.timeSendQueue : 0;
-          const moveQueueId = w.sendIdQueue;
-          const moveQueueTime = moveQueue;
-          const idQueue = moveQueueId;
-          const timeQueue = moveQueueTime;
-
-          if (moveQueue > 0) {
-
-            if (!isNaN(idQueue) && Number.isInteger(idQueue) && !isNaN(timeQueue) && Number.isInteger(timeQueue)) {
-
-              const tempoPassado = moment().subtract(timeQueue, "minutes").utc().format();
-              // const tempoAgora = moment().utc().format();
-
-              const { count, rows: tickets } = await Ticket.findAndCountAll({
-                attributes: ["id"],
-                where: {
-                  status: "pending",
-                  queueId: null,
-                  companyId: companyId,
-                  whatsappId: w.id,
-                  updatedAt: {
-                    [Op.lt]: tempoPassado
-                  },
-                  // isOutOfHour: false
-                },
-                include: [
-                  {
-                    model: Contact,
-                    as: "contact",
-                    attributes: ["id", "name", "number", "email", "profilePicUrl", "acceptAudioMessage", "active", "disableBot", "urlPicture", "lgpdAcceptedAt", "companyId"],
-                    include: ["extraInfo", "tags"]
-                  },
-                  {
-                    model: Queue,
-                    as: "queue",
-                    attributes: ["id", "name", "color"]
-                  },
-                  {
-                    model: Whatsapp,
-                    as: "whatsapp",
-                    attributes: ["id", "name", "expiresTicket", "groupAsTicket"]
-                  }
-                ]
-              });
-
-              if (count > 0) {
-                tickets.map(async ticket => {
-                  await ticket.update({
-                    queueId: idQueue
-                  });
-
-                  await ticket.reload();
-
-                  const io = getIO();
-                  io.of(String(companyId))
-                    // .to("notification")
-                    // .to(ticket.id.toString())
-                    .emit(`company-${companyId}-ticket`, {
-                      action: "update",
-                      ticket,
-                      ticketId: ticket.id
-                    });
-
-                  // io.to("pending").emit(`company-${companyId}-ticket`, {
-                  //   action: "update",
-                  //   ticket,
-                  // });
-
-                  logger.info(`Atendimento Perdido: ${ticket.id} - Empresa: ${companyId}`);
-                });
-              }
-            } else {
-              logger.info(`Condição não respeitada - Empresa: ${companyId}`);
-            }
-          }
-        }
-      });
-    });
-  } catch (e: any) {
-    Sentry.captureException(e);
-    logger.error("SearchForQueue -> VerifyQueue: error", e.message);
-    throw e;
-  }
-};
-
-async function handleVerifyQueue1(job) {
-  // logger.info("Buscando atendimentos perdidos nas filas");
-  try {
-    const companies = await Company.findAll({
-      attributes: ['id', 'name'],
-      where: {
-        status: true
-      },
-      include: [
-        {
-          model: Whatsapp,
-          attributes: ["id", "name", "status", "timeSendQueue", "sendIdQueue"]
-        },
-      ]
-    });
-
-    companies.map(async c => {
-
-      c.whatsapps.map(async w => {
-
-        if (w.status === "CONNECTED") {
-          var companyId = c.id;
-
-          const moveQueue = w.timeSendQueue ? w.timeSendQueue : 0;
-          const moveQueueId = w.sendIdQueue;
-          const moveQueueTime = moveQueue;
-          const idQueue = moveQueueId;
-          const timeQueue = moveQueueTime;
-
-          if (moveQueue > 0) {
-
-            if (!isNaN(idQueue) && Number.isInteger(idQueue) && !isNaN(timeQueue) && Number.isInteger(timeQueue)) {
-
-              const tempoPassado = moment().subtract(timeQueue, "minutes").utc().format();
-              // const tempoAgora = moment().utc().format();
-
-              const { count, rows: tickets } = await Ticket.findAndCountAll({
-                attributes: ["id"],
-                where: {
-                  status: "pending",
-                  queueId: null,
-                  companyId: companyId,
-                  whatsappId: w.id,
-                  updatedAt: {
-                    [Op.lt]: tempoPassado
-                  },
-                  // isOutOfHour: false
-                },
-                include: [
-                  {
-                    model: Contact,
-                    as: "contact",
-                    attributes: ["id", "name", "number", "email", "profilePicUrl", "acceptAudioMessage", "active", "disableBot", "urlPicture", "lgpdAcceptedAt", "companyId"],
-                    include: ["extraInfo", "tags"]
-                  },
-                  {
-                    model: Queue,
-                    as: "queue",
-                    attributes: ["id", "name", "color"]
-                  },
-                  {
-                    model: Whatsapp,
-                    as: "whatsapp",
-                    attributes: ["id", "name", "expiresTicket", "groupAsTicket"]
-                  }
-                ]
-              });
-
-              if (count > 0) {
-                tickets.map(async ticket => {
-                  await ticket.update({
-                    queueId: idQueue
-                  });
-
-                  await CreateLogTicketService({
-                    userId: null,
-                    queueId: idQueue,
-                    ticketId: ticket.id,
-                    type: "redirect"
-                  });
-
-                  await ticket.reload();
-
-                  const io = getIO();
-                  io.of(String(companyId))
-                    // .to("notification")
-                    // .to(ticket.id.toString())
-                    .emit(`company-${companyId}-ticket`, {
-                      action: "update",
-                      ticket,
-                      ticketId: ticket.id
-                    });
-
-                  // io.to("pending").emit(`company-${companyId}-ticket`, {
-                  //   action: "update",
-                  //   ticket,
-                  // });
-
-                  logger.info(`Atendimento Perdido: ${ticket.id} - Empresa: ${companyId}`);
-                });
-              }
-            } else {
-              logger.info(`Condição não respeitada - Empresa: ${companyId}`);
-            }
-          }
-        }
-      });
-    });
-  } catch (e: any) {
-    Sentry.captureException(e);
-    logger.error("SearchForQueue -> VerifyQueue: error", e.message);
-    throw e;
-  }
-};
+// Funções removidas para evitar duplicação de código
+// A funcionalidade foi consolidada na função handleVerifyQueue
 
 async function handleVerifyQueue(job) {
   // logger.info("Buscando atendimentos perdidos nas filas");
@@ -1296,7 +1073,11 @@ async function handleVerifyQueue(job) {
       include: [
         {
           model: Whatsapp,
-          attributes: ["id", "name", "status", "timeSendQueue", "sendIdQueue"]
+          attributes: ["id", "name", "status", "timeSendQueue", "sendIdQueue"],
+          where: {
+            timeSendQueue: { [Op.gt]: 0 },
+            sendIdQueue: { [Op.not]: null }
+          }
         },
       ]
     });
@@ -1743,7 +1524,7 @@ export async function startQueueProcess() {
     "VerifyQueueStatus",
     {},
     {
-      repeat: { cron: "0 * * * * *", key: "verify-queue" },
+      repeat: { cron: "* * * * *", key: "verify-queue" },
       removeOnComplete: true
     }
   );
