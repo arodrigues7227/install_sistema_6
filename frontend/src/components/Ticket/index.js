@@ -113,6 +113,17 @@ const Ticket = () => {
             setTicket(data);
             if (["pending", "open", "group"].includes(data.status)) {
               setTabOpen(data.status);
+              
+              // Reset unread messages for group tickets
+              if (data.isGroup || (data.contact?.isGroup && data.contact?.users?.length >= 0)) {
+                try {
+                  await api.put(`/tickets/${data.id}`, {
+                    unreadMessages: 0
+                  });
+                } catch (err) {
+                  console.log('Error resetting unread messages for group ticket:', err);
+                }
+              }
             }
             setLoading(false);
           }

@@ -463,6 +463,16 @@ const TicketsListCustom = (props) => {
           });
         }
       }
+      
+      // Reset unread messages when user opens the ticket
+      if (data.action === "updateUnread") {
+        dispatch({
+          type: "RESET_UNREAD",
+          payload: data.ticketId,
+          status: status,
+          sortDir: sortTickets,
+        });
+      }
     };
 
     const onCompanyContactTicketsList = (data) => {

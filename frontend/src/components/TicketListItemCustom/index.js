@@ -449,10 +449,21 @@ const TicketListItemCustom = ({ setTabOpen, ticket, isNotification = false }) =>
     setLoading(false);
   }, []);
 
-  const handleSelectTicket = (ticket) => {
+  const handleSelectTicket = async (ticket) => {
     const code = uuidv4();
     const { id, uuid } = ticket;
     setCurrentTicket({ id, uuid, code });
+    
+    // Reset unread messages for group tickets
+    if (ticket.isGroup || (ticket.contact?.isGroup && ticket.contact?.users?.length >= 0)) {
+      try {
+        await api.put(`/tickets/${id}`, {
+          unreadMessages: 0
+        });
+      } catch (err) {
+        console.log('Error resetting unread messages for group ticket:', err);
+      }
+    }
   };
 
   return (
@@ -671,9 +682,7 @@ const TicketListItemCustom = ({ setTabOpen, ticket, isNotification = false }) =>
                         >
                           {ticket?.whatsapp?.name?.toUpperCase()}
                         </Badge>
-                      ) : (
-                        <br></br>
-                      )}
+                      ) : null}
                       {ticket.queue?.name && (
                         <Badge
                           style={{
@@ -706,9 +715,7 @@ const TicketListItemCustom = ({ setTabOpen, ticket, isNotification = false }) =>
                         >
                           {ticket.whatsapp?.name.toUpperCase()}
                         </Badge>
-                      ) : (
-                        <br></br>
-                      )}
+                      ) : null}
                       {ticketUser ? (
                         <Badge
                           style={{ backgroundColor: "#000000" }}
@@ -716,16 +723,14 @@ const TicketListItemCustom = ({ setTabOpen, ticket, isNotification = false }) =>
                         >
                           {ticketUser}
                         </Badge>
-                      ) : (
-                        <br></br>
-                      )}
+                      ) : null}
                       <Badge
                         style={{
                           backgroundColor: ticket.queue?.color || "#7c7c7c",
                         }}
                         className={classes.connectionTag}
                       >
-                        {ticket.queue?.name?.toUpperCase() || "SEM FILA"}
+                        {ticket.queue?.name?.toUpperCase()}
                       </Badge>
                     </span>
                   </>

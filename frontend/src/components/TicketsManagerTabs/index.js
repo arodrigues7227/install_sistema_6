@@ -956,18 +956,11 @@ const TicketsManagerTabs = () => {
               label={
                 <Grid container alignItems="center" justifyContent="center">
                   <Grid item>
-                    <Badge
-                      overlap="rectangular"
-                      classes={{ badge: classes.customBadge }}
-                      badgeContent={groupingCount}
-                      color="primary"
-                    >
-                      <Group
-                        style={{
-                          fontSize: 18,
-                        }}
-                      />
-                    </Badge>
+                    <Group
+                      style={{
+                        fontSize: 18,
+                      }}
+                    />
                   </Grid>
                   <Grid item>
                     <Typography
